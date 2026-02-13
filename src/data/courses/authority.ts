@@ -17,6 +17,7 @@ export const authority: Course = {
   estimatedHours: 9,
   isSequential: true,
   basePath: BASE,
+  coverImage: "/images/authority-course",
   tags: [
     "authority",
     "influence",

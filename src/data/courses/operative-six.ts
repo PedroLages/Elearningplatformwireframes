@@ -17,6 +17,7 @@ export const operativeSix: Course = {
   estimatedHours: 14,
   isSequential: true,
   basePath: BASE,
+  coverImage: "/images/operative-six",
   tags: [
     "operative-training",
     "influence",

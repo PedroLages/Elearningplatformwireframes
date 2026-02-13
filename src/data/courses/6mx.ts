@@ -17,6 +17,7 @@ export const sixMinuteXRay: Course = {
   estimatedHours: 32,
   isSequential: true,
   basePath: BASE,
+  coverImage: "/images/6mx",
   tags: [
     "behavioral-analysis",
     "deception-detection",

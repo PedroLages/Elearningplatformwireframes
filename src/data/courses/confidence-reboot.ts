@@ -16,6 +16,7 @@ export const confidenceReboot: Course = {
   estimatedHours: 20,
   isSequential: true,
   basePath: BASE,
+  coverImage: "/images/confidence-reboot",
   tags: [
     "confidence",
     "composure",

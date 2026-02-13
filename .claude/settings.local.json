@@ -1,0 +1,13 @@
+{
+  "permissions": {
+    "allow": [
+      "Bash(wc:*)",
+      "Bash(find:*)",
+      "Read(//Volumes/SSD/Dev/Apps/Elearningplatformwireframes/**)",
+      "WebFetch(domain:downarchive.org)",
+      "Bash(npm run dev:*)",
+      "Bash(npm install:*)",
+      "WebFetch(domain:github.com)"
+    ]
+  }
+}

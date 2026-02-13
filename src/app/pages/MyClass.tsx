@@ -46,7 +46,7 @@ export default function MyClass() {
                 <Card className="hover:shadow-md transition-shadow h-full cursor-pointer">
                   <CardContent className="p-0">
                     <img
-                      src={course.coverImage}
+                      src={`${course.coverImage}-640w.webp`}
                       alt={course.title}
                       className="w-full h-36 object-cover rounded-t-xl"
                       loading="lazy"
@@ -93,7 +93,7 @@ export default function MyClass() {
                   <CardContent className="p-0">
                     <div className="relative">
                       <img
-                        src={course.coverImage}
+                        src={`${course.coverImage}-640w.webp`}
                         alt={course.title}
                         className="w-full h-36 object-cover rounded-t-xl"
                         loading="lazy"
@@ -131,7 +131,7 @@ export default function MyClass() {
                 <Card className="hover:shadow-md transition-shadow h-full opacity-80 hover:opacity-100 cursor-pointer">
                   <CardContent className="p-0">
                     <img
-                      src={course.coverImage}
+                      src={`${course.coverImage}-640w.webp`}
                       alt={course.title}
                       className="w-full h-36 object-cover rounded-t-xl"
                       loading="lazy"

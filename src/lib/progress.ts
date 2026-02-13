@@ -1,5 +1,5 @@
 import { Course } from "@/data/types"
-import { logStudyAction } from "./studyLog"
+import { logStudyAction, getStudyLog } from "./studyLog"
 
 const STORAGE_KEY = "course-progress"
 
@@ -164,4 +164,51 @@ export function getRecentActivity(courses: Course[], limit = 5): (Course & { pro
     .map((c) => ({ ...c, progress: all[c.id]! }))
     .sort((a, b) => new Date(b.progress.lastAccessedAt).getTime() - new Date(a.progress.lastAccessedAt).getTime())
     .slice(0, limit)
+}
+
+export function getLast7DaysLessonCompletions(): number[] {
+  const logs = getStudyLog()
+  const last7Days = Array(7).fill(0)
+  const now = new Date()
+
+  logs.forEach((log) => {
+    if (log.type === "lesson_complete") {
+      const logDate = new Date(log.timestamp)
+      const daysAgo = Math.floor(
+        (now.getTime() - logDate.getTime()) / (1000 * 60 * 60 * 24)
+      )
+      if (daysAgo >= 0 && daysAgo < 7) {
+        last7Days[6 - daysAgo]++
+      }
+    }
+  })
+
+  return last7Days
+}
+
+export function getWeeklyChange(metric: "lessons" | "courses" | "notes"): number {
+  const logs = getStudyLog()
+  const now = new Date()
+  const weekAgo = new Date(now.getTime() - 7 * 24 * 60 * 60 * 1000)
+  const twoWeeksAgo = new Date(now.getTime() - 14 * 24 * 60 * 60 * 1000)
+
+  let thisWeek = 0
+  let lastWeek = 0
+
+  logs.forEach((log) => {
+    const logDate = new Date(log.timestamp)
+    const matchesMetric =
+      (metric === "lessons" && log.type === "lesson_complete") ||
+      (metric === "notes" && log.type === "note_saved")
+
+    if (!matchesMetric) return
+
+    if (logDate >= weekAgo) {
+      thisWeek++
+    } else if (logDate >= twoWeeksAgo) {
+      lastWeek++
+    }
+  })
+
+  return thisWeek - lastWeek
 }

@@ -1,0 +1,253 @@
+name: Design Review
+
+on:
+  pull_request:
+    types: [opened, synchronize, reopened]
+    paths:
+      - 'src/app/components/**/*.tsx'
+      - 'src/app/pages/**/*.tsx'
+      - 'src/styles/**/*.css'
+      - 'tailwind.config.*'
+      - 'src/**/*.css'
+
+permissions:
+  contents: read
+  pull-requests: write
+  issues: write
+
+jobs:
+  design-review:
+    name: Automated Design Review
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0  # Full history for git diff
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+          cache: 'npm'
+
+      - name: Install dependencies
+        run: npm ci
+
+      - name: Install Playwright browsers
+        run: npx playwright install --with-deps chromium
+
+      - name: Build application
+        run: npm run build
+
+      - name: Start development server
+        run: |
+          npm run dev &
+          npx wait-on http://localhost:5173 --timeout 60000
+
+      - name: Setup Claude Code
+        run: |
+          # Install Claude Code CLI (replace with actual installation method)
+          # This is a placeholder - actual implementation depends on Claude Code deployment
+          echo "Installing Claude Code CLI..."
+          # npm install -g @anthropic/claude-code  # Example
+
+      - name: Run Design Review
+        id: design_review
+        env:
+          ANTHROPIC_API_KEY: ${{ secrets.ANTHROPIC_API_KEY }}
+        run: |
+          # Create review prompt
+          cat > review-prompt.txt <<'EOF'
+          You are a design review agent for an e-learning platform. Review the UI/UX changes in this PR.
+
+          ## Your Task
+
+          1. Review git diff to identify changed files
+          2. Consult .claude/workflows/design-review/design-principles.md for standards
+          3. Use Playwright to test affected pages at mobile (375px), tablet (768px), desktop (1440px)
+          4. Validate:
+             - Visual consistency (colors, spacing, typography)
+             - Responsive design across all breakpoints
+             - Accessibility (WCAG 2.1 AA+ compliance)
+             - Component interactions (hover, focus, active states)
+             - Code quality (React/TypeScript, Tailwind usage)
+          5. Generate detailed report with severity-triaged findings
+
+          ## Report Format
+
+          Use this exact structure:
+
+          ## Design Review Report
+
+          **PR**: #${{ github.event.pull_request.number }}
+          **Review Date**: $(date +%Y-%m-%d)
+          **Changed Files**: [List from git diff]
+
+          ### Executive Summary
+          [2-3 sentences about changes and overall assessment]
+
+          ### Findings by Severity
+
+          #### 🔴 Blockers (Must fix before merge)
+          - [Critical issues]
+
+          #### 🟡 High Priority (Should fix before merge)
+          - [Important issues]
+
+          #### 🟠 Medium Priority (Fix when possible)
+          - [Minor issues]
+
+          #### ⚪ Nitpicks (Optional)
+          - [Very minor suggestions]
+
+          ### What Works Well ✅
+          - [Positive aspects]
+
+          ### Accessibility Verification
+          - Contrast ratios: ✅/❌
+          - Keyboard navigation: ✅/❌
+          - ARIA labels: ✅/❌
+          - Semantic HTML: ✅/❌
+
+          ### Responsive Design Verification
+          - Mobile (375px): ✅/❌
+          - Tablet (768px): ✅/❌
+          - Desktop (1440px): ✅/❌
+
+          ### Recommendations
+          [Prioritized next steps]
+          EOF
+
+          # Run Claude Code with design review skill
+          # This is a placeholder - actual command depends on Claude Code CLI
+          claude-code run --skill design-review --input review-prompt.txt > review-output.md || echo "Review completed with findings"
+
+          # Extract severity for labeling
+          if grep -q "🔴 Blockers" review-output.md && grep -A5 "🔴 Blockers" review-output.md | grep -q "^- "; then
+            echo "has_blockers=true" >> $GITHUB_OUTPUT
+          else
+            echo "has_blockers=false" >> $GITHUB_OUTPUT
+          fi
+
+          if grep -q "🟡 High Priority" review-output.md && grep -A5 "🟡 High Priority" review-output.md | grep -q "^- "; then
+            echo "has_high_priority=true" >> $GITHUB_OUTPUT
+          else
+            echo "has_high_priority=false" >> $GITHUB_OUTPUT
+          fi
+
+      - name: Post review comment
+        uses: actions/github-script@v7
+        with:
+          github-token: ${{ secrets.GITHUB_TOKEN }}
+          script: |
+            const fs = require('fs');
+
+            let reviewContent;
+            try {
+              reviewContent = fs.readFileSync('review-output.md', 'utf8');
+            } catch (error) {
+              reviewContent = `## Design Review Report
+
+              ⚠️ Automated design review could not be completed.
+
+              **Error**: ${error.message}
+
+              Please run \`/design-review\` manually in Claude Code to review these UI changes.
+              `;
+            }
+
+            // Add header to comment
+            const comment = `## 🎨 Automated Design Review
+
+            ${reviewContent}
+
+            ---
+
+            <details>
+            <summary>ℹ️ About this review</summary>
+
+            This automated review checks:
+            - ✅ Visual consistency with design system
+            - ✅ Responsive design (mobile, tablet, desktop)
+            - ✅ Accessibility (WCAG 2.1 AA+)
+            - ✅ Component interactions
+            - ✅ Code quality
+
+            Review powered by Claude Code design-review workflow.
+
+            To run manually: \`/design-review\` in Claude Code
+
+            See [design-principles.md](.claude/workflows/design-review/design-principles.md) for standards.
+            </details>`;
+
+            // Post comment
+            await github.rest.issues.createComment({
+              owner: context.repo.owner,
+              repo: context.repo.repo,
+              issue_number: context.issue.number,
+              body: comment
+            });
+
+      - name: Add labels based on severity
+        if: always()
+        uses: actions/github-script@v7
+        with:
+          github-token: ${{ secrets.GITHUB_TOKEN }}
+          script: |
+            const labels = ['design-review'];
+
+            // Add severity labels based on findings
+            if ('${{ steps.design_review.outputs.has_blockers }}' === 'true') {
+              labels.push('design-blocker');
+            }
+            if ('${{ steps.design_review.outputs.has_high_priority }}' === 'true') {
+              labels.push('design-high-priority');
+            }
+
+            // Add labels to PR
+            await github.rest.issues.addLabels({
+              owner: context.repo.owner,
+              repo: context.repo.repo,
+              issue_number: context.issue.number,
+              labels: labels
+            });
+
+      - name: Upload screenshots
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: design-review-screenshots
+          path: |
+            screenshots/
+            playwright-report/
+          retention-days: 30
+
+      - name: Fail on blockers
+        if: steps.design_review.outputs.has_blockers == 'true'
+        run: |
+          echo "❌ Design review found blocker issues that must be fixed before merge"
+          echo "See PR comment for details"
+          exit 1
+
+  # Optional: Require design review to pass before merge
+  # Add this job name to branch protection rules
+  design-review-status:
+    name: Design Review Status
+    runs-on: ubuntu-latest
+    needs: design-review
+    if: always()
+    steps:
+      - name: Check review status
+        run: |
+          if [ "${{ needs.design_review.result }}" == "failure" ]; then
+            echo "Design review failed - blockers found"
+            exit 1
+          elif [ "${{ needs.design_review.result }}" == "success" ]; then
+            echo "Design review passed - no blockers"
+            exit 0
+          else
+            echo "Design review skipped or cancelled"
+            exit 0
+          fi

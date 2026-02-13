@@ -1,14 +1,30 @@
+import { useState, useEffect } from "react"
 import { Link } from "react-router"
-import { BookOpen, FileText, CheckCircle, Clock } from "lucide-react"
+import { BookOpen, CheckCircle, FileText } from "lucide-react"
 import { Card, CardContent } from "@/app/components/ui/card"
 import { Progress } from "@/app/components/ui/progress"
+import { Skeleton } from "@/app/components/ui/skeleton"
+import { EmptyState } from "@/app/components/EmptyState"
+import { AchievementBanner } from "@/app/components/AchievementBanner"
+import { RecentActivity } from "@/app/components/RecentActivity"
+import { StatsCard } from "@/app/components/StatsCard"
+import { QuickActions } from "@/app/components/QuickActions"
+import { StudyStreak } from "@/app/components/StudyStreak"
+import { EnhancedCourseCard } from "@/app/components/figma/EnhancedCourseCard"
+import { ProgressChart } from "@/app/components/charts/ProgressChart"
 import { allCourses } from "@/data/courses"
 import {
   getCoursesInProgress,
   getCompletedCourses,
   getTotalCompletedLessons,
   getTotalStudyNotes,
+  getRecentActivity,
+  getLast7DaysLessonCompletions,
+  getWeeklyChange,
+  getAllProgress,
 } from "@/lib/progress"
+import { getStudyStreak } from "@/lib/studyStreak"
+import { getActionsPerDay } from "@/lib/studyLog"
 
 function formatCategory(slug: string): string {
   return slug
@@ -18,10 +34,31 @@ function formatCategory(slug: string): string {
 }
 
 export function Overview() {
+  const [isLoading, setIsLoading] = useState(true)
+
+  useEffect(() => {
+    // Simulate data loading
+    const timer = setTimeout(() => setIsLoading(false), 500)
+    return () => clearTimeout(timer)
+  }, [])
+
   const inProgress = getCoursesInProgress(allCourses)
   const completed = getCompletedCourses(allCourses)
   const completedLessons = getTotalCompletedLessons()
   const studyNotes = getTotalStudyNotes()
+  const recentActivity = getRecentActivity(allCourses, 5)
+  const lessonSparkline = getLast7DaysLessonCompletions()
+  const lessonsChange = getWeeklyChange("lessons")
+  const studyStreak = getStudyStreak()
+  const chartData = getActionsPerDay(14) // Last 14 days
+
+  // Get last watched course/lesson for Quick Actions
+  const allProgress = getAllProgress()
+  const lastWatchedEntry = Object.entries(allProgress)
+    .filter(([_, p]) => p.lastWatchedLesson)
+    .sort((a, b) => new Date(b[1].lastAccessedAt).getTime() - new Date(a[1].lastAccessedAt).getTime())[0]
+  const lastWatchedCourse = lastWatchedEntry?.[0]
+  const lastWatchedLesson = lastWatchedEntry?.[1].lastWatchedLesson
 
   const statsCards = [
     {
@@ -33,6 +70,12 @@ export function Overview() {
       label: "Lessons Completed",
       value: completedLessons,
       icon: CheckCircle,
+      trend: {
+        value: Math.abs(lessonsChange),
+        direction: lessonsChange >= 0 ? "up" as const : "down" as const,
+        period: "this week",
+      },
+      sparkline: lessonSparkline,
     },
     {
       label: "Study Notes",
@@ -46,44 +89,98 @@ export function Overview() {
     },
   ]
 
+  if (isLoading) {
+    return (
+      <div>
+        <Skeleton className="h-8 w-32 mb-6" />
+
+        {/* Stats Row Skeleton */}
+        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4 mb-8">
+          {[1, 2, 3, 4].map((i) => (
+            <div key={i} className="rounded-2xl border p-6">
+              <Skeleton className="h-4 w-24 mb-2" />
+              <Skeleton className="h-8 w-16" />
+            </div>
+          ))}
+        </div>
+
+        {/* Continue Studying Skeleton */}
+        <Skeleton className="h-6 w-40 mb-4" />
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mb-8">
+          {[1, 2].map((i) => (
+            <div key={i} className="rounded-2xl border p-4">
+              <div className="flex items-center gap-4">
+                <Skeleton className="w-16 h-16 rounded-lg" />
+                <div className="flex-1">
+                  <Skeleton className="h-5 w-32 mb-2" />
+                  <Skeleton className="h-4 w-24 mb-2" />
+                  <Skeleton className="h-2 w-full" />
+                </div>
+              </div>
+            </div>
+          ))}
+        </div>
+
+        {/* All Courses Skeleton */}
+        <Skeleton className="h-6 w-32 mb-4" />
+        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
+          {[1, 2, 3, 4, 5, 6, 7, 8].map((i) => (
+            <div key={i} className="rounded-2xl border overflow-hidden">
+              <Skeleton className="w-full h-32" />
+              <div className="p-4">
+                <Skeleton className="h-4 w-20 mb-2" />
+                <Skeleton className="h-5 w-full mb-2" />
+                <Skeleton className="h-3 w-16" />
+              </div>
+            </div>
+          ))}
+        </div>
+      </div>
+    )
+  }
+
   return (
     <div>
       <h1 className="text-2xl font-bold mb-6">Overview</h1>
 
       {/* Stats Row */}
       <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4 mb-8">
-        {statsCards.map((stat) => {
-          const Icon = stat.icon
-          return (
-            <Card key={stat.label}>
-              <CardContent className="p-6">
-                <div className="flex items-center justify-between">
-                  <div>
-                    <p className="text-sm text-muted-foreground">{stat.label}</p>
-                    <p className="text-3xl font-bold mt-1">{stat.value}</p>
-                  </div>
-                  <div className="w-12 h-12 bg-blue-100 dark:bg-blue-900/30 rounded-xl flex items-center justify-center">
-                    <Icon className="w-6 h-6 text-blue-600" />
-                  </div>
-                </div>
-              </CardContent>
-            </Card>
-          )
-        })}
+        {statsCards.map((stat) => (
+          <StatsCard key={stat.label} {...stat} />
+        ))}
       </div>
 
+      {/* Achievement Banner and Study Streak */}
+      <div className="grid grid-cols-1 lg:grid-cols-2 gap-4 mb-8">
+        <AchievementBanner completedLessons={completedLessons} />
+        <StudyStreak current={studyStreak.current} longest={studyStreak.longest} />
+      </div>
+
+      {/* Recent Activity */}
+      <RecentActivity activities={recentActivity} />
+
+      {/* Quick Actions */}
+      <QuickActions
+        studyNotes={studyNotes}
+        lastWatchedCourse={lastWatchedCourse}
+        lastWatchedLesson={lastWatchedLesson}
+      />
+
+      {/* Progress Chart */}
+      <ProgressChart data={chartData} />
+
       {/* Continue Studying */}
-      {inProgress.length > 0 && (
-        <section className="mb-8">
-          <h2 className="text-lg font-semibold mb-4">Continue Studying</h2>
+      <section className="mb-8">
+        <h2 className="text-lg font-semibold mb-4">Continue Studying</h2>
+        {inProgress.length > 0 ? (
           <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
             {inProgress.map((course) => (
               <Link key={course.id} to={`/courses/${course.id}`}>
-                <Card className="hover:shadow-md transition-shadow cursor-pointer">
+                <Card className="group hover:shadow-xl hover:scale-[1.01] transition-all duration-200 cursor-pointer rounded-2xl">
                   <CardContent className="p-4 flex items-center gap-4">
                     {course.coverImage ? (
                       <img
-                        src={course.coverImage}
+                        src={`${course.coverImage}-320w.webp`}
                         alt={course.title}
                         className="w-16 h-16 rounded-lg object-cover"
                         loading="lazy"
@@ -108,41 +205,23 @@ export function Overview() {
               </Link>
             ))}
           </div>
-        </section>
-      )}
+        ) : (
+          <EmptyState
+            icon={BookOpen}
+            title="No courses in progress"
+            description="Start your learning journey today by exploring our course catalog!"
+            actionLabel="Browse Courses"
+            actionHref="/courses"
+          />
+        )}
+      </section>
 
       {/* All Courses */}
       <section>
         <h2 className="text-lg font-semibold mb-4">All Courses</h2>
         <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
           {allCourses.map((course) => (
-            <Link key={course.id} to={`/courses/${course.id}`}>
-              <Card className="hover:shadow-md transition-shadow cursor-pointer">
-                <CardContent className="p-0">
-                  {course.coverImage ? (
-                    <img
-                      src={course.coverImage}
-                      alt={course.title}
-                      className="w-full h-32 object-cover rounded-t-xl"
-                      loading="lazy"
-                    />
-                  ) : (
-                    <div className="w-full h-32 bg-blue-100 dark:bg-blue-900/30 rounded-t-xl flex items-center justify-center">
-                      <BookOpen className="w-12 h-12 text-blue-600" />
-                    </div>
-                  )}
-                  <div className="p-4">
-                    <span className="text-xs text-blue-600 font-medium">
-                      {formatCategory(course.category)}
-                    </span>
-                    <h3 className="font-medium mt-1 text-sm truncate">{course.title}</h3>
-                    <p className="text-xs text-muted-foreground mt-1">
-                      {course.modules.reduce((sum, m) => sum + m.lessons.length, 0)} lessons
-                    </p>
-                  </div>
-                </CardContent>
-              </Card>
-            </Link>
+            <EnhancedCourseCard key={course.id} course={course} />
           ))}
         </div>
       </section>

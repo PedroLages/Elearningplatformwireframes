@@ -16,6 +16,7 @@ export const nciAccess: Course = {
   estimatedHours: 95,
   isSequential: false,
   basePath: BASE,
+  coverImage: "/images/nci-access",
   tags: [
     "NCI",
     "behavior profiling",

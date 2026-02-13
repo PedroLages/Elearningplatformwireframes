@@ -30,8 +30,35 @@ export function CourseCard({ course, completionPercent }: CourseCardProps) {
   return (
     <Link to={`/courses/${course.id}`}>
       <Card className="group bg-card rounded-3xl border-0 shadow-sm overflow-hidden hover:shadow-lg transition-all duration-200 cursor-pointer">
-        <div className="relative h-44 bg-gradient-to-br from-blue-50 to-indigo-100 dark:from-blue-950/50 dark:to-indigo-950/50 flex items-center justify-center">
-          <BookOpen className="h-16 w-16 text-blue-300 dark:text-blue-600" />
+        <div className="relative h-44 bg-gradient-to-br from-blue-50 to-indigo-100 dark:from-blue-950/50 dark:to-indigo-950/50 flex items-center justify-center overflow-hidden">
+          {course.coverImage ? (
+            <picture className="absolute inset-0">
+              <source
+                type="image/webp"
+                srcSet={`
+                  ${course.coverImage}-320w.webp 320w,
+                  ${course.coverImage}-640w.webp 640w,
+                  ${course.coverImage}-768w.webp 768w,
+                  ${course.coverImage}-1024w.webp 1024w
+                `}
+                sizes="(max-width: 640px) 320px, (max-width: 1024px) 640px, 768px"
+              />
+              <img
+                src={`${course.coverImage}-768w.png`}
+                srcSet={`
+                  ${course.coverImage}-320w.png 320w,
+                  ${course.coverImage}-640w.png 640w,
+                  ${course.coverImage}-768w.png 768w,
+                  ${course.coverImage}-1024w.png 1024w
+                `}
+                sizes="(max-width: 640px) 320px, (max-width: 1024px) 640px, 768px"
+                alt={course.title}
+                className="w-full h-full object-cover transition-transform duration-200 group-hover:scale-105"
+              />
+            </picture>
+          ) : (
+            <BookOpen className="h-16 w-16 text-blue-300 dark:text-blue-600" />
+          )}
           {completionPercent > 0 && (
             <div className="absolute top-3 right-3">
               <ProgressRing percent={completionPercent} size={40} strokeWidth={3} />
