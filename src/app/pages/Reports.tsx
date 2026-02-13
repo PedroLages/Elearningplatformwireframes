@@ -1,126 +1,272 @@
-import { Card } from "../components/ui/card";
-import { TrendingUp, TrendingDown, BookOpen, Award, Clock, Target } from "lucide-react";
+import { useTheme } from "next-themes"
+import { BookOpen, CheckCircle, FileText, TrendingUp } from "lucide-react"
+import {
+  Card,
+  CardContent,
+  CardHeader,
+  CardTitle,
+} from "@/app/components/ui/card"
+import {
+  BarChart,
+  Bar,
+  XAxis,
+  YAxis,
+  CartesianGrid,
+  Tooltip,
+  ResponsiveContainer,
+  AreaChart,
+  Area,
+  PieChart,
+  Pie,
+  Cell,
+} from "recharts"
+import { allCourses } from "@/data/courses"
+import {
+  getCoursesInProgress,
+  getCompletedCourses,
+  getTotalCompletedLessons,
+  getTotalStudyNotes,
+  getCourseCompletionPercent,
+} from "@/lib/progress"
+import { getActionsPerDay, getRecentActions } from "@/lib/studyLog"
 
-const stats = [
-  {
-    label: "Total Learning Hours",
-    value: "247h",
-    change: "+12%",
-    trend: "up",
-    icon: Clock,
-  },
-  {
-    label: "Completed Courses",
-    value: "97",
-    change: "+8%",
-    trend: "up",
-    icon: BookOpen,
-  },
-  {
-    label: "Certificates Earned",
-    value: "62",
-    change: "+15%",
-    trend: "up",
-    icon: Award,
-  },
-  {
-    label: "Average Score",
-    value: "87%",
-    change: "-2%",
-    trend: "down",
-    icon: Target,
-  },
-];
+const COLORS = ["#2563eb", "#7c3aed", "#059669", "#d97706", "#dc2626"]
 
-const recentActivity = [
-  {
-    id: 1,
-    course: "UX Design Certificate",
-    action: "Completed Lesson 18",
-    date: "Today at 2:30 PM",
-    score: "92%",
-  },
-  {
-    id: 2,
-    course: "SEO Experts from Zero",
-    action: "Quiz Completed",
-    date: "Yesterday at 4:15 PM",
-    score: "88%",
-  },
-  {
-    id: 3,
-    course: "Project Management",
-    action: "Assignment Submitted",
-    date: "Feb 10, 2026",
-    score: "95%",
-  },
-];
+export default function Reports() {
+  const { resolvedTheme } = useTheme()
+  const tickColor = resolvedTheme === "dark" ? "#a1a1aa" : "#71717a"
+  const tooltipBg = resolvedTheme === "dark" ? "#27272a" : "#ffffff"
+  const tooltipBorder = resolvedTheme === "dark" ? "#3f3f46" : "#e4e4e7"
 
-export function Reports() {
+  const stats = [
+    {
+      label: "Lessons Completed",
+      value: getTotalCompletedLessons(),
+      icon: CheckCircle,
+    },
+    {
+      label: "Courses In Progress",
+      value: getCoursesInProgress(allCourses).length,
+      icon: BookOpen,
+    },
+    {
+      label: "Courses Completed",
+      value: getCompletedCourses(allCourses).length,
+      icon: TrendingUp,
+    },
+    {
+      label: "Study Notes",
+      value: getTotalStudyNotes(),
+      icon: FileText,
+    },
+  ]
+
+  const courseCompletionData = allCourses.map((c) => ({
+    name:
+      c.title.length > 20 ? c.title.substring(0, 20) + "..." : c.title,
+    completion: getCourseCompletionPercent(
+      c.id,
+      c.modules.reduce((sum, m) => sum + m.lessons.length, 0)
+    ),
+    category: c.category,
+  }))
+
+  const categoryData = Object.entries(
+    allCourses.reduce<Record<string, { total: number; completed: number }>>(
+      (acc, c) => {
+        const total = c.modules.reduce(
+          (sum, m) => sum + m.lessons.length,
+          0
+        )
+        const completed = getCourseCompletionPercent(c.id, total)
+        if (!acc[c.category]) acc[c.category] = { total: 0, completed: 0 }
+        acc[c.category].total += total
+        acc[c.category].completed += completed
+        return acc
+      },
+      {}
+    )
+  ).map(([name, data]) => ({
+    name,
+    value: Math.round(
+      data.completed /
+        (allCourses.filter((c) => c.category === name).length || 1)
+    ),
+  }))
+
+  const activityData = getActionsPerDay(30)
+  const recentActions = getRecentActions(10)
+
   return (
     <div>
-      <div className="mb-6">
-        <h1 className="text-3xl font-bold mb-2">Learning Reports</h1>
-        <p className="text-gray-600">Track your progress and performance</p>
-      </div>
+      <h1 className="text-2xl font-bold mb-6">Reports</h1>
 
-      {/* Stats Grid */}
-      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 mb-6">
+      {/* Stats row */}
+      <div className="grid grid-cols-4 gap-4 mb-6">
         {stats.map((stat) => {
-          const Icon = stat.icon;
-          const TrendIcon = stat.trend === "up" ? TrendingUp : TrendingDown;
-          
+          const Icon = stat.icon
           return (
-            <Card key={stat.label} className="bg-white rounded-3xl border-0 shadow-sm p-6">
-              <div className="flex items-start justify-between mb-4">
-                <div className={`p-3 rounded-xl ${
-                  stat.trend === "up" ? "bg-green-50" : "bg-red-50"
-                }`}>
-                  <Icon className={`w-6 h-6 ${
-                    stat.trend === "up" ? "text-green-600" : "text-red-600"
-                  }`} />
+            <Card key={stat.label}>
+              <CardContent className="flex items-center gap-4 p-5">
+                <div className="rounded-xl bg-primary/10 p-3">
+                  <Icon className="h-5 w-5 text-primary" />
                 </div>
-                <div className={`flex items-center gap-1 text-sm font-medium ${
-                  stat.trend === "up" ? "text-green-600" : "text-red-600"
-                }`}>
-                  <TrendIcon className="w-4 h-4" />
-                  {stat.change}
+                <div>
+                  <p className="text-2xl font-bold">{stat.value}</p>
+                  <p className="text-sm text-muted-foreground">
+                    {stat.label}
+                  </p>
                 </div>
-              </div>
-              <div className="text-3xl font-bold mb-1">{stat.value}</div>
-              <div className="text-sm text-gray-600">{stat.label}</div>
+              </CardContent>
             </Card>
-          );
+          )
         })}
       </div>
 
-      {/* Recent Activity */}
-      <Card className="bg-white rounded-3xl border-0 shadow-sm p-6 mb-6">
-        <h2 className="text-xl font-bold mb-4">Recent Activity</h2>
-        <div className="space-y-4">
-          {recentActivity.map((activity) => (
-            <div key={activity.id} className="flex items-center justify-between p-4 bg-gray-50 rounded-xl">
-              <div className="flex-1">
-                <h3 className="font-semibold mb-1">{activity.course}</h3>
-                <p className="text-sm text-gray-600">{activity.action}</p>
-                <p className="text-xs text-gray-500 mt-1">{activity.date}</p>
-              </div>
-              <div className="text-right">
-                <div className="text-2xl font-bold text-blue-600">{activity.score}</div>
-                <div className="text-xs text-gray-500">Score</div>
-              </div>
-            </div>
-          ))}
-        </div>
-      </Card>
+      {/* Charts grid */}
+      <div className="grid grid-cols-3 gap-4 mb-6">
+        <Card className="col-span-2">
+          <CardHeader>
+            <CardTitle className="text-base">Course Completion</CardTitle>
+          </CardHeader>
+          <CardContent>
+            <ResponsiveContainer width="100%" height={300}>
+              <BarChart data={courseCompletionData}>
+                <CartesianGrid
+                  strokeDasharray="3 3"
+                  className="stroke-border"
+                />
+                <XAxis
+                  dataKey="name"
+                  tick={{ fontSize: 12, fill: tickColor }}
+                  angle={-20}
+                  textAnchor="end"
+                  height={60}
+                />
+                <YAxis domain={[0, 100]} tick={{ fontSize: 12, fill: tickColor }} />
+                <Tooltip contentStyle={{ backgroundColor: tooltipBg, borderColor: tooltipBorder, borderRadius: 8 }} />
+                <Bar
+                  dataKey="completion"
+                  fill="#2563eb"
+                  radius={[4, 4, 0, 0]}
+                />
+              </BarChart>
+            </ResponsiveContainer>
+          </CardContent>
+        </Card>
 
-      {/* Performance Chart Placeholder */}
-      <Card className="bg-white rounded-3xl border-0 shadow-sm p-6">
-        <h2 className="text-xl font-bold mb-4">Learning Progress</h2>
-        <div className="h-64 flex items-center justify-center bg-gray-50 rounded-xl text-gray-400">
-          Performance chart visualization would go here
-        </div>
-      </Card>
+        <Card>
+          <CardHeader>
+            <CardTitle className="text-base">
+              Progress by Category
+            </CardTitle>
+          </CardHeader>
+          <CardContent>
+            <ResponsiveContainer width="100%" height={300}>
+              <PieChart>
+                <Pie
+                  data={categoryData}
+                  cx="50%"
+                  cy="50%"
+                  outerRadius={100}
+                  dataKey="value"
+                  label={({ cx, cy, midAngle, outerRadius, name, value }: { cx: number; cy: number; midAngle: number; outerRadius: number; name: string; value: number }) => {
+                    const RADIAN = Math.PI / 180
+                    const radius = outerRadius + 20
+                    const x = cx + radius * Math.cos(-midAngle * RADIAN)
+                    const y = cy + radius * Math.sin(-midAngle * RADIAN)
+                    return (
+                      <text x={x} y={y} fill={tickColor} textAnchor={x > cx ? "start" : "end"} dominantBaseline="central" fontSize={12}>
+                        {`${name}: ${value}%`}
+                      </text>
+                    )
+                  }}
+                >
+                  {categoryData.map((_, i) => (
+                    <Cell key={i} fill={COLORS[i % COLORS.length]} />
+                  ))}
+                </Pie>
+                <Tooltip contentStyle={{ backgroundColor: tooltipBg, borderColor: tooltipBorder, borderRadius: 8 }} />
+              </PieChart>
+            </ResponsiveContainer>
+          </CardContent>
+        </Card>
+      </div>
+
+      {/* Activity chart + Recent activity */}
+      <div className="space-y-4">
+        <Card>
+          <CardHeader>
+            <CardTitle className="text-base">
+              Study Activity (Last 30 Days)
+            </CardTitle>
+          </CardHeader>
+          <CardContent>
+            <ResponsiveContainer width="100%" height={200}>
+              <AreaChart data={activityData}>
+                <CartesianGrid
+                  strokeDasharray="3 3"
+                  className="stroke-border"
+                />
+                <XAxis dataKey="date" tick={{ fontSize: 10, fill: tickColor }} />
+                <YAxis tick={{ fontSize: 12, fill: tickColor }} />
+                <Tooltip contentStyle={{ backgroundColor: tooltipBg, borderColor: tooltipBorder, borderRadius: 8 }} />
+                <Area
+                  type="monotone"
+                  dataKey="count"
+                  stroke="#2563eb"
+                  fill="#2563eb"
+                  fillOpacity={0.1}
+                />
+              </AreaChart>
+            </ResponsiveContainer>
+          </CardContent>
+        </Card>
+
+        <Card>
+          <CardHeader>
+            <CardTitle className="text-base">Recent Activity</CardTitle>
+          </CardHeader>
+          <CardContent>
+            {recentActions.length === 0 ? (
+              <p className="text-muted-foreground text-center py-4">
+                No activity yet. Start studying to see your progress here.
+              </p>
+            ) : (
+              <div className="space-y-3">
+                {recentActions.map((action, i) => {
+                  const course = allCourses.find(
+                    (c) => c.id === action.courseId
+                  )
+                  return (
+                    <div
+                      key={i}
+                      className="flex items-center gap-3 text-sm"
+                    >
+                      <div
+                        className={`w-2 h-2 rounded-full ${
+                          action.type === "lesson_complete"
+                            ? "bg-green-500"
+                            : "bg-blue-500"
+                        }`}
+                      />
+                      <span className="text-muted-foreground">
+                        {new Date(action.timestamp).toLocaleDateString()}
+                      </span>
+                      <span>
+                        {action.type === "lesson_complete"
+                          ? "Completed a lesson"
+                          : "Watched video"}
+                        {course ? ` in ${course.title}` : ""}
+                      </span>
+                    </div>
+                  )
+                })}
+              </div>
+            )}
+          </CardContent>
+        </Card>
+      </div>
     </div>
-  );
+  )
 }

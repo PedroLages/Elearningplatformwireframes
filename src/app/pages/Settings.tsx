@@ -1,137 +1,185 @@
-import { Card } from "../components/ui/card";
-import { Button } from "../components/ui/button";
-import { Input } from "../components/ui/input";
-import { Label } from "../components/ui/label";
-import { Switch } from "../components/ui/switch";
-import { Avatar, AvatarFallback, AvatarImage } from "../components/ui/avatar";
-import { User, Mail, Bell, Lock, Globe, CreditCard } from "lucide-react";
+import { useState, useRef } from "react"
+import { useTheme } from "next-themes"
+import { Download, Upload, Trash2, Save } from "lucide-react"
+import { Card, CardContent, CardHeader, CardTitle } from "@/app/components/ui/card"
+import { Input } from "@/app/components/ui/input"
+import { Button } from "@/app/components/ui/button"
+import { Textarea } from "@/app/components/ui/textarea"
+import { Label } from "@/app/components/ui/label"
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/app/components/ui/select"
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+  AlertDialogTrigger,
+} from "@/app/components/ui/alert-dialog"
+import { getSettings, saveSettings, exportAllData, importAllData, resetAllData } from "@/lib/settings"
 
-export function Settings() {
+export default function Settings() {
+  const { theme, setTheme } = useTheme()
+  const [settings, setSettings] = useState(getSettings())
+  const [saved, setSaved] = useState(false)
+  const fileInputRef = useRef<HTMLInputElement>(null)
+
+  function handleSave() {
+    saveSettings(settings)
+    setSaved(true)
+    setTimeout(() => setSaved(false), 2000)
+  }
+
+  function handleExport() {
+    const data = exportAllData()
+    const blob = new Blob([data], { type: "application/json" })
+    const url = URL.createObjectURL(blob)
+    const a = document.createElement("a")
+    a.href = url
+    a.download = "operative-study-backup.json"
+    a.click()
+    URL.revokeObjectURL(url)
+  }
+
+  function handleImport(e: React.ChangeEvent<HTMLInputElement>) {
+    const file = e.target.files?.[0]
+    if (!file) return
+    const reader = new FileReader()
+    reader.onload = () => {
+      const success = importAllData(reader.result as string)
+      if (success) {
+        setSettings(getSettings())
+        window.location.reload()
+      }
+    }
+    reader.readAsText(file)
+  }
+
+  function handleReset() {
+    resetAllData()
+    window.location.reload()
+  }
+
   return (
     <div>
-      <div className="mb-6">
-        <h1 className="text-3xl font-bold mb-2">Settings</h1>
-        <p className="text-gray-600">Manage your account preferences</p>
-      </div>
+      <h1 className="text-2xl font-bold mb-6">Settings</h1>
 
-      <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
-        {/* Profile Settings */}
-        <Card className="bg-white rounded-3xl border-0 shadow-sm p-6 lg:col-span-2">
-          <div className="flex items-center gap-2 mb-6">
-            <User className="w-5 h-5" />
-            <h2 className="text-xl font-bold">Profile Information</h2>
-          </div>
-          
-          <div className="flex items-center gap-4 mb-6">
-            <Avatar className="w-20 h-20">
-              <AvatarImage src="https://images.unsplash.com/photo-1472099645785-5658abf4ff4e?w=200&h=200&fit=crop" />
-              <AvatarFallback>RF</AvatarFallback>
-            </Avatar>
+      <div className="max-w-2xl space-y-6">
+        {/* Profile */}
+        <Card>
+          <CardHeader>
+            <CardTitle className="text-base">Profile</CardTitle>
+          </CardHeader>
+          <CardContent className="space-y-4">
             <div>
-              <Button variant="outline" className="mb-2">Change Photo</Button>
-              <p className="text-xs text-gray-500">JPG or PNG, max 2MB</p>
+              <Label htmlFor="name">Display Name</Label>
+              <Input
+                id="name"
+                value={settings.displayName}
+                onChange={(e) => setSettings({ ...settings, displayName: e.target.value })}
+                className="mt-1"
+              />
             </div>
-          </div>
-
-          <div className="space-y-4">
-            <div className="grid grid-cols-2 gap-4">
-              <div>
-                <Label htmlFor="firstName">First Name</Label>
-                <Input id="firstName" defaultValue="Robert" className="mt-2" />
-              </div>
-              <div>
-                <Label htmlFor="lastName">Last Name</Label>
-                <Input id="lastName" defaultValue="Fox" className="mt-2" />
-              </div>
-            </div>
-            
-            <div>
-              <Label htmlFor="email">Email Address</Label>
-              <Input id="email" type="email" defaultValue="robert.fox@example.com" className="mt-2" />
-            </div>
-            
             <div>
               <Label htmlFor="bio">Bio</Label>
-              <textarea 
+              <Textarea
                 id="bio"
-                rows={4}
-                className="w-full mt-2 px-3 py-2 border rounded-lg resize-none"
-                placeholder="Tell us about yourself..."
-                defaultValue="Passionate learner exploring web development and design."
+                value={settings.bio}
+                onChange={(e) => setSettings({ ...settings, bio: e.target.value })}
+                placeholder="Tell something about yourself..."
+                className="mt-1"
+                rows={3}
+              />
+            </div>
+            <Button onClick={handleSave} className="gap-2">
+              <Save className="w-4 h-4" />
+              {saved ? "Saved!" : "Save Profile"}
+            </Button>
+          </CardContent>
+        </Card>
+
+        {/* Appearance */}
+        <Card>
+          <CardHeader>
+            <CardTitle className="text-base">Appearance</CardTitle>
+          </CardHeader>
+          <CardContent>
+            <div>
+              <Label>Theme</Label>
+              <Select value={theme} onValueChange={setTheme}>
+                <SelectTrigger className="mt-1 w-48">
+                  <SelectValue />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="system">System</SelectItem>
+                  <SelectItem value="light">Light</SelectItem>
+                  <SelectItem value="dark">Dark</SelectItem>
+                </SelectContent>
+              </Select>
+            </div>
+          </CardContent>
+        </Card>
+
+        {/* Data Management */}
+        <Card>
+          <CardHeader>
+            <CardTitle className="text-base">Data Management</CardTitle>
+          </CardHeader>
+          <CardContent className="space-y-4">
+            <div className="flex gap-3">
+              <Button variant="outline" onClick={handleExport} className="gap-2">
+                <Download className="w-4 h-4" />
+                Export Data
+              </Button>
+              <Button variant="outline" onClick={() => fileInputRef.current?.click()} className="gap-2">
+                <Upload className="w-4 h-4" />
+                Import Data
+              </Button>
+              <input
+                ref={fileInputRef}
+                type="file"
+                accept=".json"
+                onChange={handleImport}
+                className="hidden"
               />
             </div>
 
-            <Button className="bg-blue-600 hover:bg-blue-700">Save Changes</Button>
-          </div>
+            <div className="pt-4 border-t border-border">
+              <AlertDialog>
+                <AlertDialogTrigger asChild>
+                  <Button variant="destructive" className="gap-2">
+                    <Trash2 className="w-4 h-4" />
+                    Reset All Data
+                  </Button>
+                </AlertDialogTrigger>
+                <AlertDialogContent>
+                  <AlertDialogHeader>
+                    <AlertDialogTitle>Are you sure?</AlertDialogTitle>
+                    <AlertDialogDescription>
+                      This will permanently delete all your progress, journal entries, and settings.
+                      This action cannot be undone. Consider exporting your data first.
+                    </AlertDialogDescription>
+                  </AlertDialogHeader>
+                  <AlertDialogFooter>
+                    <AlertDialogCancel>Cancel</AlertDialogCancel>
+                    <AlertDialogAction onClick={handleReset} className="bg-red-600 hover:bg-red-700">
+                      Reset Everything
+                    </AlertDialogAction>
+                  </AlertDialogFooter>
+                </AlertDialogContent>
+              </AlertDialog>
+            </div>
+          </CardContent>
         </Card>
-
-        {/* Quick Settings */}
-        <div className="space-y-6">
-          {/* Notifications */}
-          <Card className="bg-white rounded-3xl border-0 shadow-sm p-6">
-            <div className="flex items-center gap-2 mb-4">
-              <Bell className="w-5 h-5" />
-              <h2 className="font-bold">Notifications</h2>
-            </div>
-            
-            <div className="space-y-4">
-              <div className="flex items-center justify-between">
-                <div>
-                  <p className="font-medium text-sm">Email Notifications</p>
-                  <p className="text-xs text-gray-500">Receive course updates</p>
-                </div>
-                <Switch defaultChecked />
-              </div>
-              
-              <div className="flex items-center justify-between">
-                <div>
-                  <p className="font-medium text-sm">Push Notifications</p>
-                  <p className="text-xs text-gray-500">Get alerts on your device</p>
-                </div>
-                <Switch defaultChecked />
-              </div>
-              
-              <div className="flex items-center justify-between">
-                <div>
-                  <p className="font-medium text-sm">Weekly Report</p>
-                  <p className="text-xs text-gray-500">Summary of your progress</p>
-                </div>
-                <Switch />
-              </div>
-            </div>
-          </Card>
-
-          {/* Language */}
-          <Card className="bg-white rounded-3xl border-0 shadow-sm p-6">
-            <div className="flex items-center gap-2 mb-4">
-              <Globe className="w-5 h-5" />
-              <h2 className="font-bold">Language</h2>
-            </div>
-            
-            <select className="w-full px-3 py-2 border rounded-lg">
-              <option>English (US)</option>
-              <option>Spanish</option>
-              <option>French</option>
-              <option>German</option>
-            </select>
-          </Card>
-
-          {/* Security */}
-          <Card className="bg-white rounded-3xl border-0 shadow-sm p-6">
-            <div className="flex items-center gap-2 mb-4">
-              <Lock className="w-5 h-5" />
-              <h2 className="font-bold">Security</h2>
-            </div>
-            
-            <Button variant="outline" className="w-full mb-2">
-              Change Password
-            </Button>
-            <Button variant="outline" className="w-full">
-              Two-Factor Authentication
-            </Button>
-          </Card>
-        </div>
       </div>
     </div>
-  );
+  )
 }

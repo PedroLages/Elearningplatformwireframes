@@ -1,0 +1,192 @@
+import { describe, it, expect, beforeEach } from 'vitest'
+import {
+  getSettings,
+  saveSettings,
+  exportAllData,
+  importAllData,
+  resetAllData,
+} from '@/lib/settings'
+
+describe('settings', () => {
+  beforeEach(() => {
+    localStorage.clear()
+  })
+
+  describe('getSettings', () => {
+    it('returns defaults when nothing stored', () => {
+      const settings = getSettings()
+      expect(settings).toEqual({
+        displayName: 'Student',
+        bio: '',
+        theme: 'system',
+      })
+    })
+
+    it('returns defaults when localStorage has invalid JSON', () => {
+      localStorage.setItem('app-settings', 'not-json')
+      const settings = getSettings()
+      expect(settings).toEqual({
+        displayName: 'Student',
+        bio: '',
+        theme: 'system',
+      })
+    })
+
+    it('merges stored values with defaults', () => {
+      localStorage.setItem('app-settings', JSON.stringify({ displayName: 'Alice' }))
+      const settings = getSettings()
+      expect(settings.displayName).toBe('Alice')
+      expect(settings.bio).toBe('')
+      expect(settings.theme).toBe('system')
+    })
+
+    it('returns a new object each time (not a reference)', () => {
+      const s1 = getSettings()
+      const s2 = getSettings()
+      expect(s1).toEqual(s2)
+      expect(s1).not.toBe(s2)
+    })
+  })
+
+  describe('saveSettings', () => {
+    it('persists settings and returns merged result', () => {
+      const result = saveSettings({ displayName: 'Bob' })
+      expect(result.displayName).toBe('Bob')
+      expect(result.bio).toBe('')
+      expect(result.theme).toBe('system')
+
+      // Verify persistence
+      const retrieved = getSettings()
+      expect(retrieved.displayName).toBe('Bob')
+    })
+
+    it('merges partial updates with existing settings', () => {
+      saveSettings({ displayName: 'Alice', bio: 'Hello' })
+      saveSettings({ theme: 'dark' })
+      const settings = getSettings()
+      expect(settings.displayName).toBe('Alice')
+      expect(settings.bio).toBe('Hello')
+      expect(settings.theme).toBe('dark')
+    })
+
+    it('overwrites previously saved values', () => {
+      saveSettings({ displayName: 'Alice' })
+      saveSettings({ displayName: 'Bob' })
+      expect(getSettings().displayName).toBe('Bob')
+    })
+
+    it('can set all fields at once', () => {
+      const result = saveSettings({
+        displayName: 'Operator',
+        bio: 'Field agent',
+        theme: 'dark',
+      })
+      expect(result).toEqual({
+        displayName: 'Operator',
+        bio: 'Field agent',
+        theme: 'dark',
+      })
+    })
+  })
+
+  describe('exportAllData', () => {
+    it('captures all localStorage data', () => {
+      localStorage.setItem('key1', JSON.stringify({ data: 'value1' }))
+      localStorage.setItem('key2', 'plain-string')
+
+      const exported = exportAllData()
+      const parsed = JSON.parse(exported)
+
+      expect(parsed.key1).toEqual({ data: 'value1' })
+      expect(parsed.key2).toBe('plain-string')
+    })
+
+    it('returns empty object when localStorage is empty', () => {
+      const exported = exportAllData()
+      expect(JSON.parse(exported)).toEqual({})
+    })
+
+    it('returns valid JSON string', () => {
+      saveSettings({ displayName: 'Test' })
+      const exported = exportAllData()
+      expect(() => JSON.parse(exported)).not.toThrow()
+    })
+
+    it('includes settings and other data', () => {
+      saveSettings({ displayName: 'Agent' })
+      localStorage.setItem('custom-key', JSON.stringify([1, 2, 3]))
+
+      const parsed = JSON.parse(exportAllData())
+      expect(parsed['app-settings']).toBeDefined()
+      expect(parsed['custom-key']).toEqual([1, 2, 3])
+    })
+  })
+
+  describe('importAllData', () => {
+    it('restores data from exported JSON', () => {
+      // Set up initial data
+      saveSettings({ displayName: 'Original' })
+      localStorage.setItem('extra', JSON.stringify({ foo: 'bar' }))
+      const exported = exportAllData()
+
+      // Clear and reimport
+      localStorage.clear()
+      expect(importAllData(exported)).toBe(true)
+
+      // Verify restoration
+      expect(getSettings().displayName).toBe('Original')
+      expect(JSON.parse(localStorage.getItem('extra')!)).toEqual({ foo: 'bar' })
+    })
+
+    it('returns false for invalid JSON', () => {
+      expect(importAllData('not-json')).toBe(false)
+    })
+
+    it('handles string values correctly', () => {
+      const data = JSON.stringify({ mykey: 'simple string' })
+      importAllData(data)
+      expect(localStorage.getItem('mykey')).toBe('simple string')
+    })
+
+    it('handles object values by JSON stringifying them', () => {
+      const data = JSON.stringify({ mykey: { nested: true } })
+      importAllData(data)
+      expect(JSON.parse(localStorage.getItem('mykey')!)).toEqual({ nested: true })
+    })
+
+    it('can round-trip with exportAllData', () => {
+      saveSettings({ displayName: 'Roundtrip', bio: 'Test', theme: 'dark' })
+      localStorage.setItem('journal', JSON.stringify([{ id: '1', title: 'Note' }]))
+
+      const exported = exportAllData()
+      localStorage.clear()
+      importAllData(exported)
+
+      expect(getSettings().displayName).toBe('Roundtrip')
+      expect(JSON.parse(localStorage.getItem('journal')!)).toEqual([{ id: '1', title: 'Note' }])
+    })
+  })
+
+  describe('resetAllData', () => {
+    it('clears all localStorage data', () => {
+      saveSettings({ displayName: 'Gone' })
+      localStorage.setItem('other', 'data')
+      resetAllData()
+      expect(localStorage.length).toBe(0)
+    })
+
+    it('settings return defaults after reset', () => {
+      saveSettings({ displayName: 'Gone', theme: 'dark' })
+      resetAllData()
+      const settings = getSettings()
+      expect(settings.displayName).toBe('Student')
+      expect(settings.theme).toBe('system')
+    })
+
+    it('is idempotent (safe to call on empty storage)', () => {
+      resetAllData()
+      resetAllData()
+      expect(localStorage.length).toBe(0)
+    })
+  })
+})

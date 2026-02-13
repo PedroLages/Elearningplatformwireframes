@@ -1,112 +1,241 @@
-import { Card } from "../components/ui/card";
-import { Button } from "../components/ui/button";
-import { Input } from "../components/ui/input";
-import { Avatar, AvatarFallback, AvatarImage } from "../components/ui/avatar";
-import { Search, Send } from "lucide-react";
+import { useState } from "react"
+import { Link } from "react-router"
+import { Plus, Search, Trash2, BookOpen, StickyNote } from "lucide-react"
+import { Card, CardContent } from "@/app/components/ui/card"
+import { Input } from "@/app/components/ui/input"
+import { Button } from "@/app/components/ui/button"
+import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/app/components/ui/tabs"
+import { Textarea } from "@/app/components/ui/textarea"
+import {
+  getJournalEntries,
+  createJournalEntry,
+  updateJournalEntry,
+  deleteJournalEntry,
+  searchJournalEntries,
+  type JournalEntry,
+} from "@/lib/journal"
+import { getAllProgress } from "@/lib/progress"
+import { allCourses } from "@/data/courses"
 
-const conversations = [
-  {
-    id: 1,
-    name: "Sarah Johnson",
-    avatar: "https://images.unsplash.com/photo-1494790108377-be9c29b29330?w=100&h=100&fit=crop",
-    lastMessage: "Thanks for your help with the assignment!",
-    time: "2m ago",
-    unread: 2,
-  },
-  {
-    id: 2,
-    name: "Mike Chen",
-    avatar: "https://images.unsplash.com/photo-1500648767791-00dcc994a43e?w=100&h=100&fit=crop",
-    lastMessage: "When is the next class?",
-    time: "1h ago",
-    unread: 0,
-  },
-  {
-    id: 3,
-    name: "Emily Davis",
-    avatar: "https://images.unsplash.com/photo-1438761681033-6461ffad8d80?w=100&h=100&fit=crop",
-    lastMessage: "Great presentation today!",
-    time: "3h ago",
-    unread: 1,
-  },
-];
+function getAllLessonNotes(): {
+  courseId: string
+  courseName: string
+  lessonId: string
+  lessonName: string
+  note: string
+}[] {
+  const progress = getAllProgress()
+  const notes: {
+    courseId: string
+    courseName: string
+    lessonId: string
+    lessonName: string
+    note: string
+  }[] = []
 
-export function Messages() {
+  for (const [courseId, courseProgress] of Object.entries(progress)) {
+    const course = allCourses.find((c) => c.id === courseId)
+    if (!course) continue
+    for (const [lessonId, note] of Object.entries(courseProgress.notes)) {
+      if (!note.trim()) continue
+      const lesson = course.modules
+        .flatMap((m) => m.lessons)
+        .find((l) => l.id === lessonId)
+      notes.push({
+        courseId,
+        courseName: course.title,
+        lessonId,
+        lessonName: lesson?.title ?? lessonId,
+        note,
+      })
+    }
+  }
+  return notes
+}
+
+export default function Messages() {
+  const [entries, setEntries] = useState<JournalEntry[]>(getJournalEntries())
+  const [selectedId, setSelectedId] = useState<string | null>(
+    entries[0]?.id ?? null
+  )
+  const [searchQuery, setSearchQuery] = useState("")
+  const [activeTab, setActiveTab] = useState("journal")
+
+  const selected = entries.find((e) => e.id === selectedId)
+  const filtered = searchQuery ? searchJournalEntries(searchQuery) : entries
+
+  function handleNew() {
+    const entry = createJournalEntry({
+      title: "Untitled",
+      content: "",
+      tags: [],
+    })
+    setEntries(getJournalEntries())
+    setSelectedId(entry.id)
+  }
+
+  function handleUpdate(
+    id: string,
+    updates: Partial<Omit<JournalEntry, "id">>
+  ) {
+    updateJournalEntry(id, updates)
+    setEntries(getJournalEntries())
+  }
+
+  function handleDelete(id: string) {
+    deleteJournalEntry(id)
+    const updated = getJournalEntries()
+    setEntries(updated)
+    setSelectedId(updated[0]?.id ?? null)
+  }
+
+  const allNotes = getAllLessonNotes()
+
   return (
-    <div className="h-full">
-      <div className="mb-6">
-        <h1 className="text-3xl font-bold mb-2">Messages</h1>
-        <p className="text-gray-600">Chat with instructors and classmates</p>
-      </div>
+    <div className="h-full flex flex-col">
+      <h1 className="text-2xl font-bold mb-6">Study Journal</h1>
 
-      <div className="grid grid-cols-1 lg:grid-cols-3 gap-6 h-[calc(100%-120px)]">
-        {/* Conversations List */}
-        <Card className="bg-white rounded-3xl border-0 shadow-sm p-6 lg:col-span-1">
-          <div className="relative mb-4">
-            <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-5 h-5 text-gray-400" />
-            <Input
-              type="text"
-              placeholder="Search messages..."
-              className="pl-10 bg-gray-50 border-0"
-            />
-          </div>
+      <Tabs
+        value={activeTab}
+        onValueChange={setActiveTab}
+        className="flex-1 flex flex-col"
+      >
+        <TabsList className="mb-4 w-fit">
+          <TabsTrigger value="journal" className="gap-2">
+            <BookOpen className="w-4 h-4" /> Journal
+          </TabsTrigger>
+          <TabsTrigger value="notes" className="gap-2">
+            <StickyNote className="w-4 h-4" /> Lesson Notes
+          </TabsTrigger>
+        </TabsList>
 
-          <div className="space-y-2">
-            {conversations.map((conv) => (
-              <div
-                key={conv.id}
-                className="flex items-center gap-3 p-3 rounded-xl hover:bg-gray-50 cursor-pointer transition-colors"
-              >
-                <Avatar className="w-12 h-12">
-                  <AvatarImage src={conv.avatar} />
-                  <AvatarFallback>{conv.name[0]}</AvatarFallback>
-                </Avatar>
-                <div className="flex-1 min-w-0">
-                  <div className="flex items-center justify-between mb-1">
-                    <h3 className="font-semibold text-sm truncate">{conv.name}</h3>
-                    <span className="text-xs text-gray-500">{conv.time}</span>
-                  </div>
-                  <p className="text-sm text-gray-600 truncate">{conv.lastMessage}</p>
+        <TabsContent value="journal" className="flex-1 flex gap-4 mt-0">
+          {/* Left panel */}
+          <Card className="w-80 flex flex-col">
+            <CardContent className="p-4 flex flex-col h-full">
+              <div className="flex gap-2 mb-4">
+                <div className="relative flex-1">
+                  <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground" />
+                  <Input
+                    placeholder="Search entries..."
+                    value={searchQuery}
+                    onChange={(e) => setSearchQuery(e.target.value)}
+                    className="pl-9"
+                  />
                 </div>
-                {conv.unread > 0 && (
-                  <div className="bg-blue-600 text-white text-xs rounded-full w-5 h-5 flex items-center justify-center">
-                    {conv.unread}
-                  </div>
+                <Button size="icon" onClick={handleNew}>
+                  <Plus className="w-4 h-4" />
+                </Button>
+              </div>
+
+              <div className="flex-1 overflow-auto space-y-2">
+                {filtered.length === 0 ? (
+                  <p className="text-sm text-muted-foreground text-center py-8">
+                    No entries yet. Click + to create one.
+                  </p>
+                ) : (
+                  filtered.map((entry) => (
+                    <button
+                      key={entry.id}
+                      onClick={() => setSelectedId(entry.id)}
+                      className={`w-full text-left p-3 rounded-lg transition-colors ${
+                        selectedId === entry.id
+                          ? "bg-accent"
+                          : "hover:bg-muted"
+                      }`}
+                    >
+                      <p className="font-medium text-sm truncate">
+                        {entry.title || "Untitled"}
+                      </p>
+                      <p className="text-xs text-muted-foreground mt-1">
+                        {new Date(entry.timestamp).toLocaleDateString()}
+                      </p>
+                    </button>
+                  ))
                 )}
               </div>
-            ))}
-          </div>
-        </Card>
+            </CardContent>
+          </Card>
 
-        {/* Chat Area */}
-        <Card className="bg-white rounded-3xl border-0 shadow-sm p-6 lg:col-span-2 flex flex-col">
-          <div className="flex items-center gap-3 pb-4 border-b mb-4">
-            <Avatar className="w-12 h-12">
-              <AvatarImage src="https://images.unsplash.com/photo-1494790108377-be9c29b29330?w=100&h=100&fit=crop" />
-              <AvatarFallback>SJ</AvatarFallback>
-            </Avatar>
-            <div>
-              <h3 className="font-semibold">Sarah Johnson</h3>
-              <p className="text-sm text-gray-500">Active now</p>
-            </div>
-          </div>
+          {/* Right panel - Editor */}
+          <Card className="flex-1">
+            <CardContent className="p-6 h-full flex flex-col">
+              {selected ? (
+                <>
+                  <div className="flex items-center justify-between mb-4">
+                    <Input
+                      value={selected.title}
+                      onChange={(e) =>
+                        handleUpdate(selected.id, { title: e.target.value })
+                      }
+                      className="text-lg font-semibold border-0 p-0 h-auto focus-visible:ring-0"
+                      placeholder="Entry title..."
+                    />
+                    <Button
+                      variant="ghost"
+                      size="icon"
+                      onClick={() => handleDelete(selected.id)}
+                      className="text-muted-foreground hover:text-red-600"
+                    >
+                      <Trash2 className="w-4 h-4" />
+                    </Button>
+                  </div>
+                  <Textarea
+                    value={selected.content}
+                    onChange={(e) =>
+                      handleUpdate(selected.id, { content: e.target.value })
+                    }
+                    placeholder="Write your thoughts..."
+                    className="flex-1 resize-none border-0 p-0 focus-visible:ring-0"
+                  />
+                  <p className="text-xs text-muted-foreground mt-4">
+                    Last updated:{" "}
+                    {new Date(selected.timestamp).toLocaleString()}
+                  </p>
+                </>
+              ) : (
+                <div className="flex-1 flex items-center justify-center text-muted-foreground">
+                  <p>Select an entry or create a new one</p>
+                </div>
+              )}
+            </CardContent>
+          </Card>
+        </TabsContent>
 
-          <div className="flex-1 flex items-center justify-center text-gray-400">
-            Select a conversation to start messaging
-          </div>
-
-          <div className="flex gap-2 pt-4 border-t">
-            <Input
-              type="text"
-              placeholder="Type a message..."
-              className="flex-1 bg-gray-50 border-0"
-            />
-            <Button className="bg-blue-600 hover:bg-blue-700">
-              <Send className="w-4 h-4" />
-            </Button>
-          </div>
-        </Card>
-      </div>
+        <TabsContent value="notes" className="flex-1 mt-0">
+          <Card>
+            <CardContent className="p-6">
+              {allNotes.length === 0 ? (
+                <p className="text-muted-foreground text-center py-8">
+                  No lesson notes yet. Add notes while studying lessons.
+                </p>
+              ) : (
+                <div className="space-y-4">
+                  {allNotes.map((note, i) => (
+                    <div
+                      key={i}
+                      className="border-b border-border pb-4 last:border-0"
+                    >
+                      <div className="flex items-center gap-2 mb-1">
+                        <Link
+                          to={`/courses/${note.courseId}/${note.lessonId}`}
+                          className="text-sm font-medium text-blue-600 hover:underline"
+                        >
+                          {note.lessonName}
+                        </Link>
+                        <span className="text-xs text-muted-foreground">
+                          in {note.courseName}
+                        </span>
+                      </div>
+                      <p className="text-sm whitespace-pre-wrap">{note.note}</p>
+                    </div>
+                  ))}
+                </div>
+              )}
+            </CardContent>
+          </Card>
+        </TabsContent>
+      </Tabs>
     </div>
-  );
+  )
 }

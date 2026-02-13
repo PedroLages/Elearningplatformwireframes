@@ -1,25 +1,131 @@
+import React, { Suspense } from "react";
 import { createBrowserRouter } from "react-router";
 import { Layout } from "./components/Layout";
-import { Overview } from "./pages/Overview";
-import { MyClass } from "./pages/MyClass";
-import { Courses } from "./pages/Courses";
-import { Messages } from "./pages/Messages";
-import { Instructors } from "./pages/Instructors";
-import { Reports } from "./pages/Reports";
-import { Settings } from "./pages/Settings";
+
+// Lazy-loaded page components (code-splitting)
+// Named exports need .then(m => ({ default: m.ExportName }))
+const Overview = React.lazy(() =>
+  import("./pages/Overview").then((m) => ({ default: m.Overview }))
+);
+const Courses = React.lazy(() =>
+  import("./pages/Courses").then((m) => ({ default: m.Courses }))
+);
+const CourseDetail = React.lazy(() =>
+  import("./pages/CourseDetail").then((m) => ({ default: m.CourseDetail }))
+);
+const LessonPlayer = React.lazy(() =>
+  import("./pages/LessonPlayer").then((m) => ({ default: m.LessonPlayer }))
+);
+const Library = React.lazy(() =>
+  import("./pages/Library").then((m) => ({ default: m.Library }))
+);
+const Instructors = React.lazy(() =>
+  import("./pages/Instructors").then((m) => ({ default: m.Instructors }))
+);
+
+// Default exports work directly with React.lazy
+const MyClass = React.lazy(() => import("./pages/MyClass"));
+const Messages = React.lazy(() => import("./pages/Messages"));
+const Reports = React.lazy(() => import("./pages/Reports"));
+const Settings = React.lazy(() => import("./pages/Settings"));
+
+function PageLoader() {
+  return (
+    <div className="flex h-full items-center justify-center">
+      <div className="text-muted-foreground text-sm">Loading...</div>
+    </div>
+  );
+}
+
+function SuspensePage({ children }: { children: React.ReactNode }) {
+  return <Suspense fallback={<PageLoader />}>{children}</Suspense>;
+}
 
 export const router = createBrowserRouter([
   {
     path: "/",
     Component: Layout,
     children: [
-      { index: true, Component: Overview },
-      { path: "my-class", Component: MyClass },
-      { path: "courses", Component: Courses },
-      { path: "messages", Component: Messages },
-      { path: "instructors", Component: Instructors },
-      { path: "reports", Component: Reports },
-      { path: "settings", Component: Settings },
+      {
+        index: true,
+        element: (
+          <SuspensePage>
+            <Overview />
+          </SuspensePage>
+        ),
+      },
+      {
+        path: "my-class",
+        element: (
+          <SuspensePage>
+            <MyClass />
+          </SuspensePage>
+        ),
+      },
+      {
+        path: "courses",
+        element: (
+          <SuspensePage>
+            <Courses />
+          </SuspensePage>
+        ),
+      },
+      {
+        path: "courses/:courseId",
+        element: (
+          <SuspensePage>
+            <CourseDetail />
+          </SuspensePage>
+        ),
+      },
+      {
+        path: "courses/:courseId/:lessonId",
+        element: (
+          <SuspensePage>
+            <LessonPlayer />
+          </SuspensePage>
+        ),
+      },
+      {
+        path: "library",
+        element: (
+          <SuspensePage>
+            <Library />
+          </SuspensePage>
+        ),
+      },
+      {
+        path: "messages",
+        element: (
+          <SuspensePage>
+            <Messages />
+          </SuspensePage>
+        ),
+      },
+      {
+        path: "instructors",
+        element: (
+          <SuspensePage>
+            <Instructors />
+          </SuspensePage>
+        ),
+      },
+      {
+        path: "reports",
+        element: (
+          <SuspensePage>
+            <Reports />
+          </SuspensePage>
+        ),
+      },
+      {
+        path: "settings",
+        element: (
+          <SuspensePage>
+            <Settings />
+          </SuspensePage>
+        ),
+      },
     ],
   },
 ]);

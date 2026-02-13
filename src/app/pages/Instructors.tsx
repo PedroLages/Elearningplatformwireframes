@@ -1,129 +1,90 @@
-import { Card } from "../components/ui/card";
-import { Button } from "../components/ui/button";
-import { Avatar, AvatarFallback, AvatarImage } from "../components/ui/avatar";
-import { Star, Users, BookOpen, Mail } from "lucide-react";
-
-const instructors = [
-  {
-    id: 1,
-    name: "Dr. Sarah Johnson",
-    title: "Web Development Expert",
-    rating: 4.9,
-    students: 2450,
-    courses: 12,
-    avatar: "https://images.unsplash.com/photo-1494790108377-be9c29b29330?w=200&h=200&fit=crop",
-    specialties: ["JavaScript", "React", "Node.js"],
-  },
-  {
-    id: 2,
-    name: "Mike Chen",
-    title: "Digital Marketing Strategist",
-    rating: 4.8,
-    students: 1890,
-    courses: 8,
-    avatar: "https://images.unsplash.com/photo-1500648767791-00dcc994a43e?w=200&h=200&fit=crop",
-    specialties: ["SEO", "Social Media", "Content Marketing"],
-  },
-  {
-    id: 3,
-    name: "Emily Davis",
-    title: "UI/UX Design Lead",
-    rating: 4.9,
-    students: 3100,
-    courses: 15,
-    avatar: "https://images.unsplash.com/photo-1438761681033-6461ffad8d80?w=200&h=200&fit=crop",
-    specialties: ["Figma", "Design Systems", "User Research"],
-  },
-  {
-    id: 4,
-    name: "Robert Fox",
-    title: "Data Science Professor",
-    rating: 4.7,
-    students: 1650,
-    courses: 10,
-    avatar: "https://images.unsplash.com/photo-1472099645785-5658abf4ff4e?w=200&h=200&fit=crop",
-    specialties: ["Python", "Machine Learning", "Statistics"],
-  },
-  {
-    id: 5,
-    name: "Lisa Anderson",
-    title: "Business Strategy Expert",
-    rating: 4.8,
-    students: 2200,
-    courses: 9,
-    avatar: "https://images.unsplash.com/photo-1487412720507-e7ab37603c6f?w=200&h=200&fit=crop",
-    specialties: ["Management", "Leadership", "Strategy"],
-  },
-  {
-    id: 6,
-    name: "David Martinez",
-    title: "Mobile Development Specialist",
-    rating: 4.9,
-    students: 1980,
-    courses: 11,
-    avatar: "https://images.unsplash.com/photo-1507003211169-0a1dd7228f2d?w=200&h=200&fit=crop",
-    specialties: ["iOS", "Android", "Flutter"],
-  },
-];
+import { Link } from "react-router"
+import { ExternalLink } from "lucide-react"
+import { Card, CardContent, CardHeader, CardTitle } from "@/app/components/ui/card"
+import { Badge } from "@/app/components/ui/badge"
+import { allCourses } from "@/data/courses"
 
 export function Instructors() {
+  const categories = [...new Set(allCourses.map((c) => c.category))]
+
   return (
     <div>
-      <div className="mb-6">
-        <h1 className="text-3xl font-bold mb-2">Our Instructors</h1>
-        <p className="text-gray-600">Learn from industry experts and experienced educators</p>
-      </div>
+      <h1 className="text-2xl font-bold mb-6">About</h1>
 
-      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-        {instructors.map((instructor) => (
-          <Card key={instructor.id} className="bg-white rounded-3xl border-0 shadow-sm p-6 hover:shadow-lg transition-shadow">
-            <div className="flex flex-col items-center text-center">
-              <Avatar className="w-24 h-24 mb-4">
-                <AvatarImage src={instructor.avatar} />
-                <AvatarFallback>{instructor.name[0]}</AvatarFallback>
-              </Avatar>
-              
-              <h3 className="font-bold text-lg mb-1">{instructor.name}</h3>
-              <p className="text-sm text-gray-600 mb-4">{instructor.title}</p>
-              
-              <div className="flex items-center gap-4 mb-4 text-sm">
-                <div className="flex items-center gap-1">
-                  <Star className="w-4 h-4 fill-yellow-400 text-yellow-400" />
-                  <span className="font-semibold">{instructor.rating}</span>
-                </div>
-                <div className="flex items-center gap-1">
-                  <Users className="w-4 h-4 text-gray-500" />
-                  <span className="text-gray-600">{instructor.students}</span>
-                </div>
-                <div className="flex items-center gap-1">
-                  <BookOpen className="w-4 h-4 text-gray-500" />
-                  <span className="text-gray-600">{instructor.courses}</span>
-                </div>
-              </div>
-              
-              <div className="flex flex-wrap gap-2 justify-center mb-4">
-                {instructor.specialties.map((specialty) => (
-                  <span
-                    key={specialty}
-                    className="px-3 py-1 bg-blue-50 text-blue-600 rounded-full text-xs font-medium"
-                  >
-                    {specialty}
-                  </span>
-                ))}
-              </div>
-              
-              <div className="flex gap-2 w-full">
-                <Button className="flex-1 bg-blue-600 hover:bg-blue-700">
-                  View Profile
-                </Button>
-                <Button variant="outline" size="icon">
-                  <Mail className="w-4 h-4" />
-                </Button>
-              </div>
+      <div className="max-w-3xl space-y-6">
+        {/* Author Card */}
+        <Card>
+          <CardContent className="p-6">
+            <h2 className="text-xl font-semibold mb-2">Chase Hughes</h2>
+            <p className="text-muted-foreground mb-4">
+              Chase Hughes is a leading expert in behavioral analysis, persuasion, and
+              influence. He has trained law enforcement, intelligence professionals, and
+              military personnel worldwide. The Operative Kit is his comprehensive training
+              program covering the full spectrum of human behavior skills.
+            </p>
+            <a
+              href="https://www.chasehughes.com"
+              target="_blank"
+              rel="noopener noreferrer"
+              className="inline-flex items-center gap-1 text-sm text-blue-600 hover:underline"
+            >
+              chasehughes.com <ExternalLink className="w-3 h-3" />
+            </a>
+          </CardContent>
+        </Card>
+
+        {/* Course Categories / Methodology */}
+        <Card>
+          <CardHeader>
+            <CardTitle className="text-base">Course Categories</CardTitle>
+          </CardHeader>
+          <CardContent>
+            <p className="text-sm text-muted-foreground mb-4">
+              The Operative Kit covers {allCourses.length} courses across{" "}
+              {categories.length} categories:
+            </p>
+            <div className="space-y-3">
+              {categories.map((category) => {
+                const categoryCourses = allCourses.filter(
+                  (c) => c.category === category
+                )
+                return (
+                  <div key={category} className="flex items-start gap-3">
+                    <Badge variant="secondary" className="mt-0.5 shrink-0">
+                      {category}
+                    </Badge>
+                    <div className="flex flex-wrap gap-2">
+                      {categoryCourses.map((course) => (
+                        <Link
+                          key={course.id}
+                          to={`/courses/${course.id}`}
+                          className="text-sm text-blue-600 hover:underline"
+                        >
+                          {course.title}
+                        </Link>
+                      ))}
+                    </div>
+                  </div>
+                )
+              })}
             </div>
-          </Card>
-        ))}
+          </CardContent>
+        </Card>
+
+        {/* About this App */}
+        <Card>
+          <CardHeader>
+            <CardTitle className="text-base">About This App</CardTitle>
+          </CardHeader>
+          <CardContent>
+            <p className="text-sm text-muted-foreground">
+              This is a personal study companion for the Chase Hughes Operative Kit.
+              It provides video lessons, PDF resources, progress tracking, and a study
+              journal to help you master the material at your own pace.
+            </p>
+          </CardContent>
+        </Card>
       </div>
     </div>
-  );
+  )
 }

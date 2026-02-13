@@ -1,0 +1,149 @@
+import { useParams, Link } from "react-router"
+import {
+  ArrowLeft,
+  Clock,
+  Video,
+  FileText,
+  BookOpen,
+  Play,
+} from "lucide-react"
+import { Button } from "../components/ui/button"
+import { Badge } from "../components/ui/badge"
+import { Progress } from "../components/ui/progress"
+import { Separator } from "../components/ui/separator"
+import { ModuleAccordion } from "../components/figma/ModuleAccordion"
+import {
+  categoryLabels,
+  categoryColors,
+} from "../components/figma/CourseCard"
+import { allCourses } from "@/data/courses"
+import { getProgress, getCourseCompletionPercent } from "@/lib/progress"
+
+export function CourseDetail() {
+  const { courseId } = useParams<{ courseId: string }>()
+  const course = allCourses.find((c) => c.id === courseId)
+
+  if (!course) {
+    return (
+      <div className="flex flex-col items-center justify-center py-24">
+        <BookOpen className="mb-4 h-16 w-16 text-muted-foreground/50" />
+        <h2 className="text-xl font-semibold mb-2">Course Not Found</h2>
+        <p className="text-muted-foreground mb-6">
+          The course you're looking for doesn't exist.
+        </p>
+        <Link to="/courses">
+          <Button>Back to Courses</Button>
+        </Link>
+      </div>
+    )
+  }
+
+  const progress = getProgress(course.id)
+  const completionPercent = getCourseCompletionPercent(
+    course.id,
+    course.totalLessons
+  )
+
+  const firstLesson = course.modules[0]?.lessons[0]
+  const lastWatchedLesson = progress.lastWatchedLesson
+  const resumeLesson = lastWatchedLesson || firstLesson?.id
+
+  return (
+    <div>
+      <Link
+        to="/courses"
+        className="inline-flex items-center gap-1 text-sm text-muted-foreground hover:text-foreground mb-4 transition-colors"
+      >
+        <ArrowLeft className="h-4 w-4" />
+        Back to Courses
+      </Link>
+
+      {/* Course Header */}
+      <div className="bg-card rounded-3xl shadow-sm p-8 mb-6">
+        <div className="flex flex-col lg:flex-row lg:items-start gap-6">
+          <div className="flex-1">
+            <div className="flex items-center gap-2 mb-3">
+              <Badge
+                className={`border-0 text-xs ${categoryColors[course.category]}`}
+              >
+                {categoryLabels[course.category]}
+              </Badge>
+              <Badge variant="outline" className="text-xs capitalize">
+                {course.difficulty}
+              </Badge>
+            </div>
+
+            <h1 className="text-2xl font-bold mb-2">{course.title}</h1>
+            <p className="text-muted-foreground mb-5">{course.description}</p>
+
+            <div className="flex flex-wrap items-center gap-5 text-sm text-muted-foreground mb-6">
+              <span className="flex items-center gap-1.5">
+                <BookOpen className="h-4 w-4" />
+                {course.totalLessons} lessons
+              </span>
+              <span className="flex items-center gap-1.5">
+                <Video className="h-4 w-4" />
+                {course.totalVideos} videos
+              </span>
+              <span className="flex items-center gap-1.5">
+                <FileText className="h-4 w-4" />
+                {course.totalPDFs} documents
+              </span>
+              <span className="flex items-center gap-1.5">
+                <Clock className="h-4 w-4" />
+                ~{course.estimatedHours} hours
+              </span>
+            </div>
+
+            {resumeLesson && (
+              <Link to={`/courses/${course.id}/${resumeLesson}`}>
+                <Button className="bg-blue-600 hover:bg-blue-700">
+                  <Play className="mr-2 h-4 w-4" />
+                  {lastWatchedLesson ? "Continue Learning" : "Start Course"}
+                </Button>
+              </Link>
+            )}
+          </div>
+
+          {/* Progress sidebar */}
+          <div className="w-full lg:w-64 bg-muted rounded-2xl p-5">
+            <h3 className="font-semibold text-sm mb-3">Your Progress</h3>
+            <div className="text-3xl font-bold text-blue-600 mb-1">
+              {completionPercent}%
+            </div>
+            <Progress value={completionPercent} className="mb-3" />
+            <p className="text-xs text-muted-foreground">
+              {progress.completedLessons.length} of {course.totalLessons}{" "}
+              lessons completed
+            </p>
+          </div>
+        </div>
+      </div>
+
+      {/* Tags */}
+      {course.tags.length > 0 && (
+        <div className="flex flex-wrap gap-2 mb-6">
+          {course.tags.map((tag) => (
+            <Badge
+              key={tag}
+              variant="secondary"
+              className="text-xs bg-accent"
+            >
+              {tag}
+            </Badge>
+          ))}
+        </div>
+      )}
+
+      <Separator className="mb-6" />
+
+      {/* Module List */}
+      <h2 className="text-lg font-semibold mb-4">Course Content</h2>
+      <ModuleAccordion
+        modules={course.modules}
+        courseId={course.id}
+        completedLessons={progress.completedLessons}
+      />
+    </div>
+  )
+}
