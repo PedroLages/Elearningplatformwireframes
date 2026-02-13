@@ -114,7 +114,7 @@ export default function Settings() {
           <CardContent>
             <div>
               <Label>Theme</Label>
-              <Select value={theme} onValueChange={setTheme}>
+              <Select value={theme} onValueChange={setTheme} aria-label="Theme">
                 <SelectTrigger className="mt-1 w-48">
                   <SelectValue />
                 </SelectTrigger>

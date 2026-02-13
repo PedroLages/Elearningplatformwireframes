@@ -51,7 +51,7 @@ export function Overview() {
       <h1 className="text-2xl font-bold mb-6">Overview</h1>
 
       {/* Stats Row */}
-      <div className="grid grid-cols-4 gap-4 mb-8">
+      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4 mb-8">
         {statsCards.map((stat) => {
           const Icon = stat.icon
           return (
@@ -79,13 +79,14 @@ export function Overview() {
           <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
             {inProgress.map((course) => (
               <Link key={course.id} to={`/courses/${course.id}`}>
-                <Card className="hover:shadow-md transition-shadow">
+                <Card className="hover:shadow-md transition-shadow cursor-pointer">
                   <CardContent className="p-4 flex items-center gap-4">
                     {course.coverImage ? (
                       <img
                         src={course.coverImage}
                         alt={course.title}
                         className="w-16 h-16 rounded-lg object-cover"
+                        loading="lazy"
                       />
                     ) : (
                       <div className="w-16 h-16 rounded-lg bg-blue-100 dark:bg-blue-900/30 flex items-center justify-center">
@@ -116,13 +117,14 @@ export function Overview() {
         <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
           {allCourses.map((course) => (
             <Link key={course.id} to={`/courses/${course.id}`}>
-              <Card className="hover:shadow-md transition-shadow">
+              <Card className="hover:shadow-md transition-shadow cursor-pointer">
                 <CardContent className="p-0">
                   {course.coverImage ? (
                     <img
                       src={course.coverImage}
                       alt={course.title}
                       className="w-full h-32 object-cover rounded-t-xl"
+                      loading="lazy"
                     />
                   ) : (
                     <div className="w-full h-32 bg-blue-100 dark:bg-blue-900/30 rounded-t-xl flex items-center justify-center">

@@ -118,12 +118,13 @@ export default function Messages() {
                   <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground" />
                   <Input
                     placeholder="Search entries..."
+                    aria-label="Search journal entries"
                     value={searchQuery}
                     onChange={(e) => setSearchQuery(e.target.value)}
                     className="pl-9"
                   />
                 </div>
-                <Button size="icon" onClick={handleNew}>
+                <Button size="icon" onClick={handleNew} aria-label="Create new journal entry">
                   <Plus className="w-4 h-4" />
                 </Button>
               </div>
@@ -168,6 +169,7 @@ export default function Messages() {
                       onChange={(e) =>
                         handleUpdate(selected.id, { title: e.target.value })
                       }
+                      aria-label="Entry title"
                       className="text-lg font-semibold border-0 p-0 h-auto focus-visible:ring-0"
                       placeholder="Entry title..."
                     />
@@ -175,6 +177,7 @@ export default function Messages() {
                       variant="ghost"
                       size="icon"
                       onClick={() => handleDelete(selected.id)}
+                      aria-label="Delete journal entry"
                       className="text-muted-foreground hover:text-red-600"
                     >
                       <Trash2 className="w-4 h-4" />
@@ -185,6 +188,7 @@ export default function Messages() {
                     onChange={(e) =>
                       handleUpdate(selected.id, { content: e.target.value })
                     }
+                    aria-label="Entry content"
                     placeholder="Write your thoughts..."
                     className="flex-1 resize-none border-0 p-0 focus-visible:ring-0"
                   />

@@ -137,7 +137,8 @@ export function LessonPlayer() {
             <h1 className="text-xl font-bold">{lesson.title}</h1>
             <button
               onClick={toggleComplete}
-              className="flex items-center gap-1.5 text-sm shrink-0"
+              aria-label={completed ? "Mark lesson incomplete" : "Mark lesson complete"}
+              className="flex items-center gap-1.5 text-sm shrink-0 cursor-pointer"
             >
               {completed ? (
                 <CheckCircle2 className="h-5 w-5 text-green-500" />
@@ -205,6 +206,7 @@ export function LessonPlayer() {
               <Textarea
                 value={noteText}
                 onChange={(e) => handleNoteChange(e.target.value)}
+                aria-label="Lesson notes"
                 placeholder="Write your notes for this lesson..."
                 className="min-h-[200px] resize-y"
               />

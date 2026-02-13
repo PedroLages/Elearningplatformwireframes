@@ -102,7 +102,7 @@ export default function Reports() {
       <h1 className="text-2xl font-bold mb-6">Reports</h1>
 
       {/* Stats row */}
-      <div className="grid grid-cols-4 gap-4 mb-6">
+      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4 mb-6">
         {stats.map((stat) => {
           const Icon = stat.icon
           return (
@@ -124,7 +124,7 @@ export default function Reports() {
       </div>
 
       {/* Charts grid */}
-      <div className="grid grid-cols-3 gap-4 mb-6">
+      <div className="grid grid-cols-1 lg:grid-cols-3 gap-4 mb-6">
         <Card className="col-span-2">
           <CardHeader>
             <CardTitle className="text-base">Course Completion</CardTitle>

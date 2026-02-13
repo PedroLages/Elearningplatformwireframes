@@ -59,6 +59,7 @@ export function Courses() {
             <Input
               type="text"
               placeholder="Search for courses..."
+              aria-label="Search courses"
               value={searchQuery}
               onChange={(e) => setSearchQuery(e.target.value)}
               className="pl-10 bg-muted border-0"

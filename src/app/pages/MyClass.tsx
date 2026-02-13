@@ -43,12 +43,13 @@ export default function MyClass() {
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
             {inProgress.map((course) => (
               <Link key={course.id} to={`/courses/${course.id}`}>
-                <Card className="hover:shadow-md transition-shadow h-full">
+                <Card className="hover:shadow-md transition-shadow h-full cursor-pointer">
                   <CardContent className="p-0">
                     <img
                       src={course.coverImage}
                       alt={course.title}
                       className="w-full h-36 object-cover rounded-t-xl"
+                      loading="lazy"
                     />
                     <div className="p-4">
                       <Badge variant="secondary" className="mb-2">
@@ -88,13 +89,14 @@ export default function MyClass() {
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
             {completed.map((course) => (
               <Link key={course.id} to={`/courses/${course.id}`}>
-                <Card className="hover:shadow-md transition-shadow h-full border-green-200 dark:border-green-800">
+                <Card className="hover:shadow-md transition-shadow h-full border-green-200 dark:border-green-800 cursor-pointer">
                   <CardContent className="p-0">
                     <div className="relative">
                       <img
                         src={course.coverImage}
                         alt={course.title}
                         className="w-full h-36 object-cover rounded-t-xl"
+                        loading="lazy"
                       />
                       <div className="absolute top-2 right-2 bg-green-600 text-white rounded-full p-1">
                         <CheckCircle className="w-4 h-4" />
@@ -126,12 +128,13 @@ export default function MyClass() {
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
             {notStarted.map((course) => (
               <Link key={course.id} to={`/courses/${course.id}`}>
-                <Card className="hover:shadow-md transition-shadow h-full opacity-80 hover:opacity-100">
+                <Card className="hover:shadow-md transition-shadow h-full opacity-80 hover:opacity-100 cursor-pointer">
                   <CardContent className="p-0">
                     <img
                       src={course.coverImage}
                       alt={course.title}
                       className="w-full h-36 object-cover rounded-t-xl"
+                      loading="lazy"
                     />
                     <div className="p-4">
                       <Badge variant="secondary" className="mb-2">

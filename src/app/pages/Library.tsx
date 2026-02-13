@@ -94,6 +94,7 @@ export function Library() {
             <Input
               type="text"
               placeholder="Search documents..."
+              aria-label="Search documents"
               value={searchQuery}
               onChange={(e) => setSearchQuery(e.target.value)}
               className="pl-10 bg-muted border-0"
