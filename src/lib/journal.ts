@@ -1,4 +1,4 @@
-const STORAGE_KEY = "study-journal"
+const STORAGE_KEY = 'study-journal'
 
 export interface JournalEntry {
   id: string
@@ -27,10 +27,10 @@ export function getJournalEntries(): JournalEntry[] {
 }
 
 export function getJournalEntry(id: string): JournalEntry | undefined {
-  return getAll().find((e) => e.id === id)
+  return getAll().find(e => e.id === id)
 }
 
-export function createJournalEntry(entry: Omit<JournalEntry, "id" | "timestamp">): JournalEntry {
+export function createJournalEntry(entry: Omit<JournalEntry, 'id' | 'timestamp'>): JournalEntry {
   const newEntry: JournalEntry = {
     ...entry,
     id: crypto.randomUUID(),
@@ -42,9 +42,12 @@ export function createJournalEntry(entry: Omit<JournalEntry, "id" | "timestamp">
   return newEntry
 }
 
-export function updateJournalEntry(id: string, updates: Partial<Omit<JournalEntry, "id">>): JournalEntry | undefined {
+export function updateJournalEntry(
+  id: string,
+  updates: Partial<Omit<JournalEntry, 'id'>>
+): JournalEntry | undefined {
   const all = getAll()
-  const idx = all.findIndex((e) => e.id === id)
+  const idx = all.findIndex(e => e.id === id)
   if (idx === -1) return undefined
   all[idx] = { ...all[idx], ...updates }
   saveAll(all)
@@ -53,7 +56,7 @@ export function updateJournalEntry(id: string, updates: Partial<Omit<JournalEntr
 
 export function deleteJournalEntry(id: string): boolean {
   const all = getAll()
-  const filtered = all.filter((e) => e.id !== id)
+  const filtered = all.filter(e => e.id !== id)
   if (filtered.length === all.length) return false
   saveAll(filtered)
   return true
@@ -62,9 +65,9 @@ export function deleteJournalEntry(id: string): boolean {
 export function searchJournalEntries(query: string): JournalEntry[] {
   const lower = query.toLowerCase()
   return getJournalEntries().filter(
-    (e) =>
+    e =>
       e.title.toLowerCase().includes(lower) ||
       e.content.toLowerCase().includes(lower) ||
-      e.tags.some((t) => t.toLowerCase().includes(lower))
+      e.tags.some(t => t.toLowerCase().includes(lower))
   )
 }

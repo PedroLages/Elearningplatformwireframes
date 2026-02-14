@@ -1,18 +1,18 @@
-import { useState, useEffect } from "react"
-import { Link } from "react-router"
-import { BookOpen, CheckCircle, FileText } from "lucide-react"
-import { Card, CardContent } from "@/app/components/ui/card"
-import { Progress } from "@/app/components/ui/progress"
-import { Skeleton } from "@/app/components/ui/skeleton"
-import { EmptyState } from "@/app/components/EmptyState"
-import { AchievementBanner } from "@/app/components/AchievementBanner"
-import { RecentActivity } from "@/app/components/RecentActivity"
-import { StatsCard } from "@/app/components/StatsCard"
-import { QuickActions } from "@/app/components/QuickActions"
-import { StudyStreak } from "@/app/components/StudyStreak"
-import { EnhancedCourseCard } from "@/app/components/figma/EnhancedCourseCard"
-import { ProgressChart } from "@/app/components/charts/ProgressChart"
-import { allCourses } from "@/data/courses"
+import { useState, useEffect } from 'react'
+import { Link } from 'react-router'
+import { BookOpen, CheckCircle, FileText } from 'lucide-react'
+import { Card, CardContent } from '@/app/components/ui/card'
+import { Progress } from '@/app/components/ui/progress'
+import { Skeleton } from '@/app/components/ui/skeleton'
+import { EmptyState } from '@/app/components/EmptyState'
+import { AchievementBanner } from '@/app/components/AchievementBanner'
+import { RecentActivity } from '@/app/components/RecentActivity'
+import { StatsCard } from '@/app/components/StatsCard'
+import { QuickActions } from '@/app/components/QuickActions'
+import { StudyStreakCalendar } from '@/app/components/StudyStreakCalendar'
+import { EnhancedCourseCard } from '@/app/components/figma/EnhancedCourseCard'
+import { ProgressChart } from '@/app/components/charts/ProgressChart'
+import { allCourses } from '@/data/courses'
 import {
   getCoursesInProgress,
   getCompletedCourses,
@@ -22,15 +22,14 @@ import {
   getLast7DaysLessonCompletions,
   getWeeklyChange,
   getAllProgress,
-} from "@/lib/progress"
-import { getStudyStreak } from "@/lib/studyStreak"
-import { getActionsPerDay } from "@/lib/studyLog"
+} from '@/lib/progress'
+import { getActionsPerDay } from '@/lib/studyLog'
 
 function formatCategory(slug: string): string {
   return slug
-    .split("-")
-    .map((word) => word.charAt(0).toUpperCase() + word.slice(1))
-    .join(" ")
+    .split('-')
+    .map(word => word.charAt(0).toUpperCase() + word.slice(1))
+    .join(' ')
 }
 
 export function Overview() {
@@ -48,39 +47,40 @@ export function Overview() {
   const studyNotes = getTotalStudyNotes()
   const recentActivity = getRecentActivity(allCourses, 5)
   const lessonSparkline = getLast7DaysLessonCompletions()
-  const lessonsChange = getWeeklyChange("lessons")
-  const studyStreak = getStudyStreak()
+  const lessonsChange = getWeeklyChange('lessons')
   const chartData = getActionsPerDay(14) // Last 14 days
 
   // Get last watched course/lesson for Quick Actions
   const allProgress = getAllProgress()
   const lastWatchedEntry = Object.entries(allProgress)
     .filter(([_, p]) => p.lastWatchedLesson)
-    .sort((a, b) => new Date(b[1].lastAccessedAt).getTime() - new Date(a[1].lastAccessedAt).getTime())[0]
+    .sort(
+      (a, b) => new Date(b[1].lastAccessedAt).getTime() - new Date(a[1].lastAccessedAt).getTime()
+    )[0]
   const lastWatchedCourse = lastWatchedEntry?.[0]
   const lastWatchedLesson = lastWatchedEntry?.[1].lastWatchedLesson
 
   const statsCards = [
     {
-      label: "Courses Started",
+      label: 'Courses Started',
       value: inProgress.length + completed.length,
       icon: BookOpen,
     },
     {
-      label: "Lessons Completed",
+      label: 'Lessons Completed',
       value: completedLessons,
       icon: CheckCircle,
-      trend: lessonsChange >= 0 ? "up" as const : "down" as const,
+      trend: lessonsChange >= 0 ? ('up' as const) : ('down' as const),
       trendValue: `${Math.abs(lessonsChange)} this week`,
       sparkline: lessonSparkline,
     },
     {
-      label: "Study Notes",
+      label: 'Study Notes',
       value: studyNotes,
       icon: FileText,
     },
     {
-      label: "Courses Completed",
+      label: 'Courses Completed',
       value: completed.length,
       icon: CheckCircle,
     },
@@ -93,7 +93,7 @@ export function Overview() {
 
         {/* Stats Row Skeleton */}
         <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4 mb-8">
-          {[1, 2, 3, 4].map((i) => (
+          {[1, 2, 3, 4].map(i => (
             <div key={i} className="rounded-2xl border p-6">
               <Skeleton className="h-4 w-24 mb-2" />
               <Skeleton className="h-8 w-16" />
@@ -104,7 +104,7 @@ export function Overview() {
         {/* Continue Studying Skeleton */}
         <Skeleton className="h-6 w-40 mb-4" />
         <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mb-8">
-          {[1, 2].map((i) => (
+          {[1, 2].map(i => (
             <div key={i} className="rounded-2xl border p-4">
               <div className="flex items-center gap-4">
                 <Skeleton className="w-16 h-16 rounded-lg" />
@@ -121,7 +121,7 @@ export function Overview() {
         {/* All Courses Skeleton */}
         <Skeleton className="h-6 w-32 mb-4" />
         <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
-          {[1, 2, 3, 4, 5, 6, 7, 8].map((i) => (
+          {[1, 2, 3, 4, 5, 6, 7, 8].map(i => (
             <div key={i} className="rounded-2xl border overflow-hidden">
               <Skeleton className="w-full h-32" />
               <div className="p-4">
@@ -142,15 +142,20 @@ export function Overview() {
 
       {/* Stats Row */}
       <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4 mb-8">
-        {statsCards.map((stat) => (
+        {statsCards.map(stat => (
           <StatsCard key={stat.label} {...stat} />
         ))}
       </div>
 
-      {/* Achievement Banner and Study Streak */}
-      <div className="grid grid-cols-1 lg:grid-cols-2 gap-4 mb-8">
+      {/* Achievement Banner */}
+      <div className="mb-8">
         <AchievementBanner completedLessons={completedLessons} />
-        <StudyStreak current={studyStreak.current} longest={studyStreak.longest} />
+      </div>
+
+      {/* Study Streak Calendar */}
+      <div className="mb-8">
+        <h2 className="text-lg font-semibold mb-4">Study Streak</h2>
+        <StudyStreakCalendar days={30} />
       </div>
 
       {/* Recent Activity */}
@@ -171,7 +176,7 @@ export function Overview() {
         <h2 className="text-lg font-semibold mb-4">Continue Studying</h2>
         {inProgress.length > 0 ? (
           <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-            {inProgress.map((course) => (
+            {inProgress.map(course => (
               <Link key={course.id} to={`/courses/${course.id}`}>
                 <Card className="group hover:shadow-xl hover:scale-[1.01] transition-all duration-200 cursor-pointer rounded-2xl">
                   <CardContent className="p-4 flex items-center gap-4">
@@ -217,7 +222,7 @@ export function Overview() {
       <section>
         <h2 className="text-lg font-semibold mb-4">All Courses</h2>
         <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
-          {allCourses.map((course) => (
+          {allCourses.map(course => (
             <EnhancedCourseCard key={course.id} course={course} />
           ))}
         </div>

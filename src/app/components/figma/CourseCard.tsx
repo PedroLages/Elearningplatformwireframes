@@ -1,24 +1,25 @@
-import { Link } from "react-router"
-import { Clock, Video, FileText, BookOpen } from "lucide-react"
-import { Card } from "../ui/card"
-import { Badge } from "../ui/badge"
-import { ProgressRing } from "./ProgressRing"
-import type { Course, CourseCategory } from "@/data/types"
+import { Link } from 'react-router'
+import { Clock, Video, FileText, BookOpen } from 'lucide-react'
+import { Card } from '@/app/components/ui/card'
+import { Badge } from '@/app/components/ui/badge'
+import { ProgressRing } from './ProgressRing'
+import type { Course, CourseCategory } from '@/data/types'
 
 const categoryLabels: Record<CourseCategory, string> = {
-  "behavioral-analysis": "Behavioral Analysis",
-  "influence-authority": "Influence & Authority",
-  "confidence-mastery": "Confidence Mastery",
-  "operative-training": "Operative Training",
-  "research-library": "Research Library",
+  'behavioral-analysis': 'Behavioral Analysis',
+  'influence-authority': 'Influence & Authority',
+  'confidence-mastery': 'Confidence Mastery',
+  'operative-training': 'Operative Training',
+  'research-library': 'Research Library',
 }
 
 const categoryColors: Record<CourseCategory, string> = {
-  "behavioral-analysis": "bg-emerald-100 text-emerald-700 dark:bg-emerald-900/30 dark:text-emerald-300",
-  "influence-authority": "bg-blue-100 text-blue-700 dark:bg-blue-900/30 dark:text-blue-300",
-  "confidence-mastery": "bg-amber-100 text-amber-700 dark:bg-amber-900/30 dark:text-amber-300",
-  "operative-training": "bg-red-100 text-red-700 dark:bg-red-900/30 dark:text-red-300",
-  "research-library": "bg-purple-100 text-purple-700 dark:bg-purple-900/30 dark:text-purple-300",
+  'behavioral-analysis':
+    'bg-emerald-100 text-emerald-700 dark:bg-emerald-900/30 dark:text-emerald-300',
+  'influence-authority': 'bg-blue-100 text-blue-700 dark:bg-blue-900/30 dark:text-blue-300',
+  'confidence-mastery': 'bg-amber-100 text-amber-700 dark:bg-amber-900/30 dark:text-amber-300',
+  'operative-training': 'bg-red-100 text-red-700 dark:bg-red-900/30 dark:text-red-300',
+  'research-library': 'bg-purple-100 text-purple-700 dark:bg-purple-900/30 dark:text-purple-300',
 }
 
 interface CourseCardProps {
@@ -75,9 +76,7 @@ export function CourseCard({ course, completionPercent }: CourseCardProps) {
           <h3 className="font-bold text-base mb-1 group-hover:text-blue-600 transition-colors line-clamp-2">
             {course.title}
           </h3>
-          <p className="text-sm text-muted-foreground mb-3 line-clamp-2">
-            {course.description}
-          </p>
+          <p className="text-sm text-muted-foreground mb-3 line-clamp-2">{course.description}</p>
 
           <div className="flex flex-wrap items-center gap-3 text-xs text-muted-foreground">
             <span className="flex items-center gap-1">

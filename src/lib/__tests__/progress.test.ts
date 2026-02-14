@@ -38,8 +38,22 @@ function makeCourse(overrides: Partial<Course> = {}): Course {
         description: 'First module',
         order: 1,
         lessons: [
-          { id: 'lesson-1', title: 'Lesson 1', description: '', order: 1, resources: [], keyTopics: [] },
-          { id: 'lesson-2', title: 'Lesson 2', description: '', order: 2, resources: [], keyTopics: [] },
+          {
+            id: 'lesson-1',
+            title: 'Lesson 1',
+            description: '',
+            order: 1,
+            resources: [],
+            keyTopics: [],
+          },
+          {
+            id: 'lesson-2',
+            title: 'Lesson 2',
+            description: '',
+            order: 2,
+            resources: [],
+            keyTopics: [],
+          },
         ],
       },
       {
@@ -48,7 +62,14 @@ function makeCourse(overrides: Partial<Course> = {}): Course {
         description: 'Second module',
         order: 2,
         lessons: [
-          { id: 'lesson-3', title: 'Lesson 3', description: '', order: 1, resources: [], keyTopics: [] },
+          {
+            id: 'lesson-3',
+            title: 'Lesson 3',
+            description: '',
+            order: 1,
+            resources: [],
+            keyTopics: [],
+          },
         ],
       },
     ],
@@ -102,7 +123,7 @@ describe('progress', () => {
       markLessonComplete('course-1', 'lesson-1')
       markLessonComplete('course-1', 'lesson-1')
       const progress = getProgress('course-1')
-      expect(progress.completedLessons.filter((l) => l === 'lesson-1')).toHaveLength(1)
+      expect(progress.completedLessons.filter(l => l === 'lesson-1')).toHaveLength(1)
     })
 
     it('can mark multiple different lessons complete', () => {

@@ -1,14 +1,14 @@
-import { StatsCard } from "./StatsCard"
-import { TrendingUp, BookOpen, Clock, Target } from "lucide-react"
-import { Course } from "@/data/types"
+import { StatsCard } from './StatsCard'
+import { TrendingUp, BookOpen, Clock, Target } from 'lucide-react'
+import { Course } from '@/data/types'
 import {
   getAverageProgressPercent,
   getTotalEstimatedStudyHours,
   getCoursesInProgress,
   getWeeklyChange,
   getLast7DaysLessonCompletions,
-} from "@/lib/progress"
-import { getStudyStreak } from "@/lib/studyStreak"
+} from '@/lib/progress'
+import { getStudyStreak } from '@/lib/studyStreak'
 
 interface ProgressStatsProps {
   courses: Course[]
@@ -19,7 +19,7 @@ export function ProgressStats({ courses }: ProgressStatsProps) {
   const studyStreakData = getStudyStreak()
   const totalHours = getTotalEstimatedStudyHours()
   const inProgressCount = getCoursesInProgress(courses).length
-  const weeklyChange = getWeeklyChange("lessons")
+  const weeklyChange = getWeeklyChange('lessons')
   const last7Days = getLast7DaysLessonCompletions()
 
   return (
@@ -28,25 +28,21 @@ export function ProgressStats({ courses }: ProgressStatsProps) {
         label="Average Progress"
         value={`${avgProgress}%`}
         icon={TrendingUp}
-        trend={avgProgress > 0 ? "up" : undefined}
+        trend={avgProgress > 0 ? 'up' : undefined}
         sparkline={last7Days}
       />
       <StatsCard
         label="Study Streak"
         value={`${studyStreakData.current} days`}
         icon={Target}
-        trend={studyStreakData.current > 0 ? "up" : undefined}
+        trend={studyStreakData.current > 0 ? 'up' : undefined}
       />
-      <StatsCard
-        label="Study Time"
-        value={`${totalHours}h`}
-        icon={Clock}
-      />
+      <StatsCard label="Study Time" value={`${totalHours}h`} icon={Clock} />
       <StatsCard
         label="In Progress"
         value={inProgressCount.toString()}
         icon={BookOpen}
-        trend={weeklyChange > 0 ? "up" : weeklyChange < 0 ? "down" : undefined}
+        trend={weeklyChange > 0 ? 'up' : weeklyChange < 0 ? 'down' : undefined}
         trendValue={weeklyChange !== 0 ? `${Math.abs(weeklyChange)} this week` : undefined}
       />
     </div>

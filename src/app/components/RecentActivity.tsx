@@ -1,10 +1,10 @@
-import { Card, CardContent } from "@/app/components/ui/card"
-import { Button } from "@/app/components/ui/button"
-import { Link } from "react-router"
-import { formatDistanceToNow } from "date-fns"
-import { Clock, ArrowRight, BookOpen } from "lucide-react"
-import type { Course } from "@/data/types"
-import type { CourseProgress } from "@/lib/progress"
+import { Card, CardContent } from '@/app/components/ui/card'
+import { Button } from '@/app/components/ui/button'
+import { Link } from 'react-router'
+import { formatDistanceToNow } from 'date-fns'
+import { Clock, ArrowRight, BookOpen } from 'lucide-react'
+import type { Course } from '@/data/types'
+import type { CourseProgress } from '@/lib/progress'
 
 interface RecentActivityProps {
   activities: (Course & { progress: CourseProgress })[]

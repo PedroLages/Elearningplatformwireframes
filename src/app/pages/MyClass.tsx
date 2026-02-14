@@ -1,82 +1,76 @@
-import { useState, useMemo } from "react"
-import { Link } from "react-router"
-import { Clock, CheckCircle, PlayCircle, ArrowRight } from "lucide-react"
-import { Button } from "@/app/components/ui/button"
-import { Tabs, TabsList, TabsTrigger, TabsContent } from "@/app/components/ui/tabs"
+import { useState, useMemo } from 'react'
+import { Link } from 'react-router'
+import { Clock, CheckCircle, PlayCircle, ArrowRight } from 'lucide-react'
+import { Button } from '@/app/components/ui/button'
+import { Tabs, TabsList, TabsTrigger, TabsContent } from '@/app/components/ui/tabs'
 import {
   Select,
   SelectContent,
   SelectItem,
   SelectTrigger,
   SelectValue,
-} from "@/app/components/ui/select"
-import { ProgressStats } from "@/app/components/ProgressStats"
-import { ProgressCourseCard } from "@/app/components/ProgressCourseCard"
-import { allCourses } from "@/data/courses"
-import { Course } from "@/data/types"
-import {
-  getCoursesInProgress,
-  getCompletedCourses,
-  getNotStartedCourses,
-} from "@/lib/progress"
+} from '@/app/components/ui/select'
+import { ProgressStats } from '@/app/components/ProgressStats'
+import { ProgressCourseCard } from '@/app/components/ProgressCourseCard'
+import { allCourses } from '@/data/courses'
+import { getCoursesInProgress, getCompletedCourses, getNotStartedCourses } from '@/lib/progress'
 
-type SortOption = "recent" | "progress-high" | "progress-low" | "alpha" | "time"
+type SortOption = 'recent' | 'progress-high' | 'progress-low' | 'alpha' | 'time'
 
 export default function MyClass() {
-  const [sortBy, setSortBy] = useState<SortOption>("recent")
+  const [sortBy, setSortBy] = useState<SortOption>('recent')
 
   const inProgress = getCoursesInProgress(allCourses)
   const completed = getCompletedCourses(allCourses)
   const notStarted = getNotStartedCourses(allCourses)
 
-  const hasAnyCourses =
-    inProgress.length > 0 || completed.length > 0 || notStarted.length > 0
+  const hasAnyCourses = inProgress.length > 0 || completed.length > 0 || notStarted.length > 0
 
   // Get all courses with their status
   const allCoursesWithStatus = useMemo(() => {
-    return allCourses.map((course) => {
-      const inProgressCourse = inProgress.find((c) => c.id === course.id)
-      const completedCourse = completed.find((c) => c.id === course.id)
+    return allCourses.map(course => {
+      const inProgressCourse = inProgress.find(c => c.id === course.id)
+      const completedCourse = completed.find(c => c.id === course.id)
 
       if (inProgressCourse) {
         return {
           ...course,
-          status: "in-progress" as const,
+          status: 'in-progress' as const,
           completionPercent: inProgressCourse.completionPercent,
           lastAccessedAt: inProgressCourse.progress.lastAccessedAt,
         }
       }
       if (completedCourse) {
-        return { ...course, status: "completed" as const }
+        return { ...course, status: 'completed' as const }
       }
-      return { ...course, status: "not-started" as const }
+      return { ...course, status: 'not-started' as const }
     })
   }, [inProgress, completed])
 
   // Sort function
   const sortCourses = (courses: typeof allCoursesWithStatus) => {
     switch (sortBy) {
-      case "recent":
+      case 'recent':
         return [...courses].sort((a, b) => {
-          const aTime = "lastAccessedAt" in a ? new Date(a.lastAccessedAt).getTime() : 0
-          const bTime = "lastAccessedAt" in b ? new Date(b.lastAccessedAt).getTime() : 0
+          const aTime = 'lastAccessedAt' in a ? new Date(a.lastAccessedAt).getTime() : 0
+          const bTime = 'lastAccessedAt' in b ? new Date(b.lastAccessedAt).getTime() : 0
           return bTime - aTime
         })
-      case "progress-high":
+      case 'progress-high':
         return [...courses].sort((a, b) => {
-          const aProgress = "completionPercent" in a ? a.completionPercent : 0
-          const bProgress = "completionPercent" in b ? b.completionPercent : 0
+          const aProgress = 'completionPercent' in a ? a.completionPercent : 0
+          const bProgress = 'completionPercent' in b ? b.completionPercent : 0
           return bProgress - aProgress
         })
-      case "progress-low":
+      case 'progress-low':
         return [...courses].sort((a, b) => {
-          const aProgress = "completionPercent" in a ? a.completionPercent : 0
-          const bProgress = "completionPercent" in b ? b.completionPercent : 0
+          const aProgress = 'completionPercent' in a ? a.completionPercent : 0
+          const bProgress = 'completionPercent' in b ? b.completionPercent : 0
           return aProgress - bProgress
         })
-      case "alpha":
+      case 'alpha':
         return [...courses].sort((a, b) => a.title.localeCompare(b.title))
-      case "time":
+      case 'time':
         // Sort by total lessons (estimated time)
         return [...courses].sort((a, b) => {
           const aLessons = a.modules.reduce((sum, m) => sum + m.lessons.length, 0)
@@ -91,7 +85,7 @@ export default function MyClass() {
   // Group courses by category
   const coursesByCategory = useMemo(() => {
     const groups: Record<string, typeof allCoursesWithStatus> = {}
-    allCoursesWithStatus.forEach((course) => {
+    allCoursesWithStatus.forEach(course => {
       if (!groups[course.category]) {
         groups[course.category] = []
       }
@@ -103,7 +97,7 @@ export default function MyClass() {
   // Group courses by difficulty
   const coursesByDifficulty = useMemo(() => {
     const groups: Record<string, typeof allCoursesWithStatus> = {}
-    allCoursesWithStatus.forEach((course) => {
+    allCoursesWithStatus.forEach(course => {
       if (!groups[course.difficulty]) {
         groups[course.difficulty] = []
       }
@@ -111,6 +105,20 @@ export default function MyClass() {
     })
     return groups
   }, [allCoursesWithStatus])
+
+  // Filter courses by status from allCoursesWithStatus
+  const inProgressWithStatus = useMemo(
+    () => allCoursesWithStatus.filter(c => c.status === 'in-progress'),
+    [allCoursesWithStatus]
+  )
+  const completedWithStatus = useMemo(
+    () => allCoursesWithStatus.filter(c => c.status === 'completed'),
+    [allCoursesWithStatus]
+  )
+  const notStartedWithStatus = useMemo(
+    () => allCoursesWithStatus.filter(c => c.status === 'not-started'),
+    [allCoursesWithStatus]
+  )
 
   if (!hasAnyCourses) {
     return (
@@ -152,7 +160,7 @@ export default function MyClass() {
                 <TabsTrigger value="by-difficulty">By Difficulty</TabsTrigger>
               </TabsList>
 
-              <Select value={sortBy} onValueChange={(value) => setSortBy(value as SortOption)}>
+              <Select value={sortBy} onValueChange={value => setSortBy(value as SortOption)}>
                 <SelectTrigger className="w-full sm:w-[200px]">
                   <SelectValue placeholder="Sort by..." />
                 </SelectTrigger>
@@ -177,15 +185,19 @@ export default function MyClass() {
                     </h2>
                   </div>
                   <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4 stagger-children">
-                    {sortCourses(inProgress).map((course) => (
-                      <ProgressCourseCard
-                        key={course.id}
-                        course={course}
-                        status="in-progress"
-                        completionPercent={course.completionPercent}
-                        lastAccessedAt={course.progress.lastAccessedAt}
-                      />
-                    ))}
+                    {sortCourses(inProgressWithStatus).map(course => {
+                      // Type guard: course is guaranteed to be in-progress status
+                      if (course.status !== 'in-progress') return null
+                      return (
+                        <ProgressCourseCard
+                          key={course.id}
+                          course={course}
+                          status="in-progress"
+                          completionPercent={course.completionPercent}
+                          lastAccessedAt={course.lastAccessedAt}
+                        />
+                      )
+                    })}
                   </div>
                 </section>
               )}
@@ -199,7 +211,7 @@ export default function MyClass() {
                     </h2>
                   </div>
                   <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4 stagger-children">
-                    {sortCourses(completed).map((course) => (
+                    {sortCourses(completedWithStatus).map(course => (
                       <ProgressCourseCard key={course.id} course={course} status="completed" />
                     ))}
                   </div>
@@ -215,7 +227,7 @@ export default function MyClass() {
                     </h2>
                   </div>
                   <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4 stagger-children">
-                    {sortCourses(notStarted).map((course) => (
+                    {sortCourses(notStartedWithStatus).map(course => (
                       <ProgressCourseCard key={course.id} course={course} status="not-started" />
                     ))}
                   </div>
@@ -242,15 +254,13 @@ export default function MyClass() {
             {/* All Courses View */}
             <TabsContent value="all">
               <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
-                {sortCourses(allCoursesWithStatus).map((course) => (
+                {sortCourses(allCoursesWithStatus).map(course => (
                   <ProgressCourseCard
                     key={course.id}
                     course={course}
                     status={course.status}
-                    completionPercent={"completionPercent" in course ? course.completionPercent : 0}
-                    lastAccessedAt={
-                      "lastAccessedAt" in course ? course.lastAccessedAt : undefined
-                    }
+                    completionPercent={'completionPercent' in course ? course.completionPercent : 0}
+                    lastAccessedAt={'lastAccessedAt' in course ? course.lastAccessedAt : undefined}
                   />
                 ))}
               </div>
@@ -262,16 +272,16 @@ export default function MyClass() {
                 <section key={category} className="mb-8">
                   <h2 className="text-lg font-semibold mb-4">{category}</h2>
                   <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
-                    {sortCourses(courses).map((course) => (
+                    {sortCourses(courses).map(course => (
                       <ProgressCourseCard
                         key={course.id}
                         course={course}
                         status={course.status}
                         completionPercent={
-                          "completionPercent" in course ? course.completionPercent : 0
+                          'completionPercent' in course ? course.completionPercent : 0
                         }
                         lastAccessedAt={
-                          "lastAccessedAt" in course ? course.lastAccessedAt : undefined
+                          'lastAccessedAt' in course ? course.lastAccessedAt : undefined
                         }
                       />
                     ))}
@@ -282,7 +292,7 @@ export default function MyClass() {
 
             {/* By Difficulty View */}
             <TabsContent value="by-difficulty">
-              {["Beginner", "Intermediate", "Advanced"].map((difficulty) => {
+              {['Beginner', 'Intermediate', 'Advanced'].map(difficulty => {
                 const courses = coursesByDifficulty[difficulty]
                 if (!courses || courses.length === 0) return null
 
@@ -290,16 +300,16 @@ export default function MyClass() {
                   <section key={difficulty} className="mb-8">
                     <h2 className="text-lg font-semibold mb-4">{difficulty}</h2>
                     <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
-                      {sortCourses(courses).map((course) => (
+                      {sortCourses(courses).map(course => (
                         <ProgressCourseCard
                           key={course.id}
                           course={course}
                           status={course.status}
                           completionPercent={
-                            "completionPercent" in course ? course.completionPercent : 0
+                            'completionPercent' in course ? course.completionPercent : 0
                           }
                           lastAccessedAt={
-                            "lastAccessedAt" in course ? course.lastAccessedAt : undefined
+                            'lastAccessedAt' in course ? course.lastAccessedAt : undefined
                           }
                         />
                       ))}

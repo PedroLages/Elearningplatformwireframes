@@ -1,18 +1,18 @@
-import { useState, useRef } from "react"
-import { useTheme } from "next-themes"
-import { Download, Upload, Trash2, Save } from "lucide-react"
-import { Card, CardContent, CardHeader, CardTitle } from "@/app/components/ui/card"
-import { Input } from "@/app/components/ui/input"
-import { Button } from "@/app/components/ui/button"
-import { Textarea } from "@/app/components/ui/textarea"
-import { Label } from "@/app/components/ui/label"
+import { useState, useRef } from 'react'
+import { useTheme } from 'next-themes'
+import { Download, Upload, Trash2, Save } from 'lucide-react'
+import { Card, CardContent, CardHeader, CardTitle } from '@/app/components/ui/card'
+import { Input } from '@/app/components/ui/input'
+import { Button } from '@/app/components/ui/button'
+import { Textarea } from '@/app/components/ui/textarea'
+import { Label } from '@/app/components/ui/label'
 import {
   Select,
   SelectContent,
   SelectItem,
   SelectTrigger,
   SelectValue,
-} from "@/app/components/ui/select"
+} from '@/app/components/ui/select'
 import {
   AlertDialog,
   AlertDialogAction,
@@ -23,8 +23,14 @@ import {
   AlertDialogHeader,
   AlertDialogTitle,
   AlertDialogTrigger,
-} from "@/app/components/ui/alert-dialog"
-import { getSettings, saveSettings, exportAllData, importAllData, resetAllData } from "@/lib/settings"
+} from '@/app/components/ui/alert-dialog'
+import {
+  getSettings,
+  saveSettings,
+  exportAllData,
+  importAllData,
+  resetAllData,
+} from '@/lib/settings'
 
 export default function Settings() {
   const { theme, setTheme } = useTheme()
@@ -40,11 +46,11 @@ export default function Settings() {
 
   function handleExport() {
     const data = exportAllData()
-    const blob = new Blob([data], { type: "application/json" })
+    const blob = new Blob([data], { type: 'application/json' })
     const url = URL.createObjectURL(blob)
-    const a = document.createElement("a")
+    const a = document.createElement('a')
     a.href = url
-    a.download = "operative-study-backup.json"
+    a.download = 'operative-study-backup.json'
     a.click()
     URL.revokeObjectURL(url)
   }
@@ -84,7 +90,7 @@ export default function Settings() {
               <Input
                 id="name"
                 value={settings.displayName}
-                onChange={(e) => setSettings({ ...settings, displayName: e.target.value })}
+                onChange={e => setSettings({ ...settings, displayName: e.target.value })}
                 className="mt-1"
               />
             </div>
@@ -93,7 +99,7 @@ export default function Settings() {
               <Textarea
                 id="bio"
                 value={settings.bio}
-                onChange={(e) => setSettings({ ...settings, bio: e.target.value })}
+                onChange={e => setSettings({ ...settings, bio: e.target.value })}
                 placeholder="Tell something about yourself..."
                 className="mt-1"
                 rows={3}
@@ -101,7 +107,7 @@ export default function Settings() {
             </div>
             <Button onClick={handleSave} className="gap-2">
               <Save className="w-4 h-4" />
-              {saved ? "Saved!" : "Save Profile"}
+              {saved ? 'Saved!' : 'Save Profile'}
             </Button>
           </CardContent>
         </Card>
@@ -139,7 +145,11 @@ export default function Settings() {
                 <Download className="w-4 h-4" />
                 Export Data
               </Button>
-              <Button variant="outline" onClick={() => fileInputRef.current?.click()} className="gap-2">
+              <Button
+                variant="outline"
+                onClick={() => fileInputRef.current?.click()}
+                className="gap-2"
+              >
                 <Upload className="w-4 h-4" />
                 Import Data
               </Button>
@@ -170,7 +180,10 @@ export default function Settings() {
                   </AlertDialogHeader>
                   <AlertDialogFooter>
                     <AlertDialogCancel>Cancel</AlertDialogCancel>
-                    <AlertDialogAction onClick={handleReset} className="bg-red-600 hover:bg-red-700">
+                    <AlertDialogAction
+                      onClick={handleReset}
+                      className="bg-red-600 hover:bg-red-700"
+                    >
                       Reset Everything
                     </AlertDialogAction>
                   </AlertDialogFooter>

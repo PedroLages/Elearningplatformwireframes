@@ -25,6 +25,30 @@ export default defineConfig({
       name: 'Mobile Safari',
       use: { ...devices['iPhone 12'] },
     },
+    {
+      name: 'Tablet',
+      use: {
+        ...devices['iPad Pro'],
+        viewport: { width: 768, height: 1024 },
+      },
+    },
+    // Accessibility testing specific viewports
+    {
+      name: 'a11y-mobile',
+      use: {
+        ...devices['Pixel 5'],
+        viewport: { width: 375, height: 667 },
+      },
+      testMatch: '**/accessibility.spec.ts',
+    },
+    {
+      name: 'a11y-desktop',
+      use: {
+        ...devices['Desktop Chrome'],
+        viewport: { width: 1440, height: 900 },
+      },
+      testMatch: '**/accessibility.spec.ts',
+    },
   ],
   webServer: {
     command: 'npm run dev',

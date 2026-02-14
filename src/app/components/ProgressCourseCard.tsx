@@ -1,15 +1,15 @@
-import { Link } from "react-router"
-import { CheckCircle, Clock } from "lucide-react"
-import { Card, CardContent } from "@/app/components/ui/card"
-import { Progress } from "@/app/components/ui/progress"
-import { Badge } from "@/app/components/ui/badge"
-import { Button } from "@/app/components/ui/button"
-import { Course } from "@/data/types"
-import { getTimeRemaining } from "@/lib/progress"
+import { Link } from 'react-router'
+import { CheckCircle, Clock } from 'lucide-react'
+import { Card, CardContent } from '@/app/components/ui/card'
+import { Progress } from '@/app/components/ui/progress'
+import { Badge } from '@/app/components/ui/badge'
+import { Button } from '@/app/components/ui/button'
+import { Course } from '@/data/types'
+import { getTimeRemaining } from '@/lib/progress'
 
 interface ProgressCourseCardProps {
   course: Course
-  status: "in-progress" | "completed" | "not-started"
+  status: 'in-progress' | 'completed' | 'not-started'
   completionPercent?: number
   lastAccessedAt?: string
 }
@@ -19,39 +19,39 @@ function formatRelativeTime(isoDate: string): string {
   const date = new Date(isoDate)
   const diffInSeconds = Math.floor((now.getTime() - date.getTime()) / 1000)
 
-  if (diffInSeconds < 60) return "just now"
+  if (diffInSeconds < 60) return 'just now'
   if (diffInSeconds < 3600) {
     const minutes = Math.floor(diffInSeconds / 60)
-    return `${minutes} ${minutes === 1 ? "minute" : "minutes"} ago`
+    return `${minutes} ${minutes === 1 ? 'minute' : 'minutes'} ago`
   }
   if (diffInSeconds < 86400) {
     const hours = Math.floor(diffInSeconds / 3600)
-    return `${hours} ${hours === 1 ? "hour" : "hours"} ago`
+    return `${hours} ${hours === 1 ? 'hour' : 'hours'} ago`
   }
   if (diffInSeconds < 604800) {
     const days = Math.floor(diffInSeconds / 86400)
-    return `${days} ${days === 1 ? "day" : "days"} ago`
+    return `${days} ${days === 1 ? 'day' : 'days'} ago`
   }
   if (diffInSeconds < 2592000) {
     const weeks = Math.floor(diffInSeconds / 604800)
-    return `${weeks} ${weeks === 1 ? "week" : "weeks"} ago`
+    return `${weeks} ${weeks === 1 ? 'week' : 'weeks'} ago`
   }
   const months = Math.floor(diffInSeconds / 2592000)
-  return `${months} ${months === 1 ? "month" : "months"} ago`
+  return `${months} ${months === 1 ? 'month' : 'months'} ago`
 }
 
 function getDifficultyBadgeVariant(
   difficulty: string
-): "default" | "secondary" | "destructive" | "outline" {
+): 'default' | 'secondary' | 'destructive' | 'outline' {
   switch (difficulty.toLowerCase()) {
-    case "beginner":
-      return "secondary" // Will style with green
-    case "intermediate":
-      return "default" // Will style with amber
-    case "advanced":
-      return "destructive" // Uses red by default
+    case 'beginner':
+      return 'secondary' // Will style with green
+    case 'intermediate':
+      return 'default' // Will style with amber
+    case 'advanced':
+      return 'destructive' // Uses red by default
     default:
-      return "outline"
+      return 'outline'
   }
 }
 
@@ -61,17 +61,17 @@ export function ProgressCourseCard({
   completionPercent = 0,
   lastAccessedAt,
 }: ProgressCourseCardProps) {
-  const timeRemaining = status === "in-progress" ? getTimeRemaining(course.id, course) : 0
+  const timeRemaining = status === 'in-progress' ? getTimeRemaining(course.id, course) : 0
   const totalLessons = course.modules.reduce((sum, m) => sum + m.lessons.length, 0)
 
   return (
     <Card
       className={`card-hover-lift h-full rounded-[24px] ${
-        status === "completed"
-          ? "border-green-200 dark:border-green-800"
-          : status === "not-started"
-          ? "opacity-80 hover:opacity-100"
-          : ""
+        status === 'completed'
+          ? 'border-green-200 dark:border-green-800'
+          : status === 'not-started'
+            ? 'opacity-80 hover:opacity-100'
+            : ''
       }`}
     >
       <CardContent className="p-0">
@@ -82,32 +82,40 @@ export function ProgressCourseCard({
             className="w-full h-36 object-cover rounded-t-[24px]"
             loading="lazy"
           />
-          {status === "completed" && (
-            <div className="absolute top-2 right-2 bg-green-600 text-white rounded-full p-1" role="status" aria-label="Course completed">
+          {status === 'completed' && (
+            <div
+              className="absolute top-2 right-2 bg-green-600 text-white rounded-full p-1"
+              role="status"
+              aria-label="Course completed"
+            >
               <CheckCircle className="w-4 h-4" aria-hidden="true" />
             </div>
           )}
         </div>
         <div className="p-4 flex flex-col gap-3">
           <div className="flex items-center gap-2 flex-wrap">
-            <Badge variant="secondary" className="badge-entrance">{course.category}</Badge>
+            <Badge variant="secondary" className="badge-entrance">
+              {course.category}
+            </Badge>
             <Badge
               variant={getDifficultyBadgeVariant(course.difficulty)}
               className={`badge-entrance ${
-                course.difficulty.toLowerCase() === "beginner"
-                  ? "bg-green-100 text-green-800 dark:bg-green-900 dark:text-green-100 hover:bg-green-100 dark:hover:bg-green-900"
-                  : course.difficulty.toLowerCase() === "intermediate"
-                  ? "bg-amber-100 text-amber-800 dark:bg-amber-900 dark:text-amber-100 hover:bg-amber-100 dark:hover:bg-amber-900"
-                  : ""
+                course.difficulty.toLowerCase() === 'beginner'
+                  ? 'bg-green-100 text-green-800 dark:bg-green-900 dark:text-green-100 hover:bg-green-100 dark:hover:bg-green-900'
+                  : course.difficulty.toLowerCase() === 'intermediate'
+                    ? 'bg-amber-100 text-amber-800 dark:bg-amber-900 dark:text-amber-100 hover:bg-amber-100 dark:hover:bg-amber-900'
+                    : ''
               }`}
             >
               {course.difficulty}
             </Badge>
           </div>
 
-          <h3 className="font-medium line-clamp-2" title={course.title}>{course.title}</h3>
+          <h3 className="font-medium line-clamp-2" title={course.title}>
+            {course.title}
+          </h3>
 
-          {status === "in-progress" && (
+          {status === 'in-progress' && (
             <>
               <div className="flex items-center gap-2">
                 <Progress
@@ -133,7 +141,7 @@ export function ProgressCourseCard({
             </>
           )}
 
-          {status === "completed" && (
+          {status === 'completed' && (
             <>
               <p className="text-sm text-green-600 dark:text-green-400 font-medium">
                 Completed • {totalLessons} lessons
@@ -146,7 +154,7 @@ export function ProgressCourseCard({
             </>
           )}
 
-          {status === "not-started" && (
+          {status === 'not-started' && (
             <>
               <p className="text-xs text-muted-foreground">{totalLessons} lessons</p>
               <Link to={`/courses/${course.id}`} className="mt-auto">

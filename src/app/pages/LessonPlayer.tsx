@@ -1,21 +1,18 @@
-import { useParams, Link, useNavigate } from "react-router"
-import { useMemo, useState, useCallback } from "react"
-import {
-  ArrowLeft,
-  ChevronLeft,
-  ChevronRight,
-  CheckCircle2,
-  Circle,
-} from "lucide-react"
-import { Button } from "../components/ui/button"
-import { Tabs, TabsContent, TabsList, TabsTrigger } from "../components/ui/tabs"
-import { Textarea } from "../components/ui/textarea"
-import { VideoPlayer } from "../components/figma/VideoPlayer"
-import { PdfViewer } from "../components/figma/PdfViewer"
-import { LessonList } from "../components/figma/LessonList"
-import { ResourceBadge } from "../components/figma/ResourceBadge"
-import { allCourses } from "@/data/courses"
-import { getResourceUrl } from "@/lib/media"
+import { useParams, Link, useNavigate } from 'react-router'
+import { useMemo, useState, useCallback, useRef, useEffect } from 'react'
+import { ArrowLeft, ChevronLeft, ChevronRight, CheckCircle2, Circle, Menu } from 'lucide-react'
+import { Button } from '../components/ui/button'
+import { Tabs, TabsContent, TabsList, TabsTrigger } from '../components/ui/tabs'
+import { Sheet, SheetContent, SheetTrigger } from '../components/ui/sheet'
+import { VideoPlayer } from '../components/figma/VideoPlayer'
+import { PdfViewer } from '../components/figma/PdfViewer'
+import { LessonList } from '../components/figma/LessonList'
+import { ResourceBadge } from '../components/figma/ResourceBadge'
+import { NoteEditor } from '../components/notes/NoteEditor'
+import { CompletionModal, type CelebrationType } from '../components/celebrations/CompletionModal'
+import { BookmarksList } from '../components/BookmarksList'
+import { allCourses } from '@/data/courses'
+import { getResourceUrl } from '@/lib/media'
 import {
   getProgress,
   markLessonComplete,
@@ -24,7 +21,8 @@ import {
   saveNote,
   getNote,
   isLessonComplete,
-} from "@/lib/progress"
+} from '@/lib/progress'
+import { addBookmark, getLessonBookmarks } from '@/lib/bookmarks'
 
 export function LessonPlayer() {
   const { courseId, lessonId } = useParams<{
@@ -33,29 +31,50 @@ export function LessonPlayer() {
   }>()
   const navigate = useNavigate()
 
-  const course = allCourses.find((c) => c.id === courseId)
+  const course = allCourses.find(c => c.id === courseId)
 
   const { lesson, allLessons, currentIndex } = useMemo(() => {
     if (!course) return { lesson: null, allLessons: [], currentIndex: -1 }
-    const all = course.modules.flatMap((m) => m.lessons)
-    const idx = all.findIndex((l) => l.id === lessonId)
+    const all = course.modules.flatMap(m => m.lessons)
+    const idx = all.findIndex(l => l.id === lessonId)
     return { lesson: all[idx] ?? null, allLessons: all, currentIndex: idx }
   }, [course, lessonId])
 
   const progress = course ? getProgress(course.id) : null
+  const titleRef = useRef<HTMLHeadingElement>(null)
   const [completed, setCompleted] = useState(() =>
     courseId && lessonId ? isLessonComplete(courseId, lessonId) : false
   )
   const [noteText, setNoteText] = useState(() =>
-    courseId && lessonId ? getNote(courseId, lessonId) : ""
+    courseId && lessonId ? getNote(courseId, lessonId) : ''
+  )
+  const [seekToTime, setSeekToTime] = useState<number | undefined>(undefined)
+  const [bookmarks, setBookmarks] = useState(() =>
+    courseId && lessonId ? getLessonBookmarks(courseId, lessonId) : []
   )
 
-  const prevLesson = currentIndex > 0 ? allLessons[currentIndex - 1] : null
-  const nextLesson =
-    currentIndex < allLessons.length - 1 ? allLessons[currentIndex + 1] : null
+  // Celebration modal state
+  const [celebrationModal, setCelebrationModal] = useState(false)
+  const [celebrationType, setCelebrationType] = useState<CelebrationType>('lesson')
+  const [celebrationTitle, setCelebrationTitle] = useState('')
 
-  const videoResource = lesson?.resources.find((r) => r.type === "video")
-  const pdfResources = lesson?.resources.filter((r) => r.type === "pdf") ?? []
+  // Update bookmarks when lesson changes
+  useEffect(() => {
+    if (courseId && lessonId) {
+      setBookmarks(getLessonBookmarks(courseId, lessonId))
+    }
+  }, [courseId, lessonId])
+
+  // Focus management for accessibility
+  useEffect(() => {
+    titleRef.current?.focus()
+  }, [lessonId])
+
+  const prevLesson = currentIndex > 0 ? allLessons[currentIndex - 1] : null
+  const nextLesson = currentIndex < allLessons.length - 1 ? allLessons[currentIndex + 1] : null
+
+  const videoResource = lesson?.resources.find(r => r.type === 'video')
+  const pdfResources = lesson?.resources.filter(r => r.type === 'pdf') ?? []
 
   const handleTimeUpdate = useCallback(
     (time: number) => {
@@ -70,8 +89,36 @@ export function LessonPlayer() {
     if (courseId && lessonId && !completed) {
       markLessonComplete(courseId, lessonId)
       setCompleted(true)
+      // Trigger celebration
+      setCelebrationType('lesson')
+      setCelebrationTitle(lesson?.title || 'Lesson')
+      setCelebrationModal(true)
     }
-  }, [courseId, lessonId, completed])
+  }, [courseId, lessonId, completed, lesson])
+
+  const handleVideoSeek = useCallback((timestamp: number) => {
+    setSeekToTime(timestamp)
+  }, [])
+
+  const handleSeekComplete = useCallback(() => {
+    setSeekToTime(undefined)
+  }, [])
+
+  const handleBookmarkAdd = useCallback(
+    (timestamp: number) => {
+      if (courseId && lessonId) {
+        addBookmark(courseId, lessonId, timestamp)
+        setBookmarks(getLessonBookmarks(courseId, lessonId))
+      }
+    },
+    [courseId, lessonId]
+  )
+
+  const handleBookmarksChange = useCallback(() => {
+    if (courseId && lessonId) {
+      setBookmarks(getLessonBookmarks(courseId, lessonId))
+    }
+  }, [courseId, lessonId])
 
   const toggleComplete = () => {
     if (!courseId || !lessonId) return
@@ -81,6 +128,10 @@ export function LessonPlayer() {
     } else {
       markLessonComplete(courseId, lessonId)
       setCompleted(true)
+      // Trigger celebration when manually marking complete
+      setCelebrationType('lesson')
+      setCelebrationTitle(lesson?.title || 'Lesson')
+      setCelebrationModal(true)
     }
   }
 
@@ -121,12 +172,15 @@ export function LessonPlayer() {
               src={getResourceUrl(videoResource)}
               title={lesson.title}
               initialPosition={
-                progress?.lastWatchedLesson === lessonId
-                  ? progress.lastVideoPosition
-                  : undefined
+                progress?.lastWatchedLesson === lessonId ? progress?.lastVideoPosition : undefined
               }
+              seekToTime={seekToTime}
+              courseId={courseId}
+              lessonId={lessonId}
               onTimeUpdate={handleTimeUpdate}
               onEnded={handleVideoEnded}
+              onSeekComplete={handleSeekComplete}
+              onBookmarkAdd={handleBookmarkAdd}
             />
           </div>
         )}
@@ -134,21 +188,46 @@ export function LessonPlayer() {
         {/* Lesson Header */}
         <div className="bg-card rounded-2xl shadow-sm p-5 mb-5">
           <div className="flex items-start justify-between mb-3">
-            <h1 className="text-xl font-bold">{lesson.title}</h1>
-            <button
-              onClick={toggleComplete}
-              aria-label={completed ? "Mark lesson incomplete" : "Mark lesson complete"}
-              className="flex items-center gap-1.5 text-sm shrink-0 cursor-pointer"
-            >
-              {completed ? (
-                <CheckCircle2 className="h-5 w-5 text-green-500" />
-              ) : (
-                <Circle className="h-5 w-5 text-muted-foreground/40" />
-              )}
-              <span className={completed ? "text-green-600" : "text-muted-foreground"}>
-                {completed ? "Completed" : "Mark Complete"}
-              </span>
-            </button>
+            <h1 ref={titleRef} tabIndex={-1} className="text-xl font-bold outline-none">
+              {lesson.title}
+            </h1>
+            <div className="flex items-center gap-2">
+              {/* Mobile lesson list button */}
+              <Sheet>
+                <SheetTrigger asChild>
+                  <Button variant="outline" size="icon" className="xl:hidden shrink-0">
+                    <Menu className="h-4 w-4" />
+                    <span className="sr-only">Open course content</span>
+                  </Button>
+                </SheetTrigger>
+                <SheetContent side="bottom" className="h-[80vh] overflow-y-auto">
+                  <div className="mb-4">
+                    <h3 className="text-sm font-semibold">Course Content</h3>
+                  </div>
+                  <LessonList
+                    modules={course.modules}
+                    courseId={course.id}
+                    activeLessonId={lessonId}
+                    completedLessons={progress?.completedLessons ?? []}
+                  />
+                </SheetContent>
+              </Sheet>
+
+              <button
+                onClick={toggleComplete}
+                aria-label={completed ? 'Mark lesson incomplete' : 'Mark lesson complete'}
+                className="flex items-center gap-1.5 text-sm shrink-0 cursor-pointer"
+              >
+                {completed ? (
+                  <CheckCircle2 className="h-5 w-5 text-green-500" />
+                ) : (
+                  <Circle className="h-5 w-5 text-muted-foreground/40" />
+                )}
+                <span className={completed ? 'text-green-600' : 'text-muted-foreground'}>
+                  {completed ? 'Completed' : 'Mark Complete'}
+                </span>
+              </button>
+            </div>
           </div>
 
           {lesson.description && (
@@ -157,7 +236,7 @@ export function LessonPlayer() {
 
           {lesson.keyTopics.length > 0 && (
             <div className="flex flex-wrap gap-1.5">
-              {lesson.keyTopics.map((topic) => (
+              {lesson.keyTopics.map(topic => (
                 <span
                   key={topic}
                   className="rounded-full bg-blue-50 dark:bg-blue-900/30 px-2.5 py-0.5 text-xs text-blue-700 dark:text-blue-300"
@@ -170,48 +249,55 @@ export function LessonPlayer() {
 
           {lesson.resources.length > 0 && (
             <div className="mt-3 flex flex-wrap gap-2">
-              {lesson.resources.map((r) => (
+              {lesson.resources.map(r => (
                 <ResourceBadge key={r.id} type={r.type} />
               ))}
             </div>
           )}
         </div>
 
-        {/* Tabs: PDFs / Notes */}
-        <Tabs defaultValue={pdfResources.length > 0 ? "materials" : "notes"}>
+        {/* Tabs: PDFs / Notes / Bookmarks */}
+        <Tabs defaultValue={pdfResources.length > 0 ? 'materials' : 'notes'}>
           <TabsList>
             {pdfResources.length > 0 && (
-              <TabsTrigger value="materials">
-                Materials ({pdfResources.length})
-              </TabsTrigger>
+              <TabsTrigger value="materials">Materials ({pdfResources.length})</TabsTrigger>
             )}
             <TabsTrigger value="notes">Notes</TabsTrigger>
+            {videoResource && (
+              <TabsTrigger value="bookmarks">Bookmarks ({bookmarks.length})</TabsTrigger>
+            )}
           </TabsList>
 
           {pdfResources.length > 0 && (
             <TabsContent value="materials" className="mt-4 space-y-4">
-              {pdfResources.map((pdf) => (
-                <PdfViewer
-                  key={pdf.id}
-                  src={getResourceUrl(pdf)}
-                  title={pdf.title}
-                />
+              {pdfResources.map(pdf => (
+                <PdfViewer key={pdf.id} src={getResourceUrl(pdf)} title={pdf.title} />
               ))}
             </TabsContent>
           )}
 
           <TabsContent value="notes" className="mt-4">
-            <div className="bg-card rounded-2xl shadow-sm p-5">
-              <h3 className="text-sm font-semibold mb-3">Your Notes</h3>
-              <Textarea
-                value={noteText}
-                onChange={(e) => handleNoteChange(e.target.value)}
-                aria-label="Lesson notes"
-                placeholder="Write your notes for this lesson..."
-                className="min-h-[200px] resize-y"
-              />
-            </div>
+            <NoteEditor
+              courseId={courseId || ''}
+              lessonId={lessonId || ''}
+              initialContent={noteText}
+              onSave={handleNoteChange}
+              onVideoSeek={handleVideoSeek}
+            />
           </TabsContent>
+
+          {videoResource && (
+            <TabsContent value="bookmarks" className="mt-4">
+              <div className="bg-card rounded-2xl shadow-sm p-5">
+                <h3 className="text-sm font-semibold mb-3">Video Bookmarks</h3>
+                <BookmarksList
+                  bookmarks={bookmarks}
+                  onSeek={handleVideoSeek}
+                  onBookmarksChange={handleBookmarksChange}
+                />
+              </div>
+            </TabsContent>
+          )}
         </Tabs>
 
         {/* Prev / Next Navigation */}
@@ -219,9 +305,7 @@ export function LessonPlayer() {
           {prevLesson ? (
             <Button
               variant="outline"
-              onClick={() =>
-                navigate(`/courses/${courseId}/${prevLesson.id}`)
-              }
+              onClick={() => navigate(`/courses/${courseId}/${prevLesson.id}`)}
             >
               <ChevronLeft className="mr-1 h-4 w-4" />
               Previous
@@ -231,9 +315,7 @@ export function LessonPlayer() {
           )}
           {nextLesson ? (
             <Button
-              onClick={() =>
-                navigate(`/courses/${courseId}/${nextLesson.id}`)
-              }
+              onClick={() => navigate(`/courses/${courseId}/${nextLesson.id}`)}
               className="bg-blue-600 hover:bg-blue-700"
             >
               Next
@@ -257,6 +339,22 @@ export function LessonPlayer() {
           completedLessons={progress?.completedLessons ?? []}
         />
       </div>
+
+      {/* Completion Celebration Modal */}
+      <CompletionModal
+        open={celebrationModal}
+        onOpenChange={setCelebrationModal}
+        type={celebrationType}
+        title={celebrationTitle}
+        onContinue={
+          nextLesson
+            ? () => {
+                setCelebrationModal(false)
+                navigate(`/courses/${courseId}/${nextLesson.id}`)
+              }
+            : undefined
+        }
+      />
     </div>
   )
 }

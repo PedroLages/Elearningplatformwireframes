@@ -1,14 +1,9 @@
-import { useState } from "react"
-import { Link, useLocation } from "react-router"
-import { MoreHorizontal } from "lucide-react"
-import {
-  Drawer,
-  DrawerContent,
-  DrawerHeader,
-  DrawerTitle,
-} from "./ui/drawer"
-import { cn } from "./ui/utils"
-import { getPrimaryNav, getOverflowNav } from "@/app/config/navigation"
+import { useState } from 'react'
+import { Link, useLocation } from 'react-router'
+import { MoreHorizontal } from 'lucide-react'
+import { Drawer, DrawerContent, DrawerHeader, DrawerTitle } from '@/app/components/ui/drawer'
+import { cn } from '@/app/components/ui/utils'
+import { getPrimaryNav, getOverflowNav } from '@/app/config/navigation'
 
 // Get navigation items from shared config
 const primaryNav = getPrimaryNav()
@@ -19,9 +14,7 @@ export function BottomNav() {
   const [moreOpen, setMoreOpen] = useState(false)
 
   const isActive = (path: string) => {
-    return path === "/"
-      ? location.pathname === "/"
-      : location.pathname.startsWith(path)
+    return path === '/' ? location.pathname === '/' : location.pathname.startsWith(path)
   }
 
   // Check if any overflow item is active
@@ -36,7 +29,7 @@ export function BottomNav() {
       >
         <div className="flex items-center justify-around h-14">
           {/* Primary Navigation Items */}
-          {primaryNav.map((item) => {
+          {primaryNav.map(item => {
             const Icon = item.icon
             const active = isActive(item.path)
 
@@ -44,18 +37,14 @@ export function BottomNav() {
               <Link
                 key={item.path}
                 to={item.path}
-                aria-current={active ? "page" : undefined}
+                aria-current={active ? 'page' : undefined}
                 className={cn(
-                  "flex flex-col items-center justify-center gap-1 flex-1 h-14 transition-colors duration-150",
-                  active
-                    ? "text-blue-600"
-                    : "text-muted-foreground active:text-blue-600"
+                  'flex flex-col items-center justify-center gap-1 flex-1 h-14 transition-colors duration-150',
+                  active ? 'text-blue-600' : 'text-muted-foreground active:text-blue-600'
                 )}
               >
                 <Icon className="w-6 h-6" aria-hidden="true" />
-                <span className="text-[10px] font-medium leading-none">
-                  {item.name}
-                </span>
+                <span className="text-[10px] font-medium leading-none">{item.name}</span>
               </Link>
             )
           })}
@@ -66,10 +55,8 @@ export function BottomNav() {
             aria-label="More menu"
             aria-expanded={moreOpen}
             className={cn(
-              "flex flex-col items-center justify-center gap-1 flex-1 h-14 transition-colors duration-150",
-              isMoreActive
-                ? "text-blue-600"
-                : "text-muted-foreground active:text-blue-600"
+              'flex flex-col items-center justify-center gap-1 flex-1 h-14 transition-colors duration-150',
+              isMoreActive ? 'text-blue-600' : 'text-muted-foreground active:text-blue-600'
             )}
           >
             <MoreHorizontal className="w-6 h-6" aria-hidden="true" />
@@ -87,7 +74,7 @@ export function BottomNav() {
           </DrawerHeader>
           <nav className="px-4 pb-6" aria-label="Additional navigation">
             <ul className="space-y-2">
-              {overflowNav.map((item) => {
+              {overflowNav.map(item => {
                 const Icon = item.icon
                 const active = isActive(item.path)
 
@@ -96,12 +83,12 @@ export function BottomNav() {
                     <Link
                       to={item.path}
                       onClick={() => setMoreOpen(false)}
-                      aria-current={active ? "page" : undefined}
+                      aria-current={active ? 'page' : undefined}
                       className={cn(
-                        "flex items-center gap-3 px-4 py-3 rounded-xl transition-colors duration-150",
+                        'flex items-center gap-3 px-4 py-3 rounded-xl transition-colors duration-150',
                         active
-                          ? "bg-blue-600 text-white"
-                          : "text-foreground hover:bg-accent active:bg-accent"
+                          ? 'bg-blue-600 text-white'
+                          : 'text-foreground hover:bg-accent active:bg-accent'
                       )}
                     >
                       <Icon className="w-5 h-5" aria-hidden="true" />

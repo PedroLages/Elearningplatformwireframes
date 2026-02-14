@@ -1,49 +1,43 @@
-import React, { Suspense } from "react";
-import { createBrowserRouter } from "react-router";
-import { Layout } from "./components/Layout";
+import React, { Suspense } from 'react'
+import { createBrowserRouter } from 'react-router'
+import { Layout } from './components/Layout'
 
 // Lazy-loaded page components (code-splitting)
 // Named exports need .then(m => ({ default: m.ExportName }))
-const Overview = React.lazy(() =>
-  import("./pages/Overview").then((m) => ({ default: m.Overview }))
-);
-const Courses = React.lazy(() =>
-  import("./pages/Courses").then((m) => ({ default: m.Courses }))
-);
+const Overview = React.lazy(() => import('./pages/Overview').then(m => ({ default: m.Overview })))
+const Courses = React.lazy(() => import('./pages/Courses').then(m => ({ default: m.Courses })))
 const CourseDetail = React.lazy(() =>
-  import("./pages/CourseDetail").then((m) => ({ default: m.CourseDetail }))
-);
+  import('./pages/CourseDetail').then(m => ({ default: m.CourseDetail }))
+)
 const LessonPlayer = React.lazy(() =>
-  import("./pages/LessonPlayer").then((m) => ({ default: m.LessonPlayer }))
-);
-const Library = React.lazy(() =>
-  import("./pages/Library").then((m) => ({ default: m.Library }))
-);
+  import('./pages/LessonPlayer').then(m => ({ default: m.LessonPlayer }))
+)
+const Library = React.lazy(() => import('./pages/Library').then(m => ({ default: m.Library })))
 const Instructors = React.lazy(() =>
-  import("./pages/Instructors").then((m) => ({ default: m.Instructors }))
-);
+  import('./pages/Instructors').then(m => ({ default: m.Instructors }))
+)
 
 // Default exports work directly with React.lazy
-const MyClass = React.lazy(() => import("./pages/MyClass"));
-const Messages = React.lazy(() => import("./pages/Messages"));
-const Reports = React.lazy(() => import("./pages/Reports"));
-const Settings = React.lazy(() => import("./pages/Settings"));
+const MyClass = React.lazy(() => import('./pages/MyClass'))
+const Messages = React.lazy(() => import('./pages/Messages'))
+const Reports = React.lazy(() => import('./pages/Reports'))
+const Settings = React.lazy(() => import('./pages/Settings'))
 
 function PageLoader() {
   return (
     <div className="flex h-full items-center justify-center">
       <div className="text-muted-foreground text-sm">Loading...</div>
     </div>
-  );
+  )
 }
 
 function SuspensePage({ children }: { children: React.ReactNode }) {
-  return <Suspense fallback={<PageLoader />}>{children}</Suspense>;
+  return <Suspense fallback={<PageLoader />}>{children}</Suspense>
 }
 
 export const router = createBrowserRouter([
   {
-    path: "/",
+    path: '/',
     Component: Layout,
     children: [
       {
@@ -55,7 +49,7 @@ export const router = createBrowserRouter([
         ),
       },
       {
-        path: "my-class",
+        path: 'my-class',
         element: (
           <SuspensePage>
             <MyClass />
@@ -63,7 +57,7 @@ export const router = createBrowserRouter([
         ),
       },
       {
-        path: "courses",
+        path: 'courses',
         element: (
           <SuspensePage>
             <Courses />
@@ -71,7 +65,7 @@ export const router = createBrowserRouter([
         ),
       },
       {
-        path: "courses/:courseId",
+        path: 'courses/:courseId',
         element: (
           <SuspensePage>
             <CourseDetail />
@@ -79,7 +73,7 @@ export const router = createBrowserRouter([
         ),
       },
       {
-        path: "courses/:courseId/:lessonId",
+        path: 'courses/:courseId/:lessonId',
         element: (
           <SuspensePage>
             <LessonPlayer />
@@ -87,7 +81,7 @@ export const router = createBrowserRouter([
         ),
       },
       {
-        path: "library",
+        path: 'library',
         element: (
           <SuspensePage>
             <Library />
@@ -95,7 +89,7 @@ export const router = createBrowserRouter([
         ),
       },
       {
-        path: "messages",
+        path: 'messages',
         element: (
           <SuspensePage>
             <Messages />
@@ -103,7 +97,7 @@ export const router = createBrowserRouter([
         ),
       },
       {
-        path: "instructors",
+        path: 'instructors',
         element: (
           <SuspensePage>
             <Instructors />
@@ -111,7 +105,7 @@ export const router = createBrowserRouter([
         ),
       },
       {
-        path: "reports",
+        path: 'reports',
         element: (
           <SuspensePage>
             <Reports />
@@ -119,7 +113,7 @@ export const router = createBrowserRouter([
         ),
       },
       {
-        path: "settings",
+        path: 'settings',
         element: (
           <SuspensePage>
             <Settings />
@@ -128,4 +122,4 @@ export const router = createBrowserRouter([
       },
     ],
   },
-]);
+])

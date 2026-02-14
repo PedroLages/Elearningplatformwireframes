@@ -1,13 +1,20 @@
 export type CourseCategory =
-  | "behavioral-analysis"
-  | "influence-authority"
-  | "confidence-mastery"
-  | "operative-training"
-  | "research-library"
+  | 'behavioral-analysis'
+  | 'influence-authority'
+  | 'confidence-mastery'
+  | 'operative-training'
+  | 'research-library'
 
-export type Difficulty = "beginner" | "intermediate" | "advanced"
+export type Difficulty = 'beginner' | 'intermediate' | 'advanced'
 
-export type ResourceType = "video" | "pdf" | "audio" | "image" | "markdown"
+export type ResourceType = 'video' | 'pdf' | 'audio' | 'image' | 'markdown'
+
+export interface CaptionTrack {
+  src: string
+  label: string
+  language: string
+  default?: boolean
+}
 
 export interface Resource {
   id: string
@@ -15,6 +22,10 @@ export interface Resource {
   type: ResourceType
   filePath: string
   fileName: string
+  metadata?: {
+    captions?: CaptionTrack[]
+    duration?: number
+  }
 }
 
 export interface Lesson {
@@ -51,4 +62,13 @@ export interface Course {
   modules: Module[]
   isSequential: boolean
   basePath: string
+}
+
+export interface Note {
+  id: string
+  content: string // Markdown text
+  timestamp?: number // Video position when created (in seconds)
+  createdAt: string // ISO 8601 timestamp
+  updatedAt: string // ISO 8601 timestamp
+  tags: string[] // Extracted from #hashtags in content
 }

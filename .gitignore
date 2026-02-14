@@ -5,3 +5,6 @@ dist/
 *.local
 *.log
 .vite/
+
+*storybook.log
+storybook-static

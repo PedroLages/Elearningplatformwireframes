@@ -1,5 +1,5 @@
-import { allCourses } from "@/data/courses"
-import { getTotalCompletedLessons, getCompletedCourses } from "@/lib/progress"
+import { allCourses } from '@/data/courses'
+import { getTotalCompletedLessons, getCompletedCourses } from '@/lib/progress'
 
 export function ProgressWidget() {
   const completedCourses = getCompletedCourses(allCourses).length
@@ -24,12 +24,7 @@ export function ProgressWidget() {
     >
       {/* Circular Progress Ring */}
       <div className="flex justify-center mb-3">
-        <svg
-          width={size}
-          height={size}
-          className="transform -rotate-90"
-          aria-hidden="true"
-        >
+        <svg width={size} height={size} className="transform -rotate-90" aria-hidden="true">
           {/* Background circle */}
           <circle
             cx={size / 2}
@@ -62,7 +57,7 @@ export function ProgressWidget() {
             textAnchor="middle"
             dy="0.3em"
             className="fill-current text-2xl font-bold transform rotate-90"
-            style={{ transformOrigin: "center" }}
+            style={{ transformOrigin: 'center' }}
           >
             {Math.round(percentage)}%
           </text>
@@ -73,9 +68,7 @@ export function ProgressWidget() {
       <p className="text-sm font-semibold text-foreground">
         {completedCourses}/{totalCourses} courses
       </p>
-      <p className="text-xs text-muted-foreground mt-1">
-        {completedLessons} lessons completed
-      </p>
+      <p className="text-xs text-muted-foreground mt-1">{completedLessons} lessons completed</p>
     </div>
   )
 }

@@ -1,12 +1,12 @@
-import { Card, CardContent } from "@/app/components/ui/card"
-import { LucideIcon, TrendingUp, TrendingDown } from "lucide-react"
-import { cn } from "@/app/components/ui/utils"
+import { Card, CardContent } from '@/app/components/ui/card'
+import { LucideIcon, TrendingUp, TrendingDown } from 'lucide-react'
+import { cn } from '@/app/components/ui/utils'
 
 interface StatsCardProps {
   label: string
   value: string | number
   icon: LucideIcon
-  trend?: "up" | "down"
+  trend?: 'up' | 'down'
   trendValue?: string
   sparkline?: number[] // Last 7 days data
 }
@@ -31,11 +31,11 @@ export function StatsCard({
             {trend && (
               <div
                 className={cn(
-                  "flex items-center gap-1 text-xs font-medium mt-2",
-                  trend === "up" ? "text-green-600" : "text-red-600"
+                  'flex items-center gap-1 text-xs font-medium mt-2',
+                  trend === 'up' ? 'text-green-600' : 'text-red-600'
                 )}
               >
-                {trend === "up" ? (
+                {trend === 'up' ? (
                   <TrendingUp className="w-3 h-3" aria-hidden="true" />
                 ) : (
                   <TrendingDown className="w-3 h-3" aria-hidden="true" />
@@ -53,7 +53,11 @@ export function StatsCard({
 
         {/* Sparkline */}
         {sparkline && sparkline.length > 0 && (
-          <div className="h-8 flex items-end gap-0.5" role="img" aria-label={`Last 7 days activity: ${sparkline.join(', ')} completions`}>
+          <div
+            className="h-8 flex items-end gap-0.5"
+            role="img"
+            aria-label={`Last 7 days activity: ${sparkline.join(', ')} completions`}
+          >
             {sparkline.map((value, i) => {
               const max = Math.max(...sparkline)
               const height = max > 0 ? (value / max) * 100 : 0
@@ -61,7 +65,7 @@ export function StatsCard({
                 <div
                   key={i}
                   className="flex-1 bg-blue-200 dark:bg-blue-800 rounded-t transition-all hover:bg-blue-400"
-                  style={{ height: `${height}%`, minHeight: "4px" }}
+                  style={{ height: `${height}%`, minHeight: '4px' }}
                   aria-hidden="true"
                 />
               )

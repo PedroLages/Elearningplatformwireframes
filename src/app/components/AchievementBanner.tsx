@@ -1,5 +1,5 @@
-import { Card, CardContent } from "@/app/components/ui/card"
-import { Trophy, Target } from "lucide-react"
+import { Card, CardContent } from '@/app/components/ui/card'
+import { Trophy, Target } from 'lucide-react'
 
 interface AchievementBannerProps {
   completedLessons: number
@@ -11,7 +11,7 @@ function getNextMilestone(completed: number): {
   message: string
 } {
   const milestones = [10, 25, 50, 100, 250, 500]
-  const next = milestones.find((m) => m > completed)
+  const next = milestones.find(m => m > completed)
 
   if (!next) {
     return {
@@ -33,9 +33,7 @@ export function AchievementBanner({ completedLessons }: AchievementBannerProps) 
   if (completedLessons === 0) return null
 
   const milestone = getNextMilestone(completedLessons)
-  const progress = milestone.next
-    ? (completedLessons / milestone.next) * 100
-    : 100
+  const progress = milestone.next ? (completedLessons / milestone.next) * 100 : 100
 
   return (
     <Card className="mb-8 bg-gradient-to-r from-blue-50 via-indigo-50 to-purple-50 dark:from-blue-950/30 dark:via-indigo-950/30 dark:to-purple-950/30 border-2 border-blue-200 dark:border-blue-800">
@@ -47,9 +45,8 @@ export function AchievementBanner({ completedLessons }: AchievementBannerProps) 
               <h2 className="text-lg font-bold">Keep Going!</h2>
             </div>
             <p className="text-sm text-muted-foreground">
-              You've completed{" "}
-              <span className="font-bold text-blue-600">{completedLessons}</span>{" "}
-              {completedLessons === 1 ? "lesson" : "lessons"}.
+              You've completed <span className="font-bold text-blue-600">{completedLessons}</span>{' '}
+              {completedLessons === 1 ? 'lesson' : 'lessons'}.
             </p>
             <p className="text-sm font-medium text-blue-700 dark:text-blue-400 mt-1">
               {milestone.message}

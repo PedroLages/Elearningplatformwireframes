@@ -1,27 +1,19 @@
-import { useState, useEffect, useCallback } from "react";
-import { Outlet, Link, useLocation, useNavigate } from "react-router";
-import {
-  GraduationCap,
-  Search,
-  Bell,
-  ChevronDown,
-  Sun,
-  Moon,
-  Menu,
-} from "lucide-react";
-import { Avatar, AvatarFallback } from "./ui/avatar";
-import { useTheme } from "next-themes";
-import { SearchCommandPalette } from "./figma/SearchCommandPalette";
-import { KeyboardShortcutsDialog } from "./figma/KeyboardShortcutsDialog";
-import { BottomNav } from "./navigation/BottomNav";
-import { ProgressWidget } from "./ProgressWidget";
-import { useIsMobile, useIsTablet, useIsDesktop } from "@/app/hooks/useMediaQuery";
-import { Sheet, SheetContent } from "./ui/sheet";
-import { navigationItems } from "@/app/config/navigation";
+import { useState, useEffect, useCallback } from 'react'
+import { Outlet, Link, useLocation, useNavigate } from 'react-router'
+import { GraduationCap, Search, Bell, ChevronDown, Sun, Moon, Menu } from 'lucide-react'
+import { Avatar, AvatarFallback } from './ui/avatar'
+import { useTheme } from 'next-themes'
+import { SearchCommandPalette } from './figma/SearchCommandPalette'
+import { KeyboardShortcutsDialog } from './figma/KeyboardShortcutsDialog'
+import { BottomNav } from './navigation/BottomNav'
+import { ProgressWidget } from './ProgressWidget'
+import { useIsMobile, useIsTablet, useIsDesktop } from '@/app/hooks/useMediaQuery'
+import { Sheet, SheetContent } from './ui/sheet'
+import { navigationItems } from '@/app/config/navigation'
 
 // Reusable sidebar content component
 function SidebarContent({ onNavigate }: { onNavigate?: () => void }) {
-  const location = useLocation();
+  const location = useLocation()
 
   return (
     <>
@@ -39,30 +31,28 @@ function SidebarContent({ onNavigate }: { onNavigate?: () => void }) {
       {/* Navigation */}
       <nav className="flex-1" aria-label="Main navigation">
         <ul className="space-y-2">
-          {navigationItems.map((item) => {
+          {navigationItems.map(item => {
             const isActive =
-              item.path === "/"
-                ? location.pathname === "/"
-                : location.pathname.startsWith(item.path);
-            const Icon = item.icon;
+              item.path === '/'
+                ? location.pathname === '/'
+                : location.pathname.startsWith(item.path)
+            const Icon = item.icon
 
             return (
               <li key={item.path}>
                 <Link
                   to={item.path}
                   onClick={onNavigate}
-                  aria-current={isActive ? "page" : undefined}
+                  aria-current={isActive ? 'page' : undefined}
                   className={`flex items-center gap-3 px-4 py-3 rounded-xl transition-colors duration-150 ${
-                    isActive
-                      ? "bg-blue-600 text-white"
-                      : "text-muted-foreground hover:bg-accent"
+                    isActive ? 'bg-blue-600 text-white' : 'text-muted-foreground hover:bg-accent'
                   }`}
                 >
                   <Icon className="w-5 h-5" aria-hidden="true" />
                   <span className="text-sm font-medium">{item.name}</span>
                 </Link>
               </li>
-            );
+            )
           })}
         </ul>
       </nav>
@@ -70,70 +60,66 @@ function SidebarContent({ onNavigate }: { onNavigate?: () => void }) {
       {/* Progress Widget */}
       <ProgressWidget />
     </>
-  );
+  )
 }
 
 export function Layout() {
-  const location = useLocation();
-  const navigate = useNavigate();
-  const { theme, setTheme } = useTheme();
-  const isMobile = useIsMobile();
-  const isTablet = useIsTablet();
-  const isDesktop = useIsDesktop();
+  const navigate = useNavigate()
+  const { theme, setTheme } = useTheme()
+  const isMobile = useIsMobile()
+  const isTablet = useIsTablet()
+  const isDesktop = useIsDesktop()
 
-  const [searchOpen, setSearchOpen] = useState(false);
-  const [shortcutsOpen, setShortcutsOpen] = useState(false);
+  const [searchOpen, setSearchOpen] = useState(false)
+  const [shortcutsOpen, setShortcutsOpen] = useState(false)
 
   // Tablet sidebar state with localStorage persistence
   const [sidebarOpen, setSidebarOpen] = useState(() => {
-    const saved = localStorage.getItem("eduvi-sidebar-v1");
-    return saved !== null ? JSON.parse(saved) : true; // Default to open
-  });
+    const saved = localStorage.getItem('eduvi-sidebar-v1')
+    return saved !== null ? JSON.parse(saved) : true // Default to open
+  })
 
   const handleKeyDown = useCallback(
     (e: KeyboardEvent) => {
-      const isMod = e.metaKey || e.ctrlKey;
+      const isMod = e.metaKey || e.ctrlKey
 
       // Cmd+K / Ctrl+K -> Open search
-      if (isMod && e.key === "k") {
-        e.preventDefault();
-        setSearchOpen((prev) => !prev);
-        return;
+      if (isMod && e.key === 'k') {
+        e.preventDefault()
+        setSearchOpen(prev => !prev)
+        return
       }
 
       // Cmd+, / Ctrl+, -> Navigate to Settings
-      if (isMod && e.key === ",") {
-        e.preventDefault();
-        navigate("/settings");
-        return;
+      if (isMod && e.key === ',') {
+        e.preventDefault()
+        navigate('/settings')
+        return
       }
 
       // ? -> Show keyboard shortcuts (only when not in an input/textarea/contenteditable)
-      if (e.key === "?" && !isMod) {
-        const target = e.target as HTMLElement;
-        const tagName = target.tagName.toLowerCase();
-        const isEditable =
-          tagName === "input" ||
-          tagName === "textarea" ||
-          target.isContentEditable;
+      if (e.key === '?' && !isMod) {
+        const target = e.target as HTMLElement
+        const tagName = target.tagName.toLowerCase()
+        const isEditable = tagName === 'input' || tagName === 'textarea' || target.isContentEditable
         if (!isEditable) {
-          e.preventDefault();
-          setShortcutsOpen(true);
+          e.preventDefault()
+          setShortcutsOpen(true)
         }
       }
     },
-    [navigate],
-  );
+    [navigate]
+  )
 
   useEffect(() => {
-    document.addEventListener("keydown", handleKeyDown);
-    return () => document.removeEventListener("keydown", handleKeyDown);
-  }, [handleKeyDown]);
+    document.addEventListener('keydown', handleKeyDown)
+    return () => document.removeEventListener('keydown', handleKeyDown)
+  }, [handleKeyDown])
 
   // Persist sidebar state to localStorage
   useEffect(() => {
-    localStorage.setItem("eduvi-sidebar-v1", JSON.stringify(sidebarOpen));
-  }, [sidebarOpen]);
+    localStorage.setItem('eduvi-sidebar-v1', JSON.stringify(sidebarOpen))
+  }, [sidebarOpen])
 
   return (
     <div className="flex h-screen bg-background">
@@ -158,11 +144,7 @@ export function Layout() {
       {/* Tablet Sidebar - Collapsible Sheet on tablet (640-1023px) */}
       {isTablet && (
         <Sheet open={sidebarOpen} onOpenChange={setSidebarOpen}>
-          <SheetContent
-            side="left"
-            className="w-[280px] p-6 flex flex-col"
-            aria-label="Sidebar"
-          >
+          <SheetContent side="left" className="w-[280px] p-6 flex flex-col" aria-label="Sidebar">
             <SidebarContent onNavigate={() => setSidebarOpen(false)} />
           </SheetContent>
         </Sheet>
@@ -188,7 +170,11 @@ export function Layout() {
           )}
 
           {/* Search trigger - Responsive */}
-          <div className="relative flex-1 max-w-md sm:flex-none sm:w-96 lg:w-80" role="search" aria-label="Site search">
+          <div
+            className="relative flex-1 max-w-md sm:flex-none sm:w-96 lg:w-80"
+            role="search"
+            aria-label="Site search"
+          >
             {/* Mobile: Icon-only button */}
             <button
               type="button"
@@ -222,14 +208,11 @@ export function Layout() {
           {/* User Actions */}
           <div className="flex items-center gap-4">
             <button
-              onClick={() => setTheme(theme === "dark" ? "light" : "dark")}
+              onClick={() => setTheme(theme === 'dark' ? 'light' : 'dark')}
               className="p-2 rounded-lg hover:bg-accent cursor-pointer"
-              aria-label={`Switch to ${theme === "dark" ? "light" : "dark"} mode`}
+              aria-label={`Switch to ${theme === 'dark' ? 'light' : 'dark'} mode`}
             >
-              <Sun
-                className="w-5 h-5 text-muted-foreground dark:hidden"
-                aria-hidden="true"
-              />
+              <Sun className="w-5 h-5 text-muted-foreground dark:hidden" aria-hidden="true" />
               <Moon
                 className="w-5 h-5 text-muted-foreground hidden dark:block"
                 aria-hidden="true"
@@ -254,10 +237,7 @@ export function Layout() {
               <div className="text-left">
                 <div className="font-semibold text-sm">Student</div>
               </div>
-              <ChevronDown
-                className="w-4 h-4 text-muted-foreground"
-                aria-hidden="true"
-              />
+              <ChevronDown className="w-4 h-4 text-muted-foreground" aria-hidden="true" />
             </div>
           </div>
         </header>
@@ -272,13 +252,10 @@ export function Layout() {
       <SearchCommandPalette open={searchOpen} onOpenChange={setSearchOpen} />
 
       {/* Keyboard Shortcuts Dialog */}
-      <KeyboardShortcutsDialog
-        open={shortcutsOpen}
-        onOpenChange={setShortcutsOpen}
-      />
+      <KeyboardShortcutsDialog open={shortcutsOpen} onOpenChange={setShortcutsOpen} />
 
       {/* Mobile Bottom Navigation - Only visible on mobile (<640px) */}
       {isMobile && <BottomNav />}
     </div>
-  );
+  )
 }

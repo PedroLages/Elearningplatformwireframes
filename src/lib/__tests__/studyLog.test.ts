@@ -40,10 +40,12 @@ describe('studyLog', () => {
     })
 
     it('stores metadata when provided', () => {
-      logStudyAction(makeAction({
-        type: 'video_progress',
-        metadata: { seconds: 120 },
-      }))
+      logStudyAction(
+        makeAction({
+          type: 'video_progress',
+          metadata: { seconds: 120 },
+        })
+      )
       const log = getStudyLog()
       expect(log[0].metadata).toEqual({ seconds: 120 })
     })
@@ -57,10 +59,12 @@ describe('studyLog', () => {
     it('truncates log at 1000 entries', () => {
       // Add 1005 entries
       for (let i = 0; i < 1005; i++) {
-        logStudyAction(makeAction({
-          courseId: `course-${i}`,
-          timestamp: new Date(2024, 0, 1, 0, 0, i).toISOString(),
-        }))
+        logStudyAction(
+          makeAction({
+            courseId: `course-${i}`,
+            timestamp: new Date(2024, 0, 1, 0, 0, i).toISOString(),
+          })
+        )
       }
       // Read raw from localStorage to check actual stored count
       const raw = JSON.parse(localStorage.getItem('study-log')!)
@@ -69,18 +73,20 @@ describe('studyLog', () => {
 
     it('keeps the most recent entries when truncating', () => {
       for (let i = 0; i < 1005; i++) {
-        logStudyAction(makeAction({
-          courseId: `course-${i}`,
-          timestamp: new Date(2024, 0, 1, 0, 0, i).toISOString(),
-        }))
+        logStudyAction(
+          makeAction({
+            courseId: `course-${i}`,
+            timestamp: new Date(2024, 0, 1, 0, 0, i).toISOString(),
+          })
+        )
       }
       const raw = JSON.parse(localStorage.getItem('study-log')!) as StudyAction[]
       // The oldest entries (0-4) should have been removed
-      expect(raw.some((a) => a.courseId === 'course-0')).toBe(false)
-      expect(raw.some((a) => a.courseId === 'course-4')).toBe(false)
+      expect(raw.some(a => a.courseId === 'course-0')).toBe(false)
+      expect(raw.some(a => a.courseId === 'course-4')).toBe(false)
       // The most recent entries should still be present
-      expect(raw.some((a) => a.courseId === 'course-1004')).toBe(true)
-      expect(raw.some((a) => a.courseId === 'course-5')).toBe(true)
+      expect(raw.some(a => a.courseId === 'course-1004')).toBe(true)
+      expect(raw.some(a => a.courseId === 'course-5')).toBe(true)
     })
 
     it('handles corrupted localStorage gracefully', () => {
@@ -117,7 +123,7 @@ describe('studyLog', () => {
 
       const log = getStudyLogForCourse('course-1')
       expect(log).toHaveLength(2)
-      expect(log.every((a) => a.courseId === 'course-1')).toBe(true)
+      expect(log.every(a => a.courseId === 'course-1')).toBe(true)
     })
 
     it('returns empty array for course with no actions', () => {
@@ -126,14 +132,18 @@ describe('studyLog', () => {
     })
 
     it('returns results sorted by timestamp descending', () => {
-      logStudyAction(makeAction({
-        courseId: 'course-1',
-        timestamp: '2024-01-01T10:00:00Z',
-      }))
-      logStudyAction(makeAction({
-        courseId: 'course-1',
-        timestamp: '2024-01-03T10:00:00Z',
-      }))
+      logStudyAction(
+        makeAction({
+          courseId: 'course-1',
+          timestamp: '2024-01-01T10:00:00Z',
+        })
+      )
+      logStudyAction(
+        makeAction({
+          courseId: 'course-1',
+          timestamp: '2024-01-03T10:00:00Z',
+        })
+      )
 
       const log = getStudyLogForCourse('course-1')
       expect(log[0].timestamp).toBe('2024-01-03T10:00:00Z')
@@ -149,7 +159,7 @@ describe('studyLog', () => {
       logStudyAction(makeAction({ timestamp: `${today}T12:00:00Z` }))
 
       const perDay = getActionsPerDay(7)
-      const todayEntry = perDay.find((d) => d.date === today)
+      const todayEntry = perDay.find(d => d.date === today)
       expect(todayEntry).toBeDefined()
       expect(todayEntry!.count).toBe(3)
     })
@@ -167,7 +177,7 @@ describe('studyLog', () => {
     it('returns 0 count for days with no activity', () => {
       const perDay = getActionsPerDay(7)
       // With no actions logged, every day should have count 0
-      expect(perDay.every((d) => d.count === 0)).toBe(true)
+      expect(perDay.every(d => d.count === 0)).toBe(true)
     })
 
     it('returns entries sorted by date ascending', () => {
@@ -181,7 +191,7 @@ describe('studyLog', () => {
       // Log an action far in the past
       logStudyAction(makeAction({ timestamp: '2020-01-01T10:00:00Z' }))
       const perDay = getActionsPerDay(7)
-      expect(perDay.every((d) => d.count === 0)).toBe(true)
+      expect(perDay.every(d => d.count === 0)).toBe(true)
     })
 
     it('counts actions from different courses on same day', () => {
@@ -190,7 +200,7 @@ describe('studyLog', () => {
       logStudyAction(makeAction({ courseId: 'course-2', timestamp: `${today}T09:00:00Z` }))
 
       const perDay = getActionsPerDay(7)
-      const todayEntry = perDay.find((d) => d.date === today)
+      const todayEntry = perDay.find(d => d.date === today)
       expect(todayEntry!.count).toBe(2)
     })
   })
@@ -198,10 +208,12 @@ describe('studyLog', () => {
   describe('getRecentActions', () => {
     it('returns most recent actions up to limit', () => {
       for (let i = 0; i < 25; i++) {
-        logStudyAction(makeAction({
-          courseId: `course-${i}`,
-          timestamp: new Date(2024, 0, 1, 0, 0, i).toISOString(),
-        }))
+        logStudyAction(
+          makeAction({
+            courseId: `course-${i}`,
+            timestamp: new Date(2024, 0, 1, 0, 0, i).toISOString(),
+          })
+        )
       }
       const recent = getRecentActions(5)
       expect(recent).toHaveLength(5)
@@ -211,10 +223,12 @@ describe('studyLog', () => {
 
     it('defaults to 20 entries', () => {
       for (let i = 0; i < 25; i++) {
-        logStudyAction(makeAction({
-          courseId: `course-${i}`,
-          timestamp: new Date(2024, 0, 1, 0, 0, i).toISOString(),
-        }))
+        logStudyAction(
+          makeAction({
+            courseId: `course-${i}`,
+            timestamp: new Date(2024, 0, 1, 0, 0, i).toISOString(),
+          })
+        )
       }
       const recent = getRecentActions()
       expect(recent).toHaveLength(20)

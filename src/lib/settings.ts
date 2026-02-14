@@ -1,15 +1,15 @@
-const STORAGE_KEY = "app-settings"
+const STORAGE_KEY = 'app-settings'
 
 export interface AppSettings {
   displayName: string
   bio: string
-  theme: "light" | "dark" | "system"
+  theme: 'light' | 'dark' | 'system'
 }
 
 const defaults: AppSettings = {
-  displayName: "Student",
-  bio: "",
-  theme: "system",
+  displayName: 'Student',
+  bio: '',
+  theme: 'system',
 }
 
 export function getSettings(): AppSettings {
@@ -47,7 +47,7 @@ export function importAllData(json: string): boolean {
   try {
     const data = JSON.parse(json) as Record<string, unknown>
     for (const [key, value] of Object.entries(data)) {
-      localStorage.setItem(key, typeof value === "string" ? value : JSON.stringify(value))
+      localStorage.setItem(key, typeof value === 'string' ? value : JSON.stringify(value))
     }
     return true
   } catch {

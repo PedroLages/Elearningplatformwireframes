@@ -1,11 +1,11 @@
-import { useState } from "react"
-import { Link } from "react-router"
-import { Plus, Search, Trash2, BookOpen, StickyNote } from "lucide-react"
-import { Card, CardContent } from "@/app/components/ui/card"
-import { Input } from "@/app/components/ui/input"
-import { Button } from "@/app/components/ui/button"
-import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/app/components/ui/tabs"
-import { Textarea } from "@/app/components/ui/textarea"
+import { useState } from 'react'
+import { Link } from 'react-router'
+import { Plus, Search, Trash2, BookOpen, StickyNote } from 'lucide-react'
+import { Card, CardContent } from '@/app/components/ui/card'
+import { Input } from '@/app/components/ui/input'
+import { Button } from '@/app/components/ui/button'
+import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/app/components/ui/tabs'
+import { Textarea } from '@/app/components/ui/textarea'
 import {
   getJournalEntries,
   createJournalEntry,
@@ -13,9 +13,9 @@ import {
   deleteJournalEntry,
   searchJournalEntries,
   type JournalEntry,
-} from "@/lib/journal"
-import { getAllProgress } from "@/lib/progress"
-import { allCourses } from "@/data/courses"
+} from '@/lib/journal'
+import { getAllProgress } from '@/lib/progress'
+import { allCourses } from '@/data/courses'
 
 function getAllLessonNotes(): {
   courseId: string
@@ -34,19 +34,20 @@ function getAllLessonNotes(): {
   }[] = []
 
   for (const [courseId, courseProgress] of Object.entries(progress)) {
-    const course = allCourses.find((c) => c.id === courseId)
+    const course = allCourses.find(c => c.id === courseId)
     if (!course) continue
-    for (const [lessonId, note] of Object.entries(courseProgress.notes)) {
-      if (!note.trim()) continue
-      const lesson = course.modules
-        .flatMap((m) => m.lessons)
-        .find((l) => l.id === lessonId)
+    for (const [lessonId, noteArray] of Object.entries(courseProgress.notes)) {
+      // Get the latest note from the array
+      if (!noteArray || noteArray.length === 0) continue
+      const latestNote = noteArray[noteArray.length - 1]
+      if (!latestNote.content.trim()) continue
+      const lesson = course.modules.flatMap(m => m.lessons).find(l => l.id === lessonId)
       notes.push({
         courseId,
         courseName: course.title,
         lessonId,
         lessonName: lesson?.title ?? lessonId,
-        note,
+        note: latestNote.content,
       })
     }
   }
@@ -55,29 +56,24 @@ function getAllLessonNotes(): {
 
 export default function Messages() {
   const [entries, setEntries] = useState<JournalEntry[]>(getJournalEntries())
-  const [selectedId, setSelectedId] = useState<string | null>(
-    entries[0]?.id ?? null
-  )
-  const [searchQuery, setSearchQuery] = useState("")
-  const [activeTab, setActiveTab] = useState("journal")
+  const [selectedId, setSelectedId] = useState<string | null>(entries[0]?.id ?? null)
+  const [searchQuery, setSearchQuery] = useState('')
+  const [activeTab, setActiveTab] = useState('journal')
 
-  const selected = entries.find((e) => e.id === selectedId)
+  const selected = entries.find(e => e.id === selectedId)
   const filtered = searchQuery ? searchJournalEntries(searchQuery) : entries
 
   function handleNew() {
     const entry = createJournalEntry({
-      title: "Untitled",
-      content: "",
+      title: 'Untitled',
+      content: '',
       tags: [],
     })
     setEntries(getJournalEntries())
     setSelectedId(entry.id)
   }
 
-  function handleUpdate(
-    id: string,
-    updates: Partial<Omit<JournalEntry, "id">>
-  ) {
+  function handleUpdate(id: string, updates: Partial<Omit<JournalEntry, 'id'>>) {
     updateJournalEntry(id, updates)
     setEntries(getJournalEntries())
   }
@@ -95,11 +91,7 @@ export default function Messages() {
     <div className="h-full flex flex-col">
       <h1 className="text-2xl font-bold mb-6">Study Journal</h1>
 
-      <Tabs
-        value={activeTab}
-        onValueChange={setActiveTab}
-        className="flex-1 flex flex-col"
-      >
+      <Tabs value={activeTab} onValueChange={setActiveTab} className="flex-1 flex flex-col">
         <TabsList className="mb-4 w-fit">
           <TabsTrigger value="journal" className="gap-2">
             <BookOpen className="w-4 h-4" /> Journal
@@ -120,7 +112,7 @@ export default function Messages() {
                     placeholder="Search entries..."
                     aria-label="Search journal entries"
                     value={searchQuery}
-                    onChange={(e) => setSearchQuery(e.target.value)}
+                    onChange={e => setSearchQuery(e.target.value)}
                     className="pl-9"
                   />
                 </div>
@@ -135,19 +127,15 @@ export default function Messages() {
                     No entries yet. Click + to create one.
                   </p>
                 ) : (
-                  filtered.map((entry) => (
+                  filtered.map(entry => (
                     <button
                       key={entry.id}
                       onClick={() => setSelectedId(entry.id)}
                       className={`w-full text-left p-3 rounded-lg transition-colors ${
-                        selectedId === entry.id
-                          ? "bg-accent"
-                          : "hover:bg-muted"
+                        selectedId === entry.id ? 'bg-accent' : 'hover:bg-muted'
                       }`}
                     >
-                      <p className="font-medium text-sm truncate">
-                        {entry.title || "Untitled"}
-                      </p>
+                      <p className="font-medium text-sm truncate">{entry.title || 'Untitled'}</p>
                       <p className="text-xs text-muted-foreground mt-1">
                         {new Date(entry.timestamp).toLocaleDateString()}
                       </p>
@@ -166,9 +154,7 @@ export default function Messages() {
                   <div className="flex items-center justify-between mb-4">
                     <Input
                       value={selected.title}
-                      onChange={(e) =>
-                        handleUpdate(selected.id, { title: e.target.value })
-                      }
+                      onChange={e => handleUpdate(selected.id, { title: e.target.value })}
                       aria-label="Entry title"
                       className="text-lg font-semibold border-0 p-0 h-auto focus-visible:ring-0"
                       placeholder="Entry title..."
@@ -185,16 +171,13 @@ export default function Messages() {
                   </div>
                   <Textarea
                     value={selected.content}
-                    onChange={(e) =>
-                      handleUpdate(selected.id, { content: e.target.value })
-                    }
+                    onChange={e => handleUpdate(selected.id, { content: e.target.value })}
                     aria-label="Entry content"
                     placeholder="Write your thoughts..."
                     className="flex-1 resize-none border-0 p-0 focus-visible:ring-0"
                   />
                   <p className="text-xs text-muted-foreground mt-4">
-                    Last updated:{" "}
-                    {new Date(selected.timestamp).toLocaleString()}
+                    Last updated: {new Date(selected.timestamp).toLocaleString()}
                   </p>
                 </>
               ) : (
@@ -216,10 +199,7 @@ export default function Messages() {
               ) : (
                 <div className="space-y-4">
                   {allNotes.map((note, i) => (
-                    <div
-                      key={i}
-                      className="border-b border-border pb-4 last:border-0"
-                    >
+                    <div key={i} className="border-b border-border pb-4 last:border-0">
                       <div className="flex items-center gap-2 mb-1">
                         <Link
                           to={`/courses/${note.courseId}/${note.lessonId}`}
@@ -227,9 +207,7 @@ export default function Messages() {
                         >
                           {note.lessonName}
                         </Link>
-                        <span className="text-xs text-muted-foreground">
-                          in {note.courseName}
-                        </span>
+                        <span className="text-xs text-muted-foreground">in {note.courseName}</span>
                       </div>
                       <p className="text-sm whitespace-pre-wrap">{note.note}</p>
                     </div>

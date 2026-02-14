@@ -1,14 +1,14 @@
-import type { Resource } from "@/data/types"
+import type { Resource } from '@/data/types'
 
-const MEDIA_BASE = "/media"
-const COURSES_ROOT = "/Volumes/SSD/GFX/Chase Hughes - The Operative Kit"
+const MEDIA_BASE = '/media'
+const COURSES_ROOT = '/Volumes/SSD/GFX/Chase Hughes - The Operative Kit'
 
 export function getResourceUrl(resource: Resource): string {
   return filePathToUrl(resource.filePath)
 }
 
 export function filePathToUrl(filePath: string): string {
-  const relative = filePath.replace(COURSES_ROOT, "")
+  const relative = filePath.replace(COURSES_ROOT, '')
   return `${MEDIA_BASE}${relative}`
 }
 

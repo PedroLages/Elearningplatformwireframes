@@ -1,9 +1,9 @@
-import { Card, CardContent } from "@/app/components/ui/card"
-import { Badge } from "@/app/components/ui/badge"
-import { Progress } from "@/app/components/ui/progress"
-import { Link } from "react-router"
-import { BookOpen, PlayCircle, CheckCircle, Clock } from "lucide-react"
-import type { Course } from "@/data/types"
+import { Card, CardContent } from '@/app/components/ui/card'
+import { Badge } from '@/app/components/ui/badge'
+import { Progress } from '@/app/components/ui/progress'
+import { Link } from 'react-router'
+import { BookOpen, PlayCircle, CheckCircle, Clock } from 'lucide-react'
+import type { Course } from '@/data/types'
 
 interface EnhancedCourseCardProps {
   course: Course & { completionPercent?: number }
@@ -11,16 +11,13 @@ interface EnhancedCourseCardProps {
 
 function formatCategory(slug: string): string {
   return slug
-    .split("-")
-    .map((word) => word.charAt(0).toUpperCase() + word.slice(1))
-    .join(" ")
+    .split('-')
+    .map(word => word.charAt(0).toUpperCase() + word.slice(1))
+    .join(' ')
 }
 
 export function EnhancedCourseCard({ course }: EnhancedCourseCardProps) {
-  const totalLessons = course.modules.reduce(
-    (sum, m) => sum + m.lessons.length,
-    0
-  )
+  const totalLessons = course.modules.reduce((sum, m) => sum + m.lessons.length, 0)
   const isInProgress = course.completionPercent && course.completionPercent > 0
   const isCompleted = course.completionPercent === 100
 
@@ -78,7 +75,7 @@ export function EnhancedCourseCard({ course }: EnhancedCourseCardProps) {
             <div className="flex items-center justify-between text-xs text-muted-foreground">
               <span className="flex items-center gap-1">
                 <PlayCircle className="w-3 h-3" />
-                {totalLessons} {totalLessons === 1 ? "lesson" : "lessons"}
+                {totalLessons} {totalLessons === 1 ? 'lesson' : 'lessons'}
               </span>
 
               {isInProgress && !isCompleted && (

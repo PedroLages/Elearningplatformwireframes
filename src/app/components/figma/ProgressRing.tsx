@@ -9,7 +9,7 @@ export function ProgressRing({
   percent,
   size = 48,
   strokeWidth = 4,
-  className = "",
+  className = '',
 }: ProgressRingProps) {
   const radius = (size - strokeWidth) / 2
   const circumference = 2 * Math.PI * radius
@@ -40,9 +40,7 @@ export function ProgressRing({
           className="text-blue-600 transition-all duration-500"
         />
       </svg>
-      <span className="absolute text-xs font-semibold text-foreground">
-        {percent}%
-      </span>
+      <span className="absolute text-xs font-semibold text-foreground">{percent}%</span>
     </div>
   )
 }

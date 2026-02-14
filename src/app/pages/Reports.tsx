@@ -1,11 +1,6 @@
-import { useTheme } from "next-themes"
-import { BookOpen, CheckCircle, FileText, TrendingUp } from "lucide-react"
-import {
-  Card,
-  CardContent,
-  CardHeader,
-  CardTitle,
-} from "@/app/components/ui/card"
+import { useTheme } from 'next-themes'
+import { BookOpen, CheckCircle, FileText, TrendingUp } from 'lucide-react'
+import { Card, CardContent, CardHeader, CardTitle } from '@/app/components/ui/card'
 import {
   BarChart,
   Bar,
@@ -19,51 +14,61 @@ import {
   PieChart,
   Pie,
   Cell,
-} from "recharts"
-import { allCourses } from "@/data/courses"
+} from 'recharts'
+import { allCourses } from '@/data/courses'
 import {
   getCoursesInProgress,
   getCompletedCourses,
   getTotalCompletedLessons,
   getTotalStudyNotes,
   getCourseCompletionPercent,
-} from "@/lib/progress"
-import { getActionsPerDay, getRecentActions } from "@/lib/studyLog"
+} from '@/lib/progress'
+import { getActionsPerDay, getRecentActions } from '@/lib/studyLog'
 
-const COLORS = ["#2563eb", "#7c3aed", "#059669", "#d97706", "#dc2626"]
+// Chart colors using CSS custom properties and Tailwind theme
+const getChartColors = (isDark: boolean) => ({
+  primary: isDark ? 'rgb(96, 165, 250)' : 'rgb(37, 99, 235)', // blue-400 : blue-600
+  purple: isDark ? 'rgb(192, 132, 252)' : 'rgb(124, 58, 237)', // purple-400 : purple-600
+  green: isDark ? 'rgb(34, 197, 94)' : 'rgb(5, 150, 105)', // green-500 : green-600
+  amber: isDark ? 'rgb(251, 191, 36)' : 'rgb(217, 119, 6)', // amber-400 : amber-600
+  red: isDark ? 'rgb(248, 113, 113)' : 'rgb(220, 38, 38)', // red-400 : red-600
+  tickColor: isDark ? 'rgb(161, 161, 170)' : 'rgb(113, 113, 130)', // zinc-400 : zinc-500
+  tooltipBg: isDark ? 'rgb(39, 39, 42)' : 'rgb(255, 255, 255)', // zinc-800 : white
+  tooltipBorder: isDark ? 'rgb(63, 63, 70)' : 'rgb(228, 228, 231)', // zinc-700 : zinc-200
+})
 
 export default function Reports() {
   const { resolvedTheme } = useTheme()
-  const tickColor = resolvedTheme === "dark" ? "#a1a1aa" : "#71717a"
-  const tooltipBg = resolvedTheme === "dark" ? "#27272a" : "#ffffff"
-  const tooltipBorder = resolvedTheme === "dark" ? "#3f3f46" : "#e4e4e7"
+  const isDark = resolvedTheme === 'dark'
+  const colors = getChartColors(isDark)
+  const COLORS = [colors.primary, colors.purple, colors.green, colors.amber, colors.red]
+  const { tickColor, tooltipBg, tooltipBorder } = colors
 
   const stats = [
     {
-      label: "Lessons Completed",
+      label: 'Lessons Completed',
       value: getTotalCompletedLessons(),
       icon: CheckCircle,
     },
     {
-      label: "Courses In Progress",
+      label: 'Courses In Progress',
       value: getCoursesInProgress(allCourses).length,
       icon: BookOpen,
     },
     {
-      label: "Courses Completed",
+      label: 'Courses Completed',
       value: getCompletedCourses(allCourses).length,
       icon: TrendingUp,
     },
     {
-      label: "Study Notes",
+      label: 'Study Notes',
       value: getTotalStudyNotes(),
       icon: FileText,
     },
   ]
 
-  const courseCompletionData = allCourses.map((c) => ({
-    name:
-      c.title.length > 20 ? c.title.substring(0, 20) + "..." : c.title,
+  const courseCompletionData = allCourses.map(c => ({
+    name: c.title.length > 20 ? c.title.substring(0, 20) + '...' : c.title,
     completion: getCourseCompletionPercent(
       c.id,
       c.modules.reduce((sum, m) => sum + m.lessons.length, 0)
@@ -72,26 +77,17 @@ export default function Reports() {
   }))
 
   const categoryData = Object.entries(
-    allCourses.reduce<Record<string, { total: number; completed: number }>>(
-      (acc, c) => {
-        const total = c.modules.reduce(
-          (sum, m) => sum + m.lessons.length,
-          0
-        )
-        const completed = getCourseCompletionPercent(c.id, total)
-        if (!acc[c.category]) acc[c.category] = { total: 0, completed: 0 }
-        acc[c.category].total += total
-        acc[c.category].completed += completed
-        return acc
-      },
-      {}
-    )
+    allCourses.reduce<Record<string, { total: number; completed: number }>>((acc, c) => {
+      const total = c.modules.reduce((sum, m) => sum + m.lessons.length, 0)
+      const completed = getCourseCompletionPercent(c.id, total)
+      if (!acc[c.category]) acc[c.category] = { total: 0, completed: 0 }
+      acc[c.category].total += total
+      acc[c.category].completed += completed
+      return acc
+    }, {})
   ).map(([name, data]) => ({
     name,
-    value: Math.round(
-      data.completed /
-        (allCourses.filter((c) => c.category === name).length || 1)
-    ),
+    value: Math.round(data.completed / (allCourses.filter(c => c.category === name).length || 1)),
   }))
 
   const activityData = getActionsPerDay(30)
@@ -103,7 +99,7 @@ export default function Reports() {
 
       {/* Stats row */}
       <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4 mb-6">
-        {stats.map((stat) => {
+        {stats.map(stat => {
           const Icon = stat.icon
           return (
             <Card key={stat.label}>
@@ -113,9 +109,7 @@ export default function Reports() {
                 </div>
                 <div>
                   <p className="text-2xl font-bold">{stat.value}</p>
-                  <p className="text-sm text-muted-foreground">
-                    {stat.label}
-                  </p>
+                  <p className="text-sm text-muted-foreground">{stat.label}</p>
                 </div>
               </CardContent>
             </Card>
@@ -132,10 +126,7 @@ export default function Reports() {
           <CardContent>
             <ResponsiveContainer width="100%" height={300}>
               <BarChart data={courseCompletionData}>
-                <CartesianGrid
-                  strokeDasharray="3 3"
-                  className="stroke-border"
-                />
+                <CartesianGrid strokeDasharray="3 3" className="stroke-border" />
                 <XAxis
                   dataKey="name"
                   tick={{ fontSize: 12, fill: tickColor }}
@@ -144,12 +135,14 @@ export default function Reports() {
                   height={60}
                 />
                 <YAxis domain={[0, 100]} tick={{ fontSize: 12, fill: tickColor }} />
-                <Tooltip contentStyle={{ backgroundColor: tooltipBg, borderColor: tooltipBorder, borderRadius: 8 }} />
-                <Bar
-                  dataKey="completion"
-                  fill="#2563eb"
-                  radius={[4, 4, 0, 0]}
+                <Tooltip
+                  contentStyle={{
+                    backgroundColor: tooltipBg,
+                    borderColor: tooltipBorder,
+                    borderRadius: 8,
+                  }}
                 />
+                <Bar dataKey="completion" fill={colors.primary} radius={[4, 4, 0, 0]} />
               </BarChart>
             </ResponsiveContainer>
           </CardContent>
@@ -157,9 +150,7 @@ export default function Reports() {
 
         <Card>
           <CardHeader>
-            <CardTitle className="text-base">
-              Progress by Category
-            </CardTitle>
+            <CardTitle className="text-base">Progress by Category</CardTitle>
           </CardHeader>
           <CardContent>
             <ResponsiveContainer width="100%" height={300}>
@@ -170,13 +161,34 @@ export default function Reports() {
                   cy="50%"
                   outerRadius={100}
                   dataKey="value"
-                  label={({ cx, cy, midAngle, outerRadius, name, value }: { cx: number; cy: number; midAngle: number; outerRadius: number; name: string; value: number }) => {
+                  label={({
+                    cx,
+                    cy,
+                    midAngle,
+                    outerRadius,
+                    name,
+                    value,
+                  }: {
+                    cx: number
+                    cy: number
+                    midAngle: number
+                    outerRadius: number
+                    name: string
+                    value: number
+                  }) => {
                     const RADIAN = Math.PI / 180
                     const radius = outerRadius + 20
                     const x = cx + radius * Math.cos(-midAngle * RADIAN)
                     const y = cy + radius * Math.sin(-midAngle * RADIAN)
                     return (
-                      <text x={x} y={y} fill={tickColor} textAnchor={x > cx ? "start" : "end"} dominantBaseline="central" fontSize={12}>
+                      <text
+                        x={x}
+                        y={y}
+                        fill={tickColor}
+                        textAnchor={x > cx ? 'start' : 'end'}
+                        dominantBaseline="central"
+                        fontSize={12}
+                      >
                         {`${name}: ${value}%`}
                       </text>
                     )
@@ -186,7 +198,13 @@ export default function Reports() {
                     <Cell key={i} fill={COLORS[i % COLORS.length]} />
                   ))}
                 </Pie>
-                <Tooltip contentStyle={{ backgroundColor: tooltipBg, borderColor: tooltipBorder, borderRadius: 8 }} />
+                <Tooltip
+                  contentStyle={{
+                    backgroundColor: tooltipBg,
+                    borderColor: tooltipBorder,
+                    borderRadius: 8,
+                  }}
+                />
               </PieChart>
             </ResponsiveContainer>
           </CardContent>
@@ -197,25 +215,26 @@ export default function Reports() {
       <div className="space-y-4">
         <Card>
           <CardHeader>
-            <CardTitle className="text-base">
-              Study Activity (Last 30 Days)
-            </CardTitle>
+            <CardTitle className="text-base">Study Activity (Last 30 Days)</CardTitle>
           </CardHeader>
           <CardContent>
             <ResponsiveContainer width="100%" height={200}>
               <AreaChart data={activityData}>
-                <CartesianGrid
-                  strokeDasharray="3 3"
-                  className="stroke-border"
-                />
+                <CartesianGrid strokeDasharray="3 3" className="stroke-border" />
                 <XAxis dataKey="date" tick={{ fontSize: 10, fill: tickColor }} />
                 <YAxis tick={{ fontSize: 12, fill: tickColor }} />
-                <Tooltip contentStyle={{ backgroundColor: tooltipBg, borderColor: tooltipBorder, borderRadius: 8 }} />
+                <Tooltip
+                  contentStyle={{
+                    backgroundColor: tooltipBg,
+                    borderColor: tooltipBorder,
+                    borderRadius: 8,
+                  }}
+                />
                 <Area
                   type="monotone"
                   dataKey="count"
-                  stroke="#2563eb"
-                  fill="#2563eb"
+                  stroke={colors.primary}
+                  fill={colors.primary}
                   fillOpacity={0.1}
                 />
               </AreaChart>
@@ -235,29 +254,20 @@ export default function Reports() {
             ) : (
               <div className="space-y-3">
                 {recentActions.map((action, i) => {
-                  const course = allCourses.find(
-                    (c) => c.id === action.courseId
-                  )
+                  const course = allCourses.find(c => c.id === action.courseId)
                   return (
-                    <div
-                      key={i}
-                      className="flex items-center gap-3 text-sm"
-                    >
+                    <div key={i} className="flex items-center gap-3 text-sm">
                       <div
                         className={`w-2 h-2 rounded-full ${
-                          action.type === "lesson_complete"
-                            ? "bg-green-500"
-                            : "bg-blue-500"
+                          action.type === 'lesson_complete' ? 'bg-green-500' : 'bg-blue-500'
                         }`}
                       />
                       <span className="text-muted-foreground">
                         {new Date(action.timestamp).toLocaleDateString()}
                       </span>
                       <span>
-                        {action.type === "lesson_complete"
-                          ? "Completed a lesson"
-                          : "Watched video"}
-                        {course ? ` in ${course.title}` : ""}
+                        {action.type === 'lesson_complete' ? 'Completed a lesson' : 'Watched video'}
+                        {course ? ` in ${course.title}` : ''}
                       </span>
                     </div>
                   )

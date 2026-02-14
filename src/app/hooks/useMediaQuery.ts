@@ -1,4 +1,4 @@
-import { useState, useEffect } from "react"
+import { useState, useEffect } from 'react'
 
 export function useMediaQuery(query: string): boolean {
   // Initialize with actual window state to prevent hydration mismatches
@@ -17,8 +17,8 @@ export function useMediaQuery(query: string): boolean {
     const listener = (e: MediaQueryListEvent) => setMatches(e.matches)
 
     // Modern browsers (deprecated addListener/removeListener removed)
-    media.addEventListener("change", listener)
-    return () => media.removeEventListener("change", listener)
+    media.addEventListener('change', listener)
+    return () => media.removeEventListener('change', listener)
   }, [query])
 
   return matches
@@ -26,13 +26,13 @@ export function useMediaQuery(query: string): boolean {
 
 // Predefined breakpoint hooks following Tailwind CSS defaults
 export function useIsMobile(): boolean {
-  return useMediaQuery("(max-width: 639px)")
+  return useMediaQuery('(max-width: 639px)')
 }
 
 export function useIsTablet(): boolean {
-  return useMediaQuery("(min-width: 640px) and (max-width: 1023px)")
+  return useMediaQuery('(min-width: 640px) and (max-width: 1023px)')
 }
 
 export function useIsDesktop(): boolean {
-  return useMediaQuery("(min-width: 1024px)")
+  return useMediaQuery('(min-width: 1024px)')
 }

@@ -1,4 +1,4 @@
-import { getStudyLog } from "./studyLog"
+import { getStudyLog } from './studyLog'
 
 export function getStudyStreak(): {
   current: number
@@ -11,12 +11,10 @@ export function getStudyStreak(): {
   }
 
   // Get unique study dates
-  const studyDates = new Set(
-    logs.map((log) => new Date(log.timestamp).toDateString())
-  )
+  const studyDates = new Set(logs.map(log => new Date(log.timestamp).toDateString()))
 
   const sortedDates = Array.from(studyDates)
-    .map((d) => new Date(d))
+    .map(d => new Date(d))
     .sort((a, b) => b.getTime() - a.getTime())
 
   let currentStreak = 0
@@ -33,10 +31,7 @@ export function getStudyStreak(): {
   const lastStudy = sortedDates[0]
   lastStudy.setHours(0, 0, 0, 0)
 
-  if (
-    lastStudy.getTime() === today.getTime() ||
-    lastStudy.getTime() === yesterday.getTime()
-  ) {
+  if (lastStudy.getTime() === today.getTime() || lastStudy.getTime() === yesterday.getTime()) {
     currentStreak = 1
 
     // Count consecutive days

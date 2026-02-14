@@ -59,15 +59,15 @@ describe('journal', () => {
 
     it('returns entries sorted by date descending (newest first)', () => {
       // Create entries with slight time difference
-      const entry1 = createJournalEntry({ title: 'First', content: '', tags: [] })
-      const entry2 = createJournalEntry({ title: 'Second', content: '', tags: [] })
-      const entry3 = createJournalEntry({ title: 'Third', content: '', tags: [] })
+      createJournalEntry({ title: 'First', content: '', tags: [] })
+      createJournalEntry({ title: 'Second', content: '', tags: [] })
+      createJournalEntry({ title: 'Third', content: '', tags: [] })
 
       const entries = getJournalEntries()
       expect(entries).toHaveLength(3)
       // Since entries are created in rapid succession with same timestamp
       // we verify they're all present regardless of order
-      const titles = entries.map((e) => e.title)
+      const titles = entries.map(e => e.title)
       expect(titles).toContain('First')
       expect(titles).toContain('Second')
       expect(titles).toContain('Third')

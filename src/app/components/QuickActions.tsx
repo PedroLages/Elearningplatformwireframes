@@ -1,11 +1,6 @@
-import { Button } from "@/app/components/ui/button"
-import { Link } from "react-router"
-import {
-  BookOpen,
-  FileText,
-  Play,
-  TrendingUp,
-} from "lucide-react"
+import { Button } from '@/app/components/ui/button'
+import { Link } from 'react-router'
+import { BookOpen, FileText, Play, TrendingUp } from 'lucide-react'
 
 interface QuickActionsProps {
   studyNotes: number
@@ -21,35 +16,35 @@ export function QuickActions({
   const actions = [
     {
       icon: BookOpen,
-      label: "Browse Courses",
-      href: "/courses",
+      label: 'Browse Courses',
+      href: '/courses',
     },
     {
       icon: FileText,
-      label: `My Notes${studyNotes > 0 ? ` (${studyNotes})` : ""}`,
-      href: "/journal",
+      label: `My Notes${studyNotes > 0 ? ` (${studyNotes})` : ''}`,
+      href: '/journal',
     },
   ]
 
   if (lastWatchedCourse && lastWatchedLesson) {
     actions.push({
       icon: Play,
-      label: "Resume Video",
+      label: 'Resume Video',
       href: `/courses/${lastWatchedCourse}/lessons/${lastWatchedLesson}`,
     })
   }
 
   actions.push({
     icon: TrendingUp,
-    label: "View Progress",
-    href: "/my-progress",
+    label: 'View Progress',
+    href: '/my-progress',
   })
 
   return (
     <section className="mb-8">
       <h2 className="text-lg font-semibold mb-4">Quick Actions</h2>
       <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
-        {actions.map((action) => {
+        {actions.map(action => {
           const Icon = action.icon
           return (
             <Button
