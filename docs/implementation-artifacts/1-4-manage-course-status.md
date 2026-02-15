@@ -81,4 +81,9 @@ so that I can focus on what I'm currently studying and filter out completed or p
 
 ## Challenges and Lessons Learned
 
-[Document issues, solutions, and patterns worth remembering]
+- **Name collisions matter early.** `LearnerCourseStatus` avoided conflict with the existing `CourseStatus` type. Checking for name conflicts before defining new types prevents confusing import errors later.
+- **Prop-drill `allTags` to fix re-render cascade.** The initial approach had `ImportedCourseCard` calling `getAllTags()` from the store, causing every card to re-render on any tag change. Lifting `allTags` to the parent and passing it as a prop eliminated the cascade. Watch for store selectors inside repeated list items.
+- **Design review caught the gray-500/gray-400 mismatch.** The AC specified gray-400 for Paused; the first implementation used gray-500. Automated design review flagged it as a blocker before merge. Always cross-reference exact color tokens against acceptance criteria.
+- **Dexie `upgrade()` backfill is the right pattern.** Adding `status: 'active'` to existing records via the v2 migration `upgrade()` callback ensures old data works with new filters without a separate data migration script.
+- **Combined filter tests need careful fixture design.** The code review flagged that the combined status+topic filter test didn't prove AND-semantics because the excluded course was already filtered by status alone. Fixture data must isolate each filter dimension to prove correct logic.
+- **Test factory duplication creeps in.** Both `Courses.test.tsx` and `useCourseImportStore.test.ts` defined inline `makeCourse()` factories. Future stories should import from `tests/support/fixtures/factories/` to avoid drift.
