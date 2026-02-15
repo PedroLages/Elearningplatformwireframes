@@ -20,6 +20,7 @@ function makeCourse(overrides: Record<string, unknown> = {}) {
     importedAt: new Date().toISOString(),
     category: '',
     tags: [] as string[],
+    status: 'active' as const,
     videoCount: 0,
     pdfCount: 0,
     directoryHandle: {} as FileSystemDirectoryHandle,

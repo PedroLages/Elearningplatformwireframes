@@ -13,6 +13,7 @@ function makeCourse(overrides: Partial<ImportedCourse> = {}): ImportedCourse {
     importedAt: new Date().toISOString(),
     category: '',
     tags: [],
+    status: 'active',
     videoCount: 5,
     pdfCount: 1,
     directoryHandle: {} as FileSystemDirectoryHandle,

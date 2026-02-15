@@ -10,6 +10,7 @@ function makeCourse(overrides: Partial<ImportedCourse> = {}): ImportedCourse {
     importedAt: '2026-02-10T10:00:00Z',
     category: 'general',
     tags: ['test'],
+    status: 'active',
     videoCount: 5,
     pdfCount: 3,
     directoryHandle: {} as FileSystemDirectoryHandle,
