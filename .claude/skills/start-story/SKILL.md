@@ -69,12 +69,7 @@ When invoked with a story ID (e.g., `E01-S03`):
     - UX design references (if applicable)
     - Note: during implementation, make granular commits after each small task as save points
 
-11. **Initial commit** (idempotent):
-    - Check if an initial commit already exists: `git log --oneline --grep="chore: start story E##-S##"`.
-    - **Commit exists**: Skip. Inform user: "Initial commit already made."
-    - **Commit does not exist**: `git add docs/implementation-artifacts/{story-key}.md docs/implementation-artifacts/sprint-status.yaml` (and `tests/e2e/story-{id}.spec.ts` if ATDD tests were created). Commit: `chore: start story E##-S##`.
-
-12. **Completion output**: Display the following summary to the user:
+11. **Completion output**: Display the following summary to the user:
 
     ```markdown
     ---
@@ -87,7 +82,6 @@ When invoked with a story ID (e.g., `E01-S03`):
     | Story file       | `docs/implementation-artifacts/{key}.md`  |
     | Sprint status    | Updated to `in-progress`                  |
     | ATDD tests       | [Created N tests / Skipped]               |
-    | Initial commit   | `chore: start story E##-S##`              |
 
     ### Next Steps
 
@@ -155,5 +149,4 @@ All steps are idempotent — re-running `/start-story` after an interruption saf
 - **Step 6** (story file): If file exists, keeps it instead of overwriting.
 - **Step 7** (sprint status): If already in-progress, skips update.
 - **Step 8** (ATDD tests): If test file exists, skips suggestion.
-- **Step 11** (initial commit): If commit exists, skips.
 - **General cleanup** (if needed): `git checkout main && git branch -D feature/e##-s##-slug`
