@@ -6,12 +6,13 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/app/components/ui/ta
 import { CourseCard } from '@/app/components/figma/CourseCard'
 import { ImportedCourseCard } from '@/app/components/figma/ImportedCourseCard'
 import { TopicFilter } from '@/app/components/figma/TopicFilter'
+import { StatusFilter } from '@/app/components/figma/StatusFilter'
 import { Search, FolderOpen, Loader2 } from 'lucide-react'
 import { allCourses } from '@/data/courses'
 import { getCourseCompletionPercent } from '@/lib/progress'
 import { useCourseImportStore } from '@/stores/useCourseImportStore'
 import { importCourseFromFolder } from '@/lib/courseImport'
-import type { CourseCategory } from '@/data/types'
+import type { CourseCategory, LearnerCourseStatus } from '@/data/types'
 
 const tabs: { value: string; label: string; category?: CourseCategory }[] = [
   { value: 'all', label: 'All Courses' },
@@ -26,6 +27,7 @@ export function Courses() {
   const [searchQuery, setSearchQuery] = useState('')
   const [activeTab, setActiveTab] = useState('all')
   const [selectedTopics, setSelectedTopics] = useState<string[]>([])
+  const [selectedStatuses, setSelectedStatuses] = useState<LearnerCourseStatus[]>([])
 
   const importedCourses = useCourseImportStore(state => state.importedCourses)
   const isImporting = useCourseImportStore(state => state.isImporting)
@@ -75,8 +77,12 @@ export function Courses() {
       )
     }
 
+    if (selectedStatuses.length > 0) {
+      courses = courses.filter(c => selectedStatuses.includes(c.status))
+    }
+
     return courses
-  }, [importedCourses, searchQuery, selectedTopics])
+  }, [importedCourses, searchQuery, selectedTopics, selectedStatuses])
 
   const sortedImportedCourses = useMemo(
     () =>
@@ -146,11 +152,19 @@ export function Courses() {
         </div>
       </Card>
 
-      <TopicFilter
-        availableTags={allTags}
-        selectedTags={selectedTopics}
-        onSelectedTagsChange={setSelectedTopics}
-      />
+      {importedCourses.length > 0 && (
+        <div className="flex flex-wrap gap-x-6 gap-y-2 items-start">
+          <TopicFilter
+            availableTags={allTags}
+            selectedTags={selectedTopics}
+            onSelectedTagsChange={setSelectedTopics}
+          />
+          <StatusFilter
+            selectedStatuses={selectedStatuses}
+            onSelectedStatusesChange={setSelectedStatuses}
+          />
+        </div>
+      )}
 
       {/* Imported Courses Section */}
       {(importedCourses.length > 0 || !searchQuery.trim()) && (
@@ -189,7 +203,7 @@ export function Courses() {
             </Card>
           ) : filteredImportedCourses.length === 0 ? (
             <div className="text-center py-8 text-muted-foreground">
-              No imported courses match your {selectedTopics.length > 0 ? 'filters' : 'search'}
+              No imported courses match your {selectedTopics.length > 0 || selectedStatuses.length > 0 ? 'filters' : 'search'}
             </div>
           ) : (
             <div data-testid="imported-courses-grid" className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6">
