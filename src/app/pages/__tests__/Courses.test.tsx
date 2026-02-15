@@ -210,7 +210,25 @@ describe('Courses page', () => {
       expect(screen.getByText('Paused Course')).toBeInTheDocument()
     })
 
-    it('combines status and topic filters', async () => {
+    it('combines status and topic filters (AC-2.2 — proves AND-semantics)', async () => {
+      // Strengthen fixture: add course that matches ONE dimension but not both
+      const strongFixture: ImportedCourse[] = [
+        ...mixedCourses,
+        {
+          id: 'active-2',
+          name: 'Active Beta Course', // Active status + beta tag
+          importedAt: '2026-02-04T00:00:00Z',
+          category: 'general',
+          tags: ['beta'],
+          status: 'active',
+          videoCount: 4,
+          pdfCount: 1,
+          directoryHandle: {} as FileSystemDirectoryHandle,
+        },
+      ]
+      storeState.importedCourses = strongFixture
+      storeState.getAllTags = () => ['alpha', 'beta']
+
       const user = userEvent.setup()
       renderCourses()
 
@@ -218,17 +236,20 @@ describe('Courses page', () => {
       const statusButtons = screen.getAllByTestId('status-filter-button')
       await user.click(statusButtons[0])
 
-      // Both Active Course (alpha) and no others should show
+      // Should show both Active courses (Active Course + Active Beta Course)
       expect(screen.getByText('Active Course')).toBeInTheDocument()
+      expect(screen.getByText('Active Beta Course')).toBeInTheDocument()
       expect(screen.queryByText('Completed Course')).not.toBeInTheDocument()
 
-      // Now also select "alpha" topic filter
+      // Now ALSO select "alpha" topic filter (AND-condition)
       const topicButtons = screen.getAllByTestId('topic-filter-button')
       const alphaButton = topicButtons.find(b => b.textContent?.includes('alpha'))
       if (alphaButton) await user.click(alphaButton)
 
-      // Still should show Active Course (has alpha tag and active status)
+      // Should ONLY show Active Course (active + alpha)
+      // Active Beta Course should be hidden (active + beta, missing alpha)
       expect(screen.getByText('Active Course')).toBeInTheDocument()
+      expect(screen.queryByText('Active Beta Course')).not.toBeInTheDocument()
       expect(screen.queryByText('Paused Course')).not.toBeInTheDocument()
     })
 

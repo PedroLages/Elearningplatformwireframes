@@ -134,6 +134,25 @@ describe('ImportedCourseCard', () => {
       expect(screen.getByText('Paused')).toBeInTheDocument()
     })
 
+    it('uses correct color classes for each status (AC-1.3)', () => {
+      const { container, rerender } = renderCard({ status: 'active' })
+      // Badge component is nested inside the button with testid
+      // ImportedCourseCard uses lighter variants (bg-blue-100), StatusFilter uses darker (bg-blue-600)
+      let badgeEl = container.querySelector('[data-testid="status-badge"] > span')
+      expect(badgeEl?.className).toMatch(/bg-blue-100/)
+      expect(badgeEl?.className).toMatch(/text-blue-700/)
+
+      rerender(<ImportedCourseCard course={makeCourse({ status: 'completed' })} allTags={[]} />)
+      badgeEl = container.querySelector('[data-testid="status-badge"] > span')
+      expect(badgeEl?.className).toMatch(/bg-green-100/)
+      expect(badgeEl?.className).toMatch(/text-green-700/)
+
+      rerender(<ImportedCourseCard course={makeCourse({ status: 'paused' })} allTags={[]} />)
+      badgeEl = container.querySelector('[data-testid="status-badge"] > span')
+      expect(badgeEl?.className).toMatch(/bg-gray-100/)
+      expect(badgeEl?.className).toMatch(/text-gray-400/)
+    })
+
     it('has descriptive aria-label on status badge', () => {
       renderCard({ status: 'active' })
       const badge = screen.getByTestId('status-badge')
