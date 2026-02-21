@@ -34,6 +34,14 @@ This document provides the complete epic and story breakdown for Elearningplatfo
 - FR11: User can navigate between videos within a course
 - FR12: User can view course structure showing sections, videos, and PDFs
 - FR13: User can access content viewing interface optimized for minimal distractions
+- FR79: User can skip forward/backward 10 seconds using visible UI buttons and keyboard shortcuts (J/L keys)
+- FR80: User can activate Picture-in-Picture mode to watch video while taking notes or browsing
+- FR81: User can view a keyboard shortcuts help overlay within the video player by pressing ?
+- FR82: User can see chapter markers on the video progress bar for content navigation
+- FR83: User can view a synchronized, scrollable transcript panel alongside the video with click-to-seek
+- FR84: User can continue watching via a floating mini-player when scrolling past the main video
+- FR85: User can toggle theater mode for a wider, distraction-free viewing experience
+- FR86: Lesson Player page has a single content scrollbar with thin, themed styling (no double scrollbar)
 
 **Progress & Session Tracking (6 Requirements):**
 
@@ -655,7 +663,171 @@ So that I can browse the curriculum and jump to any lesson.
 
 ---
 
-**Epic 2 Summary:** 5 stories covering all 7 FRs (FR7-FR13).
+### Story 2.6: Video Player UX Fixes & Accessibility
+
+As a learner,
+I want a video player with proper touch targets, accessible controls, and reliable behavior on all devices,
+So that I can use the player comfortably on mobile, tablet, and desktop with keyboard or touch.
+
+**Acceptance Criteria:**
+
+**Given** the user is on a mobile viewport (< 640px)
+**When** the video player bottom controls are visible
+**Then** all interactive buttons have minimum 44x44px touch targets
+**And** the volume control is accessible via a popover triggered by tapping the mute/unmute button
+**And** controls respond to touch events for auto-show/hide (not only mouse events)
+
+**Given** the video player container receives keyboard focus
+**When** the user tabs to the player
+**Then** a visible focus ring appears around the player container
+**And** all keyboard shortcuts function correctly
+
+**Given** the speed menu dropdown is open
+**When** the user presses Tab
+**Then** focus is trapped within the menu items (wraps from last to first)
+**And** pressing Escape closes the menu and returns focus to the trigger button
+**And** menu items have `role="menuitem"` with `aria-checked` on the active speed
+
+**Given** the `<video>` element renders
+**When** the page loads
+**Then** the element has `preload="metadata"`, `playsInline`, and optional `poster` attributes
+**And** only metadata is preloaded (not the full video)
+
+**Given** the user has `prefers-reduced-motion` enabled
+**When** the controls overlay transitions
+**Then** transitions complete in ≤1ms (handled by existing global CSS rule)
+
+**Given** the user is on the Lesson Player page
+**When** the page renders
+**Then** only one vertical scrollbar is visible for the main content area (no double scrollbar)
+**And** the course sidebar has its own independent scroll
+**And** all scrollbars use thin, theme-aware styling that matches light/dark mode
+
+**Technical Notes:**
+- `src/app/components/figma/VideoPlayer.tsx`: touch targets `h-8 w-8` → `h-11 w-11`, icons `h-4 w-4` → `h-5 w-5`, remove duplicate play/pause from bottom bar, add `onTouchStart={resetControlsTimeout}`, speed menu focus trap (`role="menu"` / `role="menuitem"`), mobile volume vertical popover (`sm:hidden`), new prop `poster?: string`
+- `src/app/pages/LessonPlayer.tsx`: change `h-[calc(100vh-120px)]` → `h-full` on outer container to fill Layout's `<main>` exactly and eliminate double scrollbar
+- `src/styles/index.css`: add global thin scrollbar styling using `scrollbar-width: thin` + `scrollbar-color` (Firefox) and `::-webkit-scrollbar` rules (Chrome/Safari) using theme CSS variables (`--color-border`, `--color-muted-foreground`)
+
+---
+
+### Story 2.7: Skip Controls, Picture-in-Picture & Shortcuts Help
+
+As a learner,
+I want visible skip buttons, picture-in-picture mode, and a shortcuts reference,
+So that I can navigate video content quickly, multitask while watching, and discover keyboard shortcuts.
+
+**Acceptance Criteria:**
+
+**Given** the user is watching a video
+**When** the controls are visible
+**Then** skip-back (−10s) and skip-forward (+10s) buttons appear in the bottom-left control group
+**And** pressing J skips back 10 seconds, L skips forward 10 seconds (YouTube convention)
+**And** each skip action triggers an ARIA announcement ("Skipped back 10 seconds")
+
+**Given** the browser supports Picture-in-Picture
+**When** the user clicks the PiP button or presses P
+**Then** the video enters PiP mode (floating window)
+**And** the PiP button shows active state while in PiP
+**And** exiting PiP (via button or browser chrome) returns to inline playback
+
+**Given** the browser does not support Picture-in-Picture
+**When** the controls render
+**Then** the PiP button is not shown
+
+**Given** the user presses ? while the video player has focus
+**When** the shortcuts overlay appears
+**Then** all available keyboard shortcuts are displayed in a two-column grid overlay
+**And** pressing ? again or Escape dismisses the overlay
+**And** the Layout-level ? handler does NOT also fire (event propagation stopped)
+
+**Technical Notes:**
+- New file: `src/app/components/figma/VideoShortcutsOverlay.tsx`
+- Import `SkipBack`, `SkipForward`, `PictureInPicture2` from lucide-react
+- PiP: `video.requestPictureInPicture()` / `document.exitPictureInPicture()`
+- Listen to `enterpictureinpicture` / `leavepictureinpicture` events for state sync
+- Guard PiP button render with `document.pictureInPictureEnabled`
+- Shortcuts overlay: absolute-positioned inside AspectRatio, `e.stopPropagation()` on `?`
+
+---
+
+### Story 2.8: Chapter Progress Bar & Transcript Panel
+
+As a learner,
+I want chapter markers on the progress bar and a synchronized transcript panel,
+So that I can navigate long videos by topic and follow along with or search the spoken content.
+
+**Acceptance Criteria:**
+
+**Given** a video has chapter data provided
+**When** the progress bar renders
+**Then** chapter divider lines appear at each chapter start position
+**And** hovering the progress bar shows a tooltip with the timestamp and chapter title
+**And** the progress bar grows slightly on hover for easier targeting
+
+**Given** a video has no chapter data
+**When** the progress bar renders
+**Then** it displays as a standard progress bar with no markers (backward compatible)
+
+**Given** a video has caption/subtitle data (WebVTT)
+**When** the user opens the "Transcript" tab in LessonPlayer
+**Then** a scrollable panel displays all caption cues with timestamps
+**And** the currently spoken cue is highlighted and auto-scrolled into view
+**And** clicking any cue seeks the video to that cue's start time
+
+**Given** no caption data exists for the current video
+**When** the tabs render
+**Then** the "Transcript" tab is not shown
+
+**Technical Notes:**
+- New file: `src/app/components/figma/ChapterProgressBar.tsx` — custom progress bar replacing Radix Slider
+- New file: `src/app/components/figma/TranscriptPanel.tsx` — VTT parser + synchronized cue list
+- New types in `src/data/types.ts`: `Chapter { time: number; title: string }`, `TranscriptCue { startTime: number; endTime: number; text: string }`
+- New VideoPlayer prop: `chapters?: Chapter[]`
+- TranscriptPanel fetches and parses VTT file directly (browser TextTrack API only gives active cues)
+- LessonPlayer: track `videoCurrentTime` via existing `onTimeUpdate`, pass to TranscriptPanel
+- Add "Transcript" to existing Tabs component (Materials | Notes | Bookmarks | Transcript)
+- Caption source from `videoResource?.metadata?.captions?.[0]?.src`
+
+---
+
+### Story 2.9: Mini-Player & Theater Mode
+
+As a learner,
+I want the video to follow me as I scroll and an option to widen the viewing area,
+So that I can keep watching while reading materials below and maximize the video when I want focus.
+
+**Acceptance Criteria:**
+
+**Given** the user is watching a video and scrolls down past the player
+**When** the main video player leaves the viewport
+**Then** a mini-player appears fixed in the bottom-right corner (320px wide)
+**And** the original player area shows a placeholder to prevent layout shift
+**And** clicking the mini-player scrolls back to the full player
+**And** the mini-player disappears when video is paused or the user scrolls back up
+
+**Given** the user clicks the theater mode button or presses T
+**When** theater mode activates
+**Then** the course sidebar (ModuleAccordion) is hidden
+**And** the video and content area expand to use the full available width
+**And** pressing T again or clicking the button exits theater mode
+**And** the mobile Sheet navigation remains accessible
+
+**Given** the user is in theater mode on mobile (< 1280px)
+**When** the sidebar is already hidden by default
+**Then** the theater mode button is not shown (sidebar already hidden)
+
+**Technical Notes:**
+- New file: `src/app/hooks/useIntersectionObserver.ts` — reusable hook
+- Mini-player: CSS-only repositioning (position: fixed vs static) on the SAME `<video>` element, no second instance
+- Insert spacer `<div>` with matching aspect ratio when fixed
+- New VideoPlayer prop: `onPlayStateChange?: (isPlaying: boolean) => void`
+- Theater mode: page-level state in LessonPlayer (Approach A — no Layout coupling)
+- New VideoPlayer props: `theaterMode?: boolean`, `onTheaterModeToggle?: () => void`
+- Add `t` keyboard shortcut in VideoPlayer
+
+---
+
+**Epic 2 Summary:** 9 stories covering 15 FRs (FR7-FR13, FR79-FR86).
 
 ---
 

@@ -18,22 +18,7 @@ import { test, expect } from '../support/fixtures'
 import {
   createImportedCourse,
 } from '../support/fixtures/factories/imported-course-factory'
-import { goToCourses } from '../support/helpers/navigation'
-
-// ---------------------------------------------------------------------------
-// Helpers
-// ---------------------------------------------------------------------------
-
-/** Navigate to Courses, seed IndexedDB, reload to pick up data. */
-async function seedAndReload(
-  page: Parameters<typeof goToCourses>[0],
-  indexedDB: { seedImportedCourses: (c: ReturnType<typeof createImportedCourse>[]) => Promise<void> },
-  courses: ReturnType<typeof createImportedCourse>[],
-) {
-  await goToCourses(page)
-  await indexedDB.seedImportedCourses(courses)
-  await page.reload({ waitUntil: 'domcontentloaded' })
-}
+import { seedAndReload } from '../support/helpers/seed-helpers'
 
 // ===========================================================================
 // AC1: Tag Badges Display and Persistence
@@ -312,6 +297,7 @@ test.describe('AC3: Tag Management', () => {
     const course2 = createImportedCourse({
       name: 'Other Course',
       tags: ['python', 'backend'],
+      importedAt: '2020-01-01T00:00:00.000Z',
     })
     await seedAndReload(page, indexedDB, [courseWithTags, course2])
 
@@ -335,6 +321,7 @@ test.describe('AC3: Tag Management', () => {
     const course2 = createImportedCourse({
       name: 'Source Course',
       tags: ['python'],
+      importedAt: '2020-01-01T00:00:00.000Z',
     })
     await seedAndReload(page, indexedDB, [courseWithTags, course2])
 

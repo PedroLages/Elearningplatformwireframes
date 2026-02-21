@@ -80,13 +80,13 @@ describe('ImportedCourseCard', () => {
 
   it('has hover scale effect', () => {
     const { container } = renderCard()
-    const scaled = container.querySelector('.hover\\:scale-\\[1\\.02\\]')
+    const scaled = container.querySelector('.hover\\:\\[transform\\:scale\\(1\\.02\\)\\]')
     expect(scaled).toBeInTheDocument()
   })
 
   it('has group-hover title color change', () => {
     const { container } = renderCard()
-    const title = container.querySelector('.group-hover\\:text-blue-600')
+    const title = container.querySelector('.group-hover\\:text-\\[\\#2563eb\\]')
     expect(title).toBeInTheDocument()
   })
 
@@ -99,7 +99,7 @@ describe('ImportedCourseCard', () => {
 
   it('respects prefers-reduced-motion', () => {
     const { container } = renderCard()
-    const motionSafe = container.querySelector('.motion-reduce\\:hover\\:scale-100')
+    const motionSafe = container.querySelector('.motion-reduce\\:hover\\:\\[transform\\:scale\\(1\\)\\]')
     expect(motionSafe).toBeInTheDocument()
   })
 

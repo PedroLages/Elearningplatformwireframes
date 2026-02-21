@@ -18,20 +18,28 @@
 - String interpolation for className instead of cn() continues in new components (StatusFilter, ImportedCourseCard)
 - Courses.test.tsx doesn't test status filtering (AC2), combined topic+status filtering, or default-to-active (AC3)
 
-### E02-S02: Video Playback Controls and Keyboard Shortcuts
-- LessonPlayer does NOT pass `captions` prop to VideoPlayer -- caption toggle and font size controls never render
-- `video::cue` pseudo-element CANNOT inherit CSS custom properties from parent elements -- must use dynamic `<style>` injection
-- `h-N w-N` instead of `size-N` continues in VideoPlayer (19 instances) -- recurring pattern from S03/S04
-- `setTimeout` without cleanup in `triggerCompletion` and `announce` -- no ref-based timer management
-- Speed menu dropdown has no click-outside-to-close behavior
-- No unit tests exist for VideoPlayer.tsx or LessonPlayer.tsx -- all coverage is E2E only
-- `prefers-reduced-motion` global override in index.css sets `transition-duration: 0.01ms !important`, which kills ALL transitions including intentional reduced-motion alternatives
-- `motion-safe:` Tailwind prefix used correctly for conditional animations
+### E02-S05: Course Structure Navigation
+- AutoAdvanceCountdown uses `setInterval` with `remaining` in deps -- creates new interval every second instead of using `setTimeout`
+- `prefers-reduced-motion` required by story Task 3.4 but NOT implemented in AutoAdvanceCountdown
+- No unit tests for AutoAdvanceCountdown or ModuleAccordion (activeLessonId feature)
+- E2E tests do NOT cover auto-advance actually navigating to next lesson after countdown reaches 0 (AC5 gap)
+- String interpolation for className (not `cn()`) continues in ModuleAccordion Link elements
+- `h-5 w-5` used instead of `size-5` Tailwind v4 shorthand in ModuleAccordion icons
+- `defaultValue` on Radix Accordion is uncontrolled -- won't re-expand when navigating between lessons in different modules
+- `handleVideoEnded` has `completed` in closure -- rewatching a completed video shows auto-advance but skips celebration (intended?) but also triggers auto-advance even for already-completed lessons
 
-## Recurring Anti-Patterns (cross-story)
-- Missing unit tests for new/modified components (S03 factories unused, S04 StatusFilter untested, S02 VideoPlayer untested)
-- `h-N w-N` instead of Tailwind v4 `size-N` shorthand (every story since S03)
-- Props available in data types but not threaded through to components (S02 captions)
+### E02-S06: Video Player UX Fixes & Accessibility
+- S05 interval bug fixed (stable interval with no deps on `remaining`)
+- S05 uncontrolled Accordion fixed (now uses controlled `value`/`onValueChange`)
+- `focus:` used instead of `focus-visible:` on video player container -- shows ring on mouse click too (undesirable)
+- Speed menu has NO click-outside-to-close handler -- clicking elsewhere leaves menu open
+- Mobile volume popover has NO click-outside-to-close handler either
+- `poster` prop added to VideoPlayer but LessonPlayer never passes it
+- AutoAdvanceCountdown interval keeps ticking past 0 (remaining goes negative) -- should clearInterval
+- No AC4 (reduced motion) E2E test -- relies on global CSS rule but no test verifies it
+- `h-16 w-16` / `h-8 w-8` still used on center play button instead of `size-16` / `size-8`
+- String interpolation for className persists in ModuleAccordion Link (not using `cn()`)
+- `openModules` referenced in useEffect but not in dependency array (lint warning suppressed?)
 
 ## Project Conventions
 - Import alias: `@/` resolves to `./src`

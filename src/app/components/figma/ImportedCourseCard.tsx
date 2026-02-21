@@ -68,12 +68,10 @@ export function ImportedCourseCard({ course, allTags }: ImportedCourseCardProps)
     <article
       data-testid="imported-course-card"
       aria-label={`${course.name} — ${course.videoCount} ${course.videoCount === 1 ? 'video' : 'videos'}, ${course.pdfCount} ${course.pdfCount === 1 ? 'PDF' : 'PDFs'}`}
+      tabIndex={0}
+      className="group rounded-[24px] cursor-pointer focus-visible:ring-2 focus-visible:ring-blue-600 focus-visible:ring-offset-2 outline-none hover:shadow-2xl hover:[transform:scale(1.02)] transition-shadow duration-300 motion-reduce:hover:[transform:scale(1)]"
     >
-      <div
-        className="rounded-[24px] cursor-pointer focus-visible:ring-2 focus-visible:ring-blue-600 focus-visible:ring-offset-2 outline-none block"
-        tabIndex={0}
-      >
-        <Card className="group bg-card rounded-[24px] border-0 shadow-sm overflow-hidden hover:shadow-2xl hover:scale-[1.02] transition-all duration-300 motion-reduce:hover:scale-100">
+        <Card className="bg-card rounded-[24px] border-0 shadow-sm overflow-hidden">
           <div
             data-testid="course-card-placeholder"
             className="relative h-44 bg-gradient-to-br from-emerald-50 to-teal-100 dark:from-emerald-950/50 dark:to-teal-950/50 flex items-center justify-center"
@@ -125,7 +123,7 @@ export function ImportedCourseCard({ course, allTags }: ImportedCourseCardProps)
           <div className="p-5">
             <h3
               data-testid="course-card-title"
-              className="font-bold text-base mb-1 line-clamp-2 group-hover:text-blue-600 transition-colors"
+              className="font-bold text-base mb-1 line-clamp-2 group-hover:text-[#2563eb]"
             >
               {course.name}
             </h3>
@@ -152,7 +150,6 @@ export function ImportedCourseCard({ course, allTags }: ImportedCourseCardProps)
             </div>
           </div>
         </Card>
-      </div>
     </article>
   )
 }

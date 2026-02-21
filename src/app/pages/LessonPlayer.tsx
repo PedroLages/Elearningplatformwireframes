@@ -1,17 +1,17 @@
 import { useParams, Link, useNavigate } from 'react-router'
 import { useMemo, useState, useCallback, useRef, useEffect } from 'react'
 import { ArrowLeft, ChevronLeft, ChevronRight, CheckCircle2, Circle, Menu } from 'lucide-react'
-import { Button } from '@/app/components/ui/button'
-import { cn } from '@/app/components/ui/utils'
-import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/app/components/ui/tabs'
-import { Sheet, SheetContent, SheetTrigger } from '@/app/components/ui/sheet'
-import { VideoPlayer } from '@/app/components/figma/VideoPlayer'
-import { PdfViewer } from '@/app/components/figma/PdfViewer'
-import { LessonList } from '@/app/components/figma/LessonList'
-import { ResourceBadge } from '@/app/components/figma/ResourceBadge'
-import { NoteEditor } from '@/app/components/notes/NoteEditor'
-import { CompletionModal, type CelebrationType } from '@/app/components/celebrations/CompletionModal'
-import { BookmarksList } from '@/app/components/BookmarksList'
+import { Button } from '../components/ui/button'
+import { Tabs, TabsContent, TabsList, TabsTrigger } from '../components/ui/tabs'
+import { Sheet, SheetContent, SheetHeader, SheetTitle, SheetTrigger } from '../components/ui/sheet'
+import { VideoPlayer } from '../components/figma/VideoPlayer'
+import { PdfViewer } from '../components/figma/PdfViewer'
+import { ModuleAccordion } from '../components/figma/ModuleAccordion'
+import { AutoAdvanceCountdown } from '../components/figma/AutoAdvanceCountdown'
+import { ResourceBadge } from '../components/figma/ResourceBadge'
+import { NoteEditor } from '../components/notes/NoteEditor'
+import { CompletionModal, type CelebrationType } from '../components/celebrations/CompletionModal'
+import { BookmarksList } from '../components/BookmarksList'
 import { allCourses } from '@/data/courses'
 import { getResourceUrl } from '@/lib/media'
 import {
@@ -54,16 +54,22 @@ export function LessonPlayer() {
     courseId && lessonId ? getLessonBookmarks(courseId, lessonId) : []
   )
 
-  // Timeout cleanup ref
-  const justCompletedTimerRef = useRef<ReturnType<typeof setTimeout>>()
-
   // Celebration modal state
   const [celebrationModal, setCelebrationModal] = useState(false)
   const [celebrationType, setCelebrationType] = useState<CelebrationType>('lesson')
   const [celebrationTitle, setCelebrationTitle] = useState('')
 
-  // Brief animation state for checkmark transition
-  const [justCompleted, setJustCompleted] = useState(false)
+  // Auto-advance countdown state
+  const [showAutoAdvance, setShowAutoAdvance] = useState(false)
+
+  // Reset auto-advance and completion state when lesson changes
+  useEffect(() => {
+    setShowAutoAdvance(false)
+    if (courseId && lessonId) {
+      setCompleted(isLessonComplete(courseId, lessonId))
+      setNoteText(getNote(courseId, lessonId))
+    }
+  }, [courseId, lessonId])
 
   // Update bookmarks when lesson changes
   useEffect(() => {
@@ -76,11 +82,6 @@ export function LessonPlayer() {
   useEffect(() => {
     titleRef.current?.focus()
   }, [lessonId])
-
-  // Cleanup timeout on unmount
-  useEffect(() => {
-    return () => clearTimeout(justCompletedTimerRef.current)
-  }, [])
 
   const prevLesson = currentIndex > 0 ? allLessons[currentIndex - 1] : null
   const nextLesson = currentIndex < allLessons.length - 1 ? allLessons[currentIndex + 1] : null
@@ -97,25 +98,20 @@ export function LessonPlayer() {
     [courseId, lessonId]
   )
 
-  const triggerCompletion = useCallback(() => {
-    if (!courseId || !lessonId || completed) return
-    markLessonComplete(courseId, lessonId)
-    setCompleted(true)
-    setJustCompleted(true)
-    clearTimeout(justCompletedTimerRef.current)
-    justCompletedTimerRef.current = setTimeout(() => setJustCompleted(false), 600)
-    setCelebrationType('lesson')
-    setCelebrationTitle(lesson?.title || 'Lesson')
-    setCelebrationModal(true)
-  }, [courseId, lessonId, completed, lesson])
-
-  const handleAutoComplete = useCallback(() => {
-    triggerCompletion()
-  }, [triggerCompletion])
-
   const handleVideoEnded = useCallback(() => {
-    triggerCompletion()
-  }, [triggerCompletion])
+    if (courseId && lessonId && !completed) {
+      markLessonComplete(courseId, lessonId)
+      setCompleted(true)
+      // Trigger celebration
+      setCelebrationType('lesson')
+      setCelebrationTitle(lesson?.title || 'Lesson')
+      setCelebrationModal(true)
+    }
+    // Show auto-advance countdown if there's a next lesson
+    if (nextLesson) {
+      setShowAutoAdvance(true)
+    }
+  }, [courseId, lessonId, completed, lesson, nextLesson])
 
   const handleVideoSeek = useCallback((timestamp: number) => {
     setSeekToTime(timestamp)
@@ -147,7 +143,12 @@ export function LessonPlayer() {
       markLessonIncomplete(courseId, lessonId)
       setCompleted(false)
     } else {
-      triggerCompletion()
+      markLessonComplete(courseId, lessonId)
+      setCompleted(true)
+      // Trigger celebration when manually marking complete
+      setCelebrationType('lesson')
+      setCelebrationTitle(lesson?.title || 'Lesson')
+      setCelebrationModal(true)
     }
   }
 
@@ -162,17 +163,17 @@ export function LessonPlayer() {
     return (
       <div className="flex flex-col items-center justify-center py-24">
         <h2 className="text-xl font-semibold mb-2">Lesson Not Found</h2>
-        <Button asChild>
-          <Link to="/courses">Back to Courses</Link>
-        </Button>
+        <Link to="/courses">
+          <Button>Back to Courses</Button>
+        </Link>
       </div>
     )
   }
 
   return (
-    <div className="flex gap-6 h-[calc(100vh-120px)]">
+    <div className="flex gap-6 h-full">
       {/* Main Content */}
-      <div className="flex-1 overflow-auto">
+      <div className="flex-1 min-h-0 overflow-y-auto">
         <Link
           to={`/courses/${courseId}`}
           className="inline-flex items-center gap-1 text-sm text-muted-foreground hover:text-foreground mb-4 transition-colors"
@@ -181,13 +182,12 @@ export function LessonPlayer() {
           {course.shortTitle}
         </Link>
 
-        {/* Video Player */}
+        {/* Video Player — poster prop deferred until Resource type supports it */}
         {videoResource && (
           <div className="mb-5">
             <VideoPlayer
               src={getResourceUrl(videoResource)}
               title={lesson.title}
-              captions={videoResource.metadata?.captions}
               initialPosition={
                 progress?.lastWatchedLesson === lessonId ? progress?.lastVideoPosition : undefined
               }
@@ -196,9 +196,23 @@ export function LessonPlayer() {
               lessonId={lessonId}
               onTimeUpdate={handleTimeUpdate}
               onEnded={handleVideoEnded}
-              onAutoComplete={handleAutoComplete}
               onSeekComplete={handleSeekComplete}
               onBookmarkAdd={handleBookmarkAdd}
+            />
+          </div>
+        )}
+
+        {/* Auto-Advance Countdown */}
+        {showAutoAdvance && nextLesson && (
+          <div className="mb-5">
+            <AutoAdvanceCountdown
+              seconds={5}
+              nextLessonTitle={nextLesson.title}
+              onAdvance={() => {
+                setShowAutoAdvance(false)
+                navigate(`/courses/${courseId}/${nextLesson.id}`)
+              }}
+              onCancel={() => setShowAutoAdvance(false)}
             />
           </div>
         )}
@@ -219,32 +233,29 @@ export function LessonPlayer() {
                   </Button>
                 </SheetTrigger>
                 <SheetContent side="bottom" className="h-[80vh] overflow-y-auto">
-                  <div className="mb-4">
-                    <h3 className="text-sm font-semibold">Course Content</h3>
+                  <SheetHeader>
+                    <SheetTitle className="text-sm">Course Content</SheetTitle>
+                  </SheetHeader>
+                  <div data-testid="mobile-course-accordion">
+                    <ModuleAccordion
+                      modules={course.modules}
+                      courseId={course.id}
+                      activeLessonId={lessonId}
+                      completedLessons={progress?.completedLessons ?? []}
+                    />
                   </div>
-                  <LessonList
-                    modules={course.modules}
-                    courseId={course.id}
-                    activeLessonId={lessonId}
-                    completedLessons={progress?.completedLessons ?? []}
-                  />
                 </SheetContent>
               </Sheet>
 
               <button
                 onClick={toggleComplete}
                 aria-label={completed ? 'Mark lesson incomplete' : 'Mark lesson complete'}
-                className="flex items-center gap-1.5 text-sm shrink-0 cursor-pointer min-h-[44px] py-2 px-2 -mr-2 rounded-lg hover:bg-accent/50 transition-colors"
+                className="flex items-center gap-1.5 text-sm shrink-0 cursor-pointer"
               >
                 {completed ? (
-                  <CheckCircle2
-                    className={cn(
-                      'size-5 text-green-500 transition-all duration-300 reduced-motion-fade',
-                      justCompleted && 'motion-safe:scale-125 motion-reduce:opacity-60'
-                    )}
-                  />
+                  <CheckCircle2 className="h-5 w-5 text-green-500" />
                 ) : (
-                  <Circle className="size-5 text-muted-foreground/40" />
+                  <Circle className="h-5 w-5 text-muted-foreground/40" />
                 )}
                 <span className={completed ? 'text-green-600' : 'text-muted-foreground'}>
                   {completed ? 'Completed' : 'Mark Complete'}
@@ -350,17 +361,19 @@ export function LessonPlayer() {
         </div>
       </div>
 
-      {/* Sidebar Lesson List */}
+      {/* Sidebar Course Structure */}
       <div className="hidden xl:block w-72 bg-card rounded-2xl shadow-sm overflow-hidden">
         <div className="px-4 py-3 border-b border-border">
           <h3 className="text-sm font-semibold">Course Content</h3>
         </div>
-        <LessonList
-          modules={course.modules}
-          courseId={course.id}
-          activeLessonId={lessonId}
-          completedLessons={progress?.completedLessons ?? []}
-        />
+        <div className="p-3 overflow-y-auto h-[calc(100%-49px)] [scrollbar-gutter:stable]" data-testid="course-sidebar-accordion">
+          <ModuleAccordion
+            modules={course.modules}
+            courseId={course.id}
+            activeLessonId={lessonId}
+            completedLessons={progress?.completedLessons ?? []}
+          />
+        </div>
       </div>
 
       {/* Completion Celebration Modal */}
