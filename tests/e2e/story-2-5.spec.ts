@@ -21,30 +21,12 @@ import { test, expect } from '../support/fixtures'
 import { navigateAndWait } from '../support/helpers/navigation'
 
 // ---------------------------------------------------------------------------
-// Constants — use the first sample course with multiple modules
+// Constants — use a course with video lessons (operative-six)
 // ---------------------------------------------------------------------------
 
-/** Navigate to a lesson player page for the first available course. */
+/** Navigate directly to a known video lesson in the Lesson Player. */
 async function goToFirstLesson(page: Parameters<typeof navigateAndWait>[0]) {
-  // Navigate to courses page first to discover available courses
-  await navigateAndWait(page, '/courses')
-  // Click the first course card to go to course detail
-  const courseLink = page.locator('[data-testid="course-card"], a[href^="/courses/"]').first()
-  await courseLink.click()
-  await page.waitForLoadState('domcontentloaded')
-  // Click the first lesson link
-  const lessonLink = page.locator('a[href*="/courses/"][href$!="/"]').filter({ hasText: /\w/ }).first()
-  await lessonLink.click()
-  await page.waitForLoadState('domcontentloaded')
-}
-
-/** Navigate directly to a known sample course lesson. */
-async function goToLesson(
-  page: Parameters<typeof navigateAndWait>[0],
-  courseId: string,
-  lessonId: string,
-) {
-  await navigateAndWait(page, `/courses/${courseId}/${lessonId}`)
+  await navigateAndWait(page, '/courses/operative-six/op6-introduction')
 }
 
 // ===========================================================================
@@ -97,8 +79,10 @@ test.describe('AC1: Collapsible ModuleAccordion in Sidebar', () => {
     await goToFirstLesson(page)
 
     // WHEN: User clicks an expanded accordion trigger
-    const trigger = page.getByTestId('course-sidebar-accordion').locator('button[data-state="open"]').first()
+    // Use data-slot for a stable locator that doesn't change with state
+    const trigger = page.getByTestId('course-sidebar-accordion').locator('[data-slot="accordion-trigger"]').first()
     if (await trigger.count() > 0) {
+      await expect(trigger).toHaveAttribute('data-state', 'open')
       await trigger.click()
 
       // THEN: Module content collapses (data-state="closed")
@@ -258,6 +242,21 @@ test.describe('AC4: Next Lesson Button', () => {
 // ===========================================================================
 
 test.describe('AC5: Auto-Advance Countdown', () => {
+  /** Simulate video end: wait for video, dispatch ended, dismiss celebration modal. */
+  async function triggerVideoEnd(page: Parameters<typeof navigateAndWait>[0]) {
+    await page.locator('video').waitFor({ timeout: 5000 })
+    await page.evaluate(() => {
+      const video = document.querySelector('video')
+      if (video) video.dispatchEvent(new Event('ended'))
+    })
+    // Dismiss the celebration modal if it appears (it opens on first completion)
+    const dialog = page.locator('[role="dialog"]')
+    if (await dialog.isVisible().catch(() => false)) {
+      await page.keyboard.press('Escape')
+      await dialog.waitFor({ state: 'hidden', timeout: 2000 }).catch(() => {})
+    }
+  }
+
   test('should show auto-advance countdown after video ends', async ({
     page,
   }) => {
@@ -265,13 +264,8 @@ test.describe('AC5: Auto-Advance Countdown', () => {
     await page.setViewportSize({ width: 1440, height: 900 })
     await goToFirstLesson(page)
 
-    // WHEN: Video reaches the end (simulate via ended event)
-    await page.evaluate(() => {
-      const video = document.querySelector('video')
-      if (video) {
-        video.dispatchEvent(new Event('ended'))
-      }
-    })
+    // WHEN: Video reaches the end
+    await triggerVideoEnd(page)
 
     // THEN: Auto-advance countdown is visible
     const countdown = page.getByTestId('auto-advance-countdown')
@@ -285,10 +279,7 @@ test.describe('AC5: Auto-Advance Countdown', () => {
     await page.setViewportSize({ width: 1440, height: 900 })
     await goToFirstLesson(page)
 
-    await page.evaluate(() => {
-      const video = document.querySelector('video')
-      if (video) video.dispatchEvent(new Event('ended'))
-    })
+    await triggerVideoEnd(page)
 
     const countdown = page.getByTestId('auto-advance-countdown')
     await expect(countdown).toBeVisible({ timeout: 3000 })
@@ -306,10 +297,7 @@ test.describe('AC5: Auto-Advance Countdown', () => {
     await page.setViewportSize({ width: 1440, height: 900 })
     await goToFirstLesson(page)
 
-    await page.evaluate(() => {
-      const video = document.querySelector('video')
-      if (video) video.dispatchEvent(new Event('ended'))
-    })
+    await triggerVideoEnd(page)
 
     const countdown = page.getByTestId('auto-advance-countdown')
     await expect(countdown).toBeVisible({ timeout: 3000 })
@@ -326,10 +314,7 @@ test.describe('AC5: Auto-Advance Countdown', () => {
     await page.setViewportSize({ width: 1440, height: 900 })
     await goToFirstLesson(page)
 
-    await page.evaluate(() => {
-      const video = document.querySelector('video')
-      if (video) video.dispatchEvent(new Event('ended'))
-    })
+    await triggerVideoEnd(page)
 
     const countdown = page.getByTestId('auto-advance-countdown')
     await expect(countdown).toBeVisible({ timeout: 3000 })
@@ -349,10 +334,7 @@ test.describe('AC5: Auto-Advance Countdown', () => {
     await page.setViewportSize({ width: 1440, height: 900 })
     await goToFirstLesson(page)
 
-    await page.evaluate(() => {
-      const video = document.querySelector('video')
-      if (video) video.dispatchEvent(new Event('ended'))
-    })
+    await triggerVideoEnd(page)
 
     const countdown = page.getByTestId('auto-advance-countdown')
     await expect(countdown).toBeVisible({ timeout: 3000 })

@@ -1,12 +1,12 @@
 ---
 story_id: E02-S05
 story_name: "Course Structure Navigation"
-status: in-progress
+status: done
 started: 2026-02-21
-completed:
-reviewed: false
-review_started:
-review_gates_passed: []
+completed: 2026-02-21
+reviewed: true
+review_started: 2026-02-21
+review_gates_passed: [build, lint, unit-tests, e2e-tests, design-review, code-review, test-quality]
 ---
 
 # Story 2.5: Course Structure Navigation
@@ -82,11 +82,20 @@ So that I can browse the curriculum and jump to any lesson.
 
 ## Design Review Feedback
 
-[Populated by /review-story — Playwright MCP findings]
+Report: `docs/reviews/design/design-review-2026-02-21-E02-S05.md`
+
+**Blockers (1):** Missing `<SheetTitle>` in mobile Sheet for accessibility.
+**High (4):** Menu button touch target, cancel button touch target, memoize callbacks, import paths.
+**Medium (4):** Heading hierarchy, Mark Complete touch target, redundant handleCancel wrapper, prefers-reduced-motion.
 
 ## Code Review Feedback
 
-[Populated by /review-story — adversarial code review findings]
+Report: `docs/reviews/code/code-review-2026-02-21-E02-S05.md`
+
+**Blockers (2):** Unstable countdown timer (useEffect recreates interval every second), uncontrolled accordion won't re-expand on lesson change.
+**High (3):** Missing prefers-reduced-motion, missing E2E test for auto-navigation, auto-advance on re-watch.
+**Medium (4):** String interpolation instead of cn(), redundant handleCancel, h-5 w-5 instead of size-5, no-op assertion.
+**Nits (3):** Inline callbacks, dead LessonList code, fragile CSS class selectors.
 
 ## Challenges and Lessons Learned
 

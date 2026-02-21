@@ -1,3 +1,4 @@
+import { useState, useEffect } from 'react'
 import { Link } from 'react-router'
 import { CheckCircle2, Circle, Video, FileText } from 'lucide-react'
 import {
@@ -17,13 +18,23 @@ interface ModuleAccordionProps {
 }
 
 export function ModuleAccordion({ modules, courseId, completedLessons, activeLessonId }: ModuleAccordionProps) {
-  // Auto-expand the module containing the active lesson
-  const defaultOpen = activeLessonId
-    ? modules.filter(m => m.lessons.some(l => l.id === activeLessonId)).map(m => m.id)
-    : undefined
+  // Controlled accordion — auto-expand module containing the active lesson
+  const [openModules, setOpenModules] = useState<string[]>(() => {
+    if (!activeLessonId) return []
+    return modules.filter(m => m.lessons.some(l => l.id === activeLessonId)).map(m => m.id)
+  })
+
+  // Re-expand when active lesson changes (cross-module navigation via Next button)
+  useEffect(() => {
+    if (!activeLessonId) return
+    const activeModuleId = modules.find(m => m.lessons.some(l => l.id === activeLessonId))?.id
+    if (activeModuleId && !openModules.includes(activeModuleId)) {
+      setOpenModules(prev => [...prev, activeModuleId])
+    }
+  }, [activeLessonId, modules])
 
   return (
-    <Accordion type="multiple" defaultValue={defaultOpen} className="space-y-3">
+    <Accordion type="multiple" value={openModules} onValueChange={setOpenModules} className="space-y-3">
       {modules.map(module => {
         const completedInModule = module.lessons.filter(l => completedLessons.includes(l.id)).length
 

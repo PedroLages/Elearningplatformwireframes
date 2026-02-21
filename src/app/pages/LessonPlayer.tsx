@@ -3,7 +3,7 @@ import { useMemo, useState, useCallback, useRef, useEffect } from 'react'
 import { ArrowLeft, ChevronLeft, ChevronRight, CheckCircle2, Circle, Menu } from 'lucide-react'
 import { Button } from '../components/ui/button'
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '../components/ui/tabs'
-import { Sheet, SheetContent, SheetTrigger } from '../components/ui/sheet'
+import { Sheet, SheetContent, SheetHeader, SheetTitle, SheetTrigger } from '../components/ui/sheet'
 import { VideoPlayer } from '../components/figma/VideoPlayer'
 import { PdfViewer } from '../components/figma/PdfViewer'
 import { ModuleAccordion } from '../components/figma/ModuleAccordion'
@@ -233,9 +233,9 @@ export function LessonPlayer() {
                   </Button>
                 </SheetTrigger>
                 <SheetContent side="bottom" className="h-[80vh] overflow-y-auto">
-                  <div className="mb-4">
-                    <h3 className="text-sm font-semibold">Course Content</h3>
-                  </div>
+                  <SheetHeader>
+                    <SheetTitle className="text-sm">Course Content</SheetTitle>
+                  </SheetHeader>
                   <div data-testid="mobile-course-accordion">
                     <ModuleAccordion
                       modules={course.modules}

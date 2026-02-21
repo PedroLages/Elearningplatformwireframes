@@ -18,6 +18,16 @@
 - String interpolation for className instead of cn() continues in new components (StatusFilter, ImportedCourseCard)
 - Courses.test.tsx doesn't test status filtering (AC2), combined topic+status filtering, or default-to-active (AC3)
 
+### E02-S05: Course Structure Navigation
+- AutoAdvanceCountdown uses `setInterval` with `remaining` in deps -- creates new interval every second instead of using `setTimeout`
+- `prefers-reduced-motion` required by story Task 3.4 but NOT implemented in AutoAdvanceCountdown
+- No unit tests for AutoAdvanceCountdown or ModuleAccordion (activeLessonId feature)
+- E2E tests do NOT cover auto-advance actually navigating to next lesson after countdown reaches 0 (AC5 gap)
+- String interpolation for className (not `cn()`) continues in ModuleAccordion Link elements
+- `h-5 w-5` used instead of `size-5` Tailwind v4 shorthand in ModuleAccordion icons
+- `defaultValue` on Radix Accordion is uncontrolled -- won't re-expand when navigating between lessons in different modules
+- `handleVideoEnded` has `completed` in closure -- rewatching a completed video shows auto-advance but skips celebration (intended?) but also triggers auto-advance even for already-completed lessons
+
 ## Project Conventions
 - Import alias: `@/` resolves to `./src`
 - Card border radius: `rounded-[24px]`

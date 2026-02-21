@@ -1,4 +1,4 @@
-import { useEffect, useState, useCallback } from 'react'
+import { useEffect, useState, useRef } from 'react'
 import { Button } from '@/app/components/ui/button'
 
 interface AutoAdvanceCountdownProps {
@@ -15,23 +15,23 @@ export function AutoAdvanceCountdown({
   onCancel,
 }: AutoAdvanceCountdownProps) {
   const [remaining, setRemaining] = useState(seconds)
+  const onAdvanceRef = useRef(onAdvance)
+  onAdvanceRef.current = onAdvance
 
-  const handleCancel = useCallback(() => {
-    onCancel()
-  }, [onCancel])
-
+  // Single stable interval — no deps on remaining or callbacks
   useEffect(() => {
-    if (remaining <= 0) {
-      onAdvance()
-      return
-    }
-
     const timer = setInterval(() => {
       setRemaining(prev => prev - 1)
     }, 1000)
-
     return () => clearInterval(timer)
-  }, [remaining, onAdvance])
+  }, [seconds])
+
+  // Fire advance when countdown reaches 0
+  useEffect(() => {
+    if (remaining <= 0) {
+      onAdvanceRef.current()
+    }
+  }, [remaining])
 
   return (
     <div
@@ -44,7 +44,7 @@ export function AutoAdvanceCountdown({
         Next: <span className="font-medium">{nextLessonTitle}</span> in{' '}
         <span className="font-bold tabular-nums">{remaining}s</span>
       </p>
-      <Button variant="outline" size="sm" onClick={handleCancel}>
+      <Button variant="outline" size="sm" onClick={onCancel}>
         Cancel
       </Button>
     </div>
