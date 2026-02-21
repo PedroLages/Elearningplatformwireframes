@@ -111,6 +111,8 @@ Report: `docs/reviews/code/code-review-2026-02-21-E02-S09.md`
 
 ## Challenges and Lessons Learned
 
+> **Note for future stories**: VideoPlayer's `onPlayStateChange`, `theaterMode`, `onTheaterModeToggle` props and LessonPlayer's mini-player structure (testids: `video-anchor`, `mini-player`, `lesson-content-scroll`, `desktop-sidebar`) must be preserved. Do not remove these features when adding new VideoPlayer capabilities.
+
 - **Event bubbling through `<video>`**: Clicking the mini-player wrapper bubbled into the video element's `onClick={togglePlayPause}`, pausing the video every time. The E2E test passed accidentally because pause itself hides the mini-player. Fix: `e.stopPropagation()` on the mini-player click handler. Lesson: when overlaying a clickable wrapper on a video element, always stop propagation.
 
 - **T key double-toggle from two handlers**: Having `onKeyDown` on the wrapper div AND a `window`-level listener in VideoPlayer both handling `'t'` caused React to batch two functional state updates that cancelled each other — theater mode could never activate when focus was inside VideoPlayer controls. Fix: remove the wrapper's `onKeyDown` for T; the window listener is sufficient. Lesson: global keyboard shortcuts should live in exactly one place; don't split them between React synthetic events and window listeners.

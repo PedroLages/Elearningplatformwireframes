@@ -238,7 +238,7 @@ export function Layout() {
         </header>
 
         {/* Page Content - Extra bottom padding on mobile for bottom nav */}
-        <main id="main-content" className="flex-1 overflow-auto p-6 pt-6 pb-20 sm:pb-6">
+        <main id="main-content" data-testid="main-scroll-container" className="flex-1 overflow-auto p-6 pt-6 pb-20 sm:pb-6">
           <Outlet />
         </main>
       </div>

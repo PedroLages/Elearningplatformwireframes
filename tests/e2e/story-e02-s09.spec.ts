@@ -20,9 +20,9 @@ async function goToLessonPlayer(page: Parameters<typeof navigateAndWait>[0]) {
   await page.locator('video').waitFor({ state: 'visible', timeout: 10000 })
 }
 
-/** Scroll the lesson content container (inner overflow-y-auto div). */
+/** Scroll the main scroll container (Layout's <main> — single scroll container after sticky sidebar fix). */
 async function scrollLessonContent(page: Parameters<typeof navigateAndWait>[0], y: number) {
-  await page.getByTestId('lesson-content-scroll').evaluate((el, scrollY) => el.scrollBy(0, scrollY), y)
+  await page.getByTestId('main-scroll-container').evaluate((el, scrollY) => el.scrollBy(0, scrollY), y)
 }
 
 /**

@@ -231,9 +231,9 @@ export function LessonPlayer() {
   }
 
   return (
-    <div className="flex gap-6 h-full">
+    <div className="flex gap-6">
       {/* Main Content */}
-      <div className="flex-1 min-h-0 overflow-y-auto" data-testid="lesson-content-scroll">
+      <div className="flex-1 min-w-0" data-testid="lesson-content-scroll">
         <Link
           to={`/courses/${courseId}`}
           className="inline-flex items-center gap-1 text-sm text-muted-foreground hover:text-foreground mb-4 transition-colors"
@@ -493,11 +493,11 @@ export function LessonPlayer() {
       </div>
 
       {/* Sidebar Course Structure — hidden in theater mode */}
-      <div data-testid="desktop-sidebar" className={cn('w-72 bg-card rounded-2xl shadow-sm overflow-hidden', isTheaterMode ? 'hidden' : 'hidden xl:block')}>
-        <div className="px-4 py-3 border-b border-border">
+      <div data-testid="desktop-sidebar" className={cn('sticky top-0 self-start flex-shrink-0 w-72 bg-card rounded-2xl shadow-sm overflow-hidden flex flex-col max-h-[calc(100svh-3rem)]', isTheaterMode ? 'hidden' : 'hidden xl:flex')}>
+        <div className="px-4 py-3 border-b border-border flex-shrink-0">
           <h3 className="text-sm font-semibold">Course Content</h3>
         </div>
-        <div className="p-3 overflow-y-auto h-[calc(100%-49px)] [scrollbar-gutter:stable]" data-testid="course-sidebar-accordion">
+        <div className="p-3 flex-1 overflow-y-auto [scrollbar-gutter:stable]" data-testid="course-sidebar-accordion">
           <ModuleAccordion
             modules={course.modules}
             courseId={course.id}
