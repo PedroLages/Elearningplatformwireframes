@@ -129,6 +129,7 @@ export function LessonPlayer() {
       if (courseId && lessonId) {
         addBookmark(courseId, lessonId, timestamp)
         setBookmarks(getLessonBookmarks(courseId, lessonId))
+        toast(`Bookmarked at ${formatBookmarkTimestamp(timestamp)}`, { duration: 2000 })
       }
     },
     [courseId, lessonId]
@@ -201,6 +202,8 @@ export function LessonPlayer() {
               onEnded={handleVideoEnded}
               onSeekComplete={handleSeekComplete}
               onBookmarkAdd={handleBookmarkAdd}
+              bookmarks={bookmarks}
+              onBookmarkSeek={handleVideoSeek}
             />
           </div>
         )}
