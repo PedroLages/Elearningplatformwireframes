@@ -1,12 +1,12 @@
 ---
 story_id: E02-S04
 story_name: "PDF Viewer with Page Navigation"
-status: in-progress
+status: done
 started: 2026-02-21
-completed:
-reviewed: false
-review_started:
-review_gates_passed: []
+completed: 2026-02-21
+reviewed: true
+review_started: 2026-02-21
+review_gates_passed: [build, lint, unit-tests, e2e-tests, design-review, code-review]
 ---
 
 # Story 2.4: PDF Viewer with Page Navigation
@@ -32,7 +32,7 @@ So that I can study slides and textbooks alongside my video content.
 
 **Given** the user navigates away from a PDF
 **When** they return later
-**Then** the last viewed page is restored from IndexedDB
+**Then** the last viewed page is restored from localStorage
 **And** the restore happens within 1 second
 
 ## Tasks / Subtasks
@@ -51,7 +51,7 @@ So that I can study slides and textbooks alongside my video content.
 - [ ] Task 5: Integrate PDF mode into LessonPlayer page (AC: 1, 2, 3)
   - [ ] 5.1 Detect PDF content type and switch to PdfViewer
   - [ ] 5.2 Route PDF files through blob URL creation from FileSystemFileHandle
-- [ ] Task 6: Persist and restore last viewed page in IndexedDB (AC: 3)
+- [ ] Task 6: Persist and restore last viewed page in localStorage (AC: 3)
   - [ ] 6.1 Save current page to progress table on page change
   - [ ] 6.2 Restore page position on load within 1 second
 
@@ -65,11 +65,21 @@ So that I can study slides and textbooks alongside my video content.
 
 ## Design Review Feedback
 
-[Populated by /review-story — Playwright MCP findings]
+Full report: `docs/reviews/design/design-review-2026-02-21-e02-s04.md`
+
+- 1 Blocker: Content area `flex-1` overrides fixed-height utilities (PdfViewer.tsx:444)
+- 4 High: Touch targets 32px (need 44px), page input immediate-navigate on keystroke, contrast 4.06:1, mobile toolbar wrap
+- 4 Medium: Border radius inconsistencies, relative imports
+- 3 Nits: Dead props, missing useCallback
 
 ## Code Review Feedback
 
-[Populated by /review-story — adversarial code review findings]
+Full report: `docs/reviews/code/code-review-2026-02-21-e02-s04.md`
+
+- 1 Blocker: AC3 specifies IndexedDB but implementation uses localStorage (process mismatch)
+- 4 High: Dead `courseId`/`resourceId` props, unmount cleanup, no unit tests for savePdfPage/getPdfPage, Materials tab no debounce
+- 3 Medium: `h-X w-X` vs `size-X`, zoom dropdown no Escape key, 12 useState declarations
+- 4 Nits: Mixed border radius, window.open security, callback stability, page dimensions
 
 ## Implementation Plan
 

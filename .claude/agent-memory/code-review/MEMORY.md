@@ -18,6 +18,15 @@
 - String interpolation for className instead of cn() continues in new components (StatusFilter, ImportedCourseCard)
 - Courses.test.tsx doesn't test status filtering (AC2), combined topic+status filtering, or default-to-active (AC3)
 
+### E02-S04: PDF Viewer with Page Navigation
+- AC3 says "IndexedDB" but progress module uses localStorage -- consistent with existing codebase but deviates from AC text
+- `savePdfPage`/`getPdfPage` have no dedicated unit tests in `src/lib/__tests__/progress.test.ts`
+- PdfViewer component accepts `courseId`/`resourceId` props but never uses them internally (dead props)
+- `h-8 w-8` used 10+ times in PdfViewer instead of Tailwind v4 `size-8`; `h-4 w-4` used 10+ times instead of `size-4`
+- Debounce timeout for PDF page save in LessonPlayer not cleaned up on unmount
+- Materials tab PDFs call `savePdfPage` synchronously on every page change (no debounce), unlike primary PDF
+- Zoom dropdown has no keyboard dismiss (Escape key) support
+
 ## Project Conventions
 - Import alias: `@/` resolves to `./src`
 - Card border radius: `rounded-[24px]`

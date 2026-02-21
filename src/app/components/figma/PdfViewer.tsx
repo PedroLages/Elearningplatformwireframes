@@ -60,10 +60,16 @@ export function PdfViewer({
   const [pageWidth, setPageWidth] = useState(0)
   const [pageHeight, setPageHeight] = useState(0)
   const [zoomDropdownOpen, setZoomDropdownOpen] = useState(false)
+  const [pageInputValue, setPageInputValue] = useState(String(initialPage))
 
   const containerRef = useRef<HTMLDivElement>(null)
   const contentRef = useRef<HTMLDivElement>(null)
   const dropdownRef = useRef<HTMLDivElement>(null)
+
+  // Sync page input draft when currentPage changes externally (buttons, keyboard)
+  useEffect(() => {
+    setPageInputValue(String(currentPage))
+  }, [currentPage])
 
   // Measure container
   useEffect(() => {
@@ -228,14 +234,21 @@ export function PdfViewer({
   )
 
   const handlePageInputChange = (e: React.ChangeEvent<HTMLInputElement>) => {
-    const val = parseInt(e.target.value, 10)
+    setPageInputValue(e.target.value)
+  }
+
+  const commitPageInput = useCallback(() => {
+    const val = parseInt(pageInputValue, 10)
     if (!isNaN(val)) {
       goToPage(val)
+    } else {
+      setPageInputValue(String(currentPage))
     }
-  }
+  }, [pageInputValue, goToPage, currentPage])
 
   const handlePageInputKeyDown = (e: React.KeyboardEvent<HTMLInputElement>) => {
     if (e.key === 'Enter') {
+      commitPageInput()
       ;(e.target as HTMLInputElement).blur()
     }
   }
@@ -310,9 +323,10 @@ export function PdfViewer({
               type="number"
               min={1}
               max={totalPages}
-              value={currentPage}
+              value={pageInputValue}
               onChange={handlePageInputChange}
               onKeyDown={handlePageInputKeyDown}
+              onBlur={commitPageInput}
               aria-label="Current page"
               className="w-10 rounded border border-border bg-background px-1 py-0.5 text-center text-sm [appearance:textfield] [&::-webkit-inner-spin-button]:appearance-none [&::-webkit-outer-spin-button]:appearance-none"
             />
@@ -441,7 +455,7 @@ export function PdfViewer({
       {/* PDF content area */}
       <div
         ref={contentRef}
-        className="relative flex-1 overflow-auto h-[400px] sm:h-[500px] lg:h-[700px] xl:h-[800px]"
+        className="relative overflow-auto h-[400px] sm:h-[500px] lg:h-[700px] xl:h-[800px]"
       >
         {isLoading && (
           <div className="absolute inset-0 flex flex-col items-center justify-center gap-3 p-8">
