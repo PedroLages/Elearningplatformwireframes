@@ -95,4 +95,9 @@ Two blockers: (B1) `data-testid="video-player"` renamed to `video-player-contain
 
 ## Challenges and Lessons Learned
 
-[Document issues, solutions, and patterns worth remembering]
+- **Test ID renames break downstream tests silently.** Renaming `data-testid="video-player"` to `video-player-container` broke 3 existing E2E specs in other story files. Always grep for `getByTestId('name')` across the full test suite before renaming any test ID.
+- **Document only what exists.** The shortcuts overlay listed `Shift + ←→` for ±10s seeking, but no handler implemented it. Code review caught the phantom entry. Only add shortcut rows for shortcuts that actually fire.
+- **Overlays need dialog ARIA from the start.** The shortcuts overlay shipped without `role="dialog"`, `aria-modal`, or focus management. Retrofitting these is more work than including them in the initial component skeleton. Start every overlay/modal with dialog semantics.
+- **44px minimum applies to close buttons too.** The close button used `size-9` (36px), below the 44px touch target minimum. Easy to miss on dismiss buttons inside overlays.
+- **PiP requires native event listeners for state sync.** React state alone can't track PiP because the user can exit PiP via browser chrome (not our button). Listening to `enterpictureinpicture`/`leavepictureinpicture` on the video element keeps state accurate.
+- **Capture-phase event handling prevents parent conflicts.** The `?` key needed to open the video shortcuts overlay without also triggering the Layout-level `?` handler. A `document.addEventListener('keydown', handler, true)` in capture phase with `stopPropagation()` solved this cleanly.
