@@ -7,6 +7,7 @@ import { Sheet, SheetContent, SheetTrigger } from '../components/ui/sheet'
 import { VideoPlayer } from '../components/figma/VideoPlayer'
 import { PdfViewer } from '../components/figma/PdfViewer'
 import { ModuleAccordion } from '../components/figma/ModuleAccordion'
+import { AutoAdvanceCountdown } from '../components/figma/AutoAdvanceCountdown'
 import { ResourceBadge } from '../components/figma/ResourceBadge'
 import { NoteEditor } from '../components/notes/NoteEditor'
 import { CompletionModal, type CelebrationType } from '../components/celebrations/CompletionModal'
@@ -58,6 +59,18 @@ export function LessonPlayer() {
   const [celebrationType, setCelebrationType] = useState<CelebrationType>('lesson')
   const [celebrationTitle, setCelebrationTitle] = useState('')
 
+  // Auto-advance countdown state
+  const [showAutoAdvance, setShowAutoAdvance] = useState(false)
+
+  // Reset auto-advance and completion state when lesson changes
+  useEffect(() => {
+    setShowAutoAdvance(false)
+    if (courseId && lessonId) {
+      setCompleted(isLessonComplete(courseId, lessonId))
+      setNoteText(getNote(courseId, lessonId))
+    }
+  }, [courseId, lessonId])
+
   // Update bookmarks when lesson changes
   useEffect(() => {
     if (courseId && lessonId) {
@@ -94,7 +107,11 @@ export function LessonPlayer() {
       setCelebrationTitle(lesson?.title || 'Lesson')
       setCelebrationModal(true)
     }
-  }, [courseId, lessonId, completed, lesson])
+    // Show auto-advance countdown if there's a next lesson
+    if (nextLesson) {
+      setShowAutoAdvance(true)
+    }
+  }, [courseId, lessonId, completed, lesson, nextLesson])
 
   const handleVideoSeek = useCallback((timestamp: number) => {
     setSeekToTime(timestamp)
@@ -181,6 +198,21 @@ export function LessonPlayer() {
               onEnded={handleVideoEnded}
               onSeekComplete={handleSeekComplete}
               onBookmarkAdd={handleBookmarkAdd}
+            />
+          </div>
+        )}
+
+        {/* Auto-Advance Countdown */}
+        {showAutoAdvance && nextLesson && (
+          <div className="mb-5">
+            <AutoAdvanceCountdown
+              seconds={5}
+              nextLessonTitle={nextLesson.title}
+              onAdvance={() => {
+                setShowAutoAdvance(false)
+                navigate(`/courses/${courseId}/${nextLesson.id}`)
+              }}
+              onCancel={() => setShowAutoAdvance(false)}
             />
           </div>
         )}
