@@ -5,6 +5,7 @@ import { Button } from '../components/ui/button'
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '../components/ui/tabs'
 import { Sheet, SheetContent, SheetHeader, SheetTitle, SheetTrigger } from '../components/ui/sheet'
 import { VideoPlayer } from '../components/figma/VideoPlayer'
+import { TranscriptPanel } from '../components/figma/TranscriptPanel'
 import { PdfViewer } from '../components/figma/PdfViewer'
 import { ModuleAccordion } from '../components/figma/ModuleAccordion'
 import { AutoAdvanceCountdown } from '../components/figma/AutoAdvanceCountdown'
@@ -109,6 +110,8 @@ export function LessonPlayer() {
   const nextLesson = currentIndex < allLessons.length - 1 ? allLessons[currentIndex + 1] : null
 
   const videoResource = lesson?.resources.find(r => r.type === 'video')
+  const captionSrc = videoResource?.metadata?.captions?.[0]?.src
+  const videoChapters = videoResource?.metadata?.chapters
   const allPdfResources = lesson?.resources.filter(r => r.type === 'pdf') ?? []
   // When no video exists, promote first PDF to primary content
   const primaryPdf = !videoResource && allPdfResources.length > 0 ? allPdfResources[0] : null
@@ -126,9 +129,12 @@ export function LessonPlayer() {
     [courseId, primaryPdf]
   )
 
+  const [videoCurrentTime, setVideoCurrentTime] = useState(0)
+
   const lastSaveTimeRef = useRef(-Infinity)
   const handleTimeUpdate = useCallback(
     (time: number) => {
+      setVideoCurrentTime(time)
       if (courseId && lessonId && time - lastSaveTimeRef.current >= 5) {
         lastSaveTimeRef.current = time
         saveVideoPosition(courseId, lessonId, time)
@@ -234,12 +240,14 @@ export function LessonPlayer() {
               seekToTime={seekToTime}
               courseId={courseId}
               lessonId={lessonId}
+              chapters={videoChapters}
               onTimeUpdate={handleTimeUpdate}
               onEnded={handleVideoEnded}
               onSeekComplete={handleSeekComplete}
               onBookmarkAdd={handleBookmarkAdd}
               bookmarks={bookmarks}
               onBookmarkSeek={handleVideoSeek}
+              captions={videoResource.metadata?.captions}
             />
           </div>
         )}
@@ -346,7 +354,7 @@ export function LessonPlayer() {
           )}
         </div>
 
-        {/* Tabs: PDFs / Notes / Bookmarks */}
+        {/* Tabs: PDFs / Notes / Bookmarks / Transcript */}
         <Tabs defaultValue={pdfResources.length > 0 ? 'materials' : 'notes'} key={lessonId}>
           <TabsList>
             {pdfResources.length > 0 && (
@@ -355,6 +363,9 @@ export function LessonPlayer() {
             <TabsTrigger value="notes">Notes</TabsTrigger>
             {videoResource && (
               <TabsTrigger value="bookmarks">Bookmarks ({bookmarks.length})</TabsTrigger>
+            )}
+            {captionSrc && (
+              <TabsTrigger value="transcript">Transcript</TabsTrigger>
             )}
           </TabsList>
 
@@ -394,6 +405,18 @@ export function LessonPlayer() {
                   bookmarks={bookmarks}
                   onSeek={handleVideoSeek}
                   onBookmarksChange={handleBookmarksChange}
+                />
+              </div>
+            </TabsContent>
+          )}
+
+          {captionSrc && (
+            <TabsContent value="transcript" className="mt-4">
+              <div className="bg-card rounded-2xl shadow-sm overflow-hidden h-[400px]">
+                <TranscriptPanel
+                  src={captionSrc}
+                  currentTime={videoCurrentTime}
+                  onSeek={handleVideoSeek}
                 />
               </div>
             </TabsContent>

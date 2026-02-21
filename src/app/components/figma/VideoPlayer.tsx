@@ -14,13 +14,13 @@ import {
   SkipForward,
   PictureInPicture2,
 } from 'lucide-react'
-import type { CaptionTrack } from '@/data/types'
+import type { CaptionTrack, Chapter } from '@/data/types'
+import { ChapterProgressBar } from './ChapterProgressBar'
 import { AspectRatio } from '@/app/components/ui/aspect-ratio'
 import { Button } from '@/app/components/ui/button'
 import { Slider } from '@/app/components/ui/slider'
 // Radix Popover Portal miscalculates position inside scroll containers — using plain CSS dropdown
 import { cn } from '@/app/components/ui/utils'
-import { Tooltip, TooltipTrigger, TooltipContent } from '@/app/components/ui/tooltip'
 import { VideoShortcutsOverlay } from '@/app/components/figma/VideoShortcutsOverlay'
 
 interface VideoPlayerProps {
@@ -28,6 +28,7 @@ interface VideoPlayerProps {
   title?: string
   initialPosition?: number
   captions?: CaptionTrack[]
+  chapters?: Chapter[]
   seekToTime?: number
   courseId?: string
   lessonId?: string
@@ -60,6 +61,7 @@ export function VideoPlayer({
   title,
   initialPosition,
   captions,
+  chapters,
   seekToTime,
   courseId: _courseId,
   lessonId: _lessonId,
@@ -106,9 +108,6 @@ export function VideoPlayer({
 
   // Video shortcuts overlay state
   const [shortcutsOpen, setShortcutsOpen] = useState(false)
-
-  // Progress bar hover state for expand-on-hover effect
-  const [progressHovered, setProgressHovered] = useState(false)
 
   // Bookmark confirmation flash state
   const [justBookmarked, setJustBookmarked] = useState(false)
@@ -602,11 +601,11 @@ export function VideoPlayer({
     }
   }, [showControls])
 
-  // Handle progress bar change
+  // Handle progress bar change (percent 0–100)
   const handleProgressChange = useCallback(
-    (value: number[]) => {
+    (percent: number) => {
       if (videoRef.current) {
-        const newTime = (value[0] / 100) * duration
+        const newTime = (percent / 100) * duration
         videoRef.current.currentTime = newTime
         setCurrentTime(newTime)
       }
@@ -694,48 +693,17 @@ export function VideoPlayer({
           <div className="absolute bottom-0 left-0 right-0 p-4 space-y-2">
             {/* Progress Bar */}
             <div className="flex items-center gap-2">
-              <span className="text-white text-xs font-medium min-w-[45px]">
+              <span data-testid="current-time" className="text-white text-xs font-medium min-w-[45px]">
                 {formatTime(currentTime)}
               </span>
-              <div
-                className="relative flex-1 py-3 -my-3 cursor-pointer"
-                onMouseEnter={() => setProgressHovered(true)}
-                onMouseLeave={() => setProgressHovered(false)}
-              >
-                <Slider
-                  value={[progress]}
-                  onValueChange={handleProgressChange}
-                  max={100}
-                  step={0.1}
-                  aria-label="Video progress"
-                  trackClassName={cn(
-                    'bg-white/30',
-                    progressHovered ? '' : '!h-1'
-                  )}
-                  rangeClassName="bg-white"
-                  thumbClassName={cn(
-                    'bg-white border-2 border-white shadow-[0_0_0_3px_rgba(255,255,255,0.25)] transition-[opacity,width,height] duration-200 motion-reduce:transition-none',
-                    progressHovered ? 'opacity-100' : 'opacity-0 !size-2.5'
-                  )}
-                />
-                {/* Bookmark markers — visible dot is w-2 h-2, wrapped in 44x44px hit area for touch targets */}
-                {bookmarks && duration > 0 && bookmarks.map(bm => (
-                  <Tooltip key={bm.id}>
-                    <TooltipTrigger asChild>
-                      <button
-                        data-testid="bookmark-marker"
-                        className="absolute top-1/2 -translate-y-1/2 -translate-x-1/2 min-w-[44px] min-h-[44px] flex items-center justify-center z-10 cursor-pointer group/marker"
-                        style={{ left: `${(bm.timestamp / duration) * 100}%` }}
-                        onClick={(e) => { e.stopPropagation(); onBookmarkSeek?.(bm.timestamp) }}
-                        aria-label={`Bookmark at ${formatTime(bm.timestamp)}`}
-                      >
-                        <span className="w-2 h-2 rounded-full bg-yellow-400 border border-yellow-600 group-hover/marker:scale-150 transition-transform motion-reduce:transition-none" />
-                      </button>
-                    </TooltipTrigger>
-                    <TooltipContent side="top">{formatTime(bm.timestamp)}</TooltipContent>
-                  </Tooltip>
-                ))}
-              </div>
+              <ChapterProgressBar
+                progress={progress}
+                duration={duration}
+                chapters={chapters}
+                bookmarks={bookmarks}
+                onSeek={handleProgressChange}
+                onBookmarkSeek={onBookmarkSeek}
+              />
               <span className="text-white text-xs font-medium min-w-[45px] text-right">
                 {formatTime(duration)}
               </span>
