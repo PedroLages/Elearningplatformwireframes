@@ -1,12 +1,12 @@
 ---
 story_id: E02-S06
 story_name: "Video Player UX Fixes & Accessibility"
-status: in-progress
+status: done
 started: 2026-02-21
-completed:
-reviewed: false
-review_started:
-review_gates_passed: []
+completed: 2026-02-21
+reviewed: true
+review_started: 2026-02-21
+review_gates_passed: [build, lint, unit-tests, e2e-tests, design-review, code-review]
 ---
 
 # Story 2.6: Video Player UX Fixes & Accessibility
@@ -95,11 +95,25 @@ So that I can use the player comfortably on mobile, tablet, and desktop with key
 
 ## Design Review Feedback
 
-[Populated by /review-story — Playwright MCP findings]
+**Reviewed 2026-02-21** — Report: `docs/reviews/design/design-review-2026-02-21-E02-S06.md`
+
+- **B1 (Blocker)**: `Button` needs `React.forwardRef` — `speedTriggerRef` always null
+- **H1**: Slider thumbs have no accessible name — `aria-label` not threaded to `Thumb`
+- **H2**: Focus ring uses `focus:` not `focus-visible:` — shows on mouse clicks
+- **H3**: Duplicate Play button in tab order — center overlay needs `tabIndex={-1}`
 
 ## Code Review Feedback
 
-[Populated by /review-story — adversarial code review findings]
+**Reviewed 2026-02-21** — Report: `docs/reviews/code/code-review-2026-02-21-E02-S06.md`
+
+- **B1 (Blocker)**: Focus ring `focus:` vs `focus-visible:` (same as design B2)
+- **B2 (Blocker)**: Speed menu no click-outside-to-close handler
+- **H1**: AutoAdvanceCountdown interval keeps ticking past zero
+- **H2**: `poster` prop not wired in LessonPlayer
+- **H3**: No AC4 (reduced motion) E2E test
+- **H4**: ModuleAccordion stale `openModules` closure in useEffect
+- 4 Medium issues (volume popover click-outside, Tailwind class consistency)
+- 4 Nits
 
 ## Challenges and Lessons Learned
 

@@ -32,35 +32,40 @@ async function putRecords(
   courses: ImportedCourseTestData[],
 ): Promise<void> {
   await page.evaluate(
-    async ({ dbName, storeName, data }) => {
-      return new Promise<void>((resolve, reject) => {
-        const request = indexedDB.open(dbName)
-        request.onsuccess = () => {
-          const db = request.result
-          // Check if store exists (Dexie may not have created it yet)
-          if (!db.objectStoreNames.contains(storeName)) {
-            db.close()
-            reject(new Error(`Store "${storeName}" not found in "${dbName}"`))
-            return
+    async ({ dbName, storeName, data, maxRetries, retryDelay }) => {
+      for (let attempt = 0; attempt < maxRetries; attempt++) {
+        const result = await new Promise<'ok' | 'store-missing'>((resolve, reject) => {
+          const request = indexedDB.open(dbName)
+          request.onsuccess = () => {
+            const db = request.result
+            if (!db.objectStoreNames.contains(storeName)) {
+              db.close()
+              resolve('store-missing')
+              return
+            }
+            const tx = db.transaction(storeName, 'readwrite')
+            const store = tx.objectStore(storeName)
+            for (const item of data) {
+              store.put(item)
+            }
+            tx.oncomplete = () => {
+              db.close()
+              resolve('ok')
+            }
+            tx.onerror = () => {
+              db.close()
+              reject(tx.error)
+            }
           }
-          const tx = db.transaction(storeName, 'readwrite')
-          const store = tx.objectStore(storeName)
-          for (const item of data) {
-            store.put(item)
-          }
-          tx.oncomplete = () => {
-            db.close()
-            resolve()
-          }
-          tx.onerror = () => {
-            db.close()
-            reject(tx.error)
-          }
-        }
-        request.onerror = () => reject(request.error)
-      })
+          request.onerror = () => reject(request.error)
+        })
+        if (result === 'ok') return
+        // Store not yet created by Dexie — wait and retry
+        await new Promise(r => setTimeout(r, retryDelay))
+      }
+      throw new Error(`Store "${storeName}" not found in "${dbName}" after ${maxRetries} retries`)
     },
-    { dbName: DB_NAME, storeName: STORE_NAME, data: courses },
+    { dbName: DB_NAME, storeName: STORE_NAME, data: courses, maxRetries: 10, retryDelay: 200 },
   )
 }
 

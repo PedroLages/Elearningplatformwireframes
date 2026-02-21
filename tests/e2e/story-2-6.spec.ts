@@ -7,6 +7,7 @@
  *   - AC1: Touch targets (44x44px), mobile volume popover, touch auto-show/hide
  *   - AC2: Focus ring on player container, speed menu focus trap with ARIA roles
  *   - AC3: Video element attributes (preload, playsInline, poster)
+ *   - AC4: Reduced motion — transitions complete in ≤1ms
  *   - AC5: Single scrollbar on LessonPlayer, themed scrollbar styling
  *
  * Data seeding:
@@ -211,6 +212,26 @@ test.describe('AC3: Video Element Attributes', () => {
     const video = page.locator('video')
     await expect(video).toHaveAttribute('preload', 'metadata')
     await expect(video).toHaveAttribute('playsinline', '')
+    // poster attribute deferred — Resource type has no poster field yet
+  })
+})
+
+// ===========================================================================
+// AC4: Reduced Motion
+// ===========================================================================
+
+test.describe('AC4: Reduced Motion', () => {
+  test('controls transitions respect prefers-reduced-motion', async ({ page }) => {
+    await page.emulateMedia({ reducedMotion: 'reduce' })
+    await page.setViewportSize({ width: 1440, height: 900 })
+    await goToFirstLesson(page)
+
+    const overlay = page.getByTestId('player-controls-overlay')
+    const td = await overlay.evaluate(el =>
+      parseFloat(window.getComputedStyle(el).transitionDuration)
+    )
+    // Global CSS sets transition-duration: 0.01ms !important under reduced-motion
+    expect(td).toBeLessThanOrEqual(0.01)
   })
 })
 

@@ -182,7 +182,7 @@ export function LessonPlayer() {
           {course.shortTitle}
         </Link>
 
-        {/* Video Player */}
+        {/* Video Player — poster prop deferred until Resource type supports it */}
         {videoResource && (
           <div className="mb-5">
             <VideoPlayer

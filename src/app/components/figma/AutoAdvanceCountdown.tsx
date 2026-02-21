@@ -18,10 +18,16 @@ export function AutoAdvanceCountdown({
   const onAdvanceRef = useRef(onAdvance)
   onAdvanceRef.current = onAdvance
 
-  // Single stable interval — no deps on remaining or callbacks
+  // Single stable interval — stops itself at zero
   useEffect(() => {
     const timer = setInterval(() => {
-      setRemaining(prev => prev - 1)
+      setRemaining(prev => {
+        if (prev <= 1) {
+          clearInterval(timer)
+          return 0
+        }
+        return prev - 1
+      })
     }, 1000)
     return () => clearInterval(timer)
   }, [seconds])

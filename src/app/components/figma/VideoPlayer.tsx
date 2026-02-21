@@ -93,6 +93,8 @@ export function VideoPlayer({
   // Refs for speed menu focus trap
   const speedTriggerRef = useRef<HTMLButtonElement>(null)
   const speedMenuItemsRef = useRef<(HTMLButtonElement | null)[]>([])
+  const speedMenuWrapperRef = useRef<HTMLDivElement>(null)
+  const mobileVolumeWrapperRef = useRef<HTMLDivElement>(null)
 
   // Load saved caption preference from localStorage
   const [captionsEnabled, setCaptionsEnabled] = useState(() => {
@@ -340,6 +342,30 @@ export function VideoPlayer({
     return () => document.removeEventListener('keydown', handleKeyDown, true)
   }, [speedMenuOpen])
 
+  // Click-outside handler for speed menu (B2)
+  useEffect(() => {
+    if (!speedMenuOpen) return
+    const handleClickOutside = (e: MouseEvent) => {
+      if (speedMenuWrapperRef.current && !speedMenuWrapperRef.current.contains(e.target as Node)) {
+        setSpeedMenuOpen(false)
+      }
+    }
+    document.addEventListener('mousedown', handleClickOutside)
+    return () => document.removeEventListener('mousedown', handleClickOutside)
+  }, [speedMenuOpen])
+
+  // Click-outside handler for mobile volume popover (M1)
+  useEffect(() => {
+    if (!mobileVolumeOpen) return
+    const handleClickOutside = (e: MouseEvent) => {
+      if (mobileVolumeWrapperRef.current && !mobileVolumeWrapperRef.current.contains(e.target as Node)) {
+        setMobileVolumeOpen(false)
+      }
+    }
+    document.addEventListener('mousedown', handleClickOutside)
+    return () => document.removeEventListener('mousedown', handleClickOutside)
+  }, [mobileVolumeOpen])
+
   // Close mobile volume popover when controls hide
   useEffect(() => {
     if (!showControls) {
@@ -486,7 +512,7 @@ export function VideoPlayer({
     <div
       ref={containerRef}
       data-testid="video-player-container"
-      className="relative w-full overflow-hidden rounded-2xl bg-black group focus:outline focus:outline-2 focus:outline-blue-600 focus:outline-offset-2"
+      className="relative w-full overflow-hidden rounded-2xl bg-black group focus-visible:outline focus-visible:outline-2 focus-visible:outline-blue-600 focus-visible:outline-offset-2"
       onMouseMove={resetControlsTimeout}
       onMouseLeave={() => isPlaying && !speedMenuOpen && setShowControls(false)}
       onTouchStart={handleTouchShow}
@@ -536,11 +562,12 @@ export function VideoPlayer({
             <Button
               variant="ghost"
               size="icon"
-              className="h-16 w-16 rounded-full bg-black/50 hover:bg-black/70 text-white"
+              className="size-16 rounded-full bg-black/50 hover:bg-black/70 text-white"
               onClick={togglePlayPause}
-              aria-label={isPlaying ? 'Pause' : 'Play'}
+              tabIndex={-1}
+              aria-hidden="true"
             >
-              {isPlaying ? <Pause className="h-8 w-8" /> : <Play className="h-8 w-8 ml-1" />}
+              {isPlaying ? <Pause className="size-8" /> : <Play className="size-8 ml-1" />}
             </Button>
           </div>
 
@@ -579,7 +606,7 @@ export function VideoPlayer({
                 </Button>
 
                 {/* Volume */}
-                <div className="relative flex items-center gap-2">
+                <div ref={mobileVolumeWrapperRef} className="relative flex items-center gap-2">
                   <Button
                     variant="ghost"
                     size="icon"
@@ -632,7 +659,7 @@ export function VideoPlayer({
 
               <div className="flex items-center gap-2">
                 {/* Playback Speed */}
-                <div className="relative">
+                <div ref={speedMenuWrapperRef} className="relative">
                   <Button
                     ref={speedTriggerRef}
                     variant="ghost"
@@ -642,7 +669,6 @@ export function VideoPlayer({
                     aria-label="Playback speed"
                     aria-expanded={speedMenuOpen}
                     aria-haspopup="menu"
-                    tabIndex={0}
                     onClick={() => setSpeedMenuOpen(prev => !prev)}
                   >
                     <Settings className="size-5 mr-1" />

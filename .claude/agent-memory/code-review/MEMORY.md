@@ -28,6 +28,19 @@
 - `defaultValue` on Radix Accordion is uncontrolled -- won't re-expand when navigating between lessons in different modules
 - `handleVideoEnded` has `completed` in closure -- rewatching a completed video shows auto-advance but skips celebration (intended?) but also triggers auto-advance even for already-completed lessons
 
+### E02-S06: Video Player UX Fixes & Accessibility
+- S05 interval bug fixed (stable interval with no deps on `remaining`)
+- S05 uncontrolled Accordion fixed (now uses controlled `value`/`onValueChange`)
+- `focus:` used instead of `focus-visible:` on video player container -- shows ring on mouse click too (undesirable)
+- Speed menu has NO click-outside-to-close handler -- clicking elsewhere leaves menu open
+- Mobile volume popover has NO click-outside-to-close handler either
+- `poster` prop added to VideoPlayer but LessonPlayer never passes it
+- AutoAdvanceCountdown interval keeps ticking past 0 (remaining goes negative) -- should clearInterval
+- No AC4 (reduced motion) E2E test -- relies on global CSS rule but no test verifies it
+- `h-16 w-16` / `h-8 w-8` still used on center play button instead of `size-16` / `size-8`
+- String interpolation for className persists in ModuleAccordion Link (not using `cn()`)
+- `openModules` referenced in useEffect but not in dependency array (lint warning suppressed?)
+
 ## Project Conventions
 - Import alias: `@/` resolves to `./src`
 - Card border radius: `rounded-[24px]`
