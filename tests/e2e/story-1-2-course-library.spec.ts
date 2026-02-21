@@ -20,24 +20,7 @@ import {
   createImportedCourses,
 } from '../support/fixtures/factories/imported-course-factory'
 import { goToCourses } from '../support/helpers/navigation'
-
-// ---------------------------------------------------------------------------
-// Helpers
-// ---------------------------------------------------------------------------
-
-/** Navigate to Courses, seed IndexedDB, reload to pick up data. */
-async function seedAndReload(
-  page: Parameters<typeof goToCourses>[0],
-  indexedDB: { seedImportedCourses: (c: ReturnType<typeof createImportedCourse>[]) => Promise<void> },
-  courses: ReturnType<typeof createImportedCourse>[],
-) {
-  // GIVEN: Navigate first so Dexie creates the database
-  await goToCourses(page)
-  // Seed imported courses into IndexedDB
-  await indexedDB.seedImportedCourses(courses)
-  // Reload so Zustand store picks up seeded data
-  await page.reload({ waitUntil: 'domcontentloaded' })
-}
+import { seedAndReload } from '../support/helpers/seed-helpers'
 
 // ===========================================================================
 // AC1: Course Cards in Responsive Grid
@@ -204,7 +187,9 @@ test.describe('AC1: Course Card Grid Display', () => {
   test('should apply hover scale effect on imported course card', async ({
     page,
     indexedDB,
+    isMobile,
   }) => {
+    test.skip(isMobile, 'Hover states not supported on touch devices')
     // GIVEN: Imported course card rendered
     await seedAndReload(page, indexedDB, [course])
 
@@ -223,7 +208,9 @@ test.describe('AC1: Course Card Grid Display', () => {
   test('should apply blue-600 title color on hover', async ({
     page,
     indexedDB,
+    isMobile,
   }) => {
+    test.skip(isMobile, 'Hover states not supported on touch devices')
     // GIVEN: Imported course card rendered
     await seedAndReload(page, indexedDB, [course])
 

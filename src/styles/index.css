@@ -3,6 +3,32 @@
 @import './theme.css';
 @import './animations.css';
 
+/* Global thin scrollbar styling
+ * Standards: Chrome 121+, Firefox 64+, Safari 26.2+, Edge 121+
+ * WebKit fallback: older Chrome/Safari versions */
+* {
+  scrollbar-width: thin;
+  scrollbar-color: var(--scrollbar-thumb) var(--scrollbar-track);
+}
+
+::-webkit-scrollbar {
+  width: 6px;
+  height: 6px;
+}
+
+::-webkit-scrollbar-track {
+  background: var(--scrollbar-track);
+}
+
+::-webkit-scrollbar-thumb {
+  background: var(--scrollbar-thumb);
+  border-radius: 3px;
+}
+
+::-webkit-scrollbar-thumb:hover {
+  background: var(--scrollbar-thumb-hover, var(--scrollbar-thumb));
+}
+
 @media (prefers-reduced-motion: reduce) {
   *,
   *::before,
@@ -11,5 +37,10 @@
     animation-iteration-count: 1 !important;
     transition-duration: 0.01ms !important;
     scroll-behavior: auto !important;
+  }
+
+  /* Allow opacity fade for completion micro-interactions (AC: E02-S02) */
+  .reduced-motion-fade {
+    transition: opacity 300ms ease !important;
   }
 }

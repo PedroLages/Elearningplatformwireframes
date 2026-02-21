@@ -18,6 +18,37 @@
 - String interpolation for className instead of cn() continues in new components (StatusFilter, ImportedCourseCard)
 - Courses.test.tsx doesn't test status filtering (AC2), combined topic+status filtering, or default-to-active (AC3)
 
+### E02-S05: Course Structure Navigation
+- AutoAdvanceCountdown uses `setInterval` with `remaining` in deps -- creates new interval every second instead of using `setTimeout`
+- `prefers-reduced-motion` required by story Task 3.4 but NOT implemented in AutoAdvanceCountdown
+- No unit tests for AutoAdvanceCountdown or ModuleAccordion (activeLessonId feature)
+- E2E tests do NOT cover auto-advance actually navigating to next lesson after countdown reaches 0 (AC5 gap)
+- String interpolation for className (not `cn()`) continues in ModuleAccordion Link elements
+- `h-5 w-5` used instead of `size-5` Tailwind v4 shorthand in ModuleAccordion icons
+- `defaultValue` on Radix Accordion is uncontrolled -- won't re-expand when navigating between lessons in different modules
+- `handleVideoEnded` has `completed` in closure -- rewatching a completed video shows auto-advance but skips celebration (intended?) but also triggers auto-advance even for already-completed lessons
+
+### E02-S06: Video Player UX Fixes & Accessibility
+- S05 interval bug fixed (stable interval with no deps on `remaining`)
+- S05 uncontrolled Accordion fixed (now uses controlled `value`/`onValueChange`)
+- `focus:` used instead of `focus-visible:` on video player container -- shows ring on mouse click too (undesirable)
+- Speed menu has NO click-outside-to-close handler -- clicking elsewhere leaves menu open
+- Mobile volume popover has NO click-outside-to-close handler either
+- `poster` prop added to VideoPlayer but LessonPlayer never passes it
+- AutoAdvanceCountdown interval keeps ticking past 0 (remaining goes negative) -- should clearInterval
+- No AC4 (reduced motion) E2E test -- relies on global CSS rule but no test verifies it
+- `h-16 w-16` / `h-8 w-8` still used on center play button instead of `size-16` / `size-8`
+- String interpolation for className persists in ModuleAccordion Link (not using `cn()`)
+- `openModules` referenced in useEffect but not in dependency array (lint warning suppressed?)
+
+### E02-S07: Skip Controls, PiP & Shortcuts Help
+- Removal of `data-testid="video-player"` breaks 3 existing E2E tests (story-e02-s03, story-2-1-lesson-player)
+- `Shift+ArrowLeft/Right` listed in shortcuts overlay but NOT implemented in keyboard handler
+- VideoShortcutsOverlay has no ARIA role/aria-modal/focus trap -- accessibility gap for screen readers
+- Close button on overlay is `size-9` (36px), below 44px WCAG touch target minimum
+- `announceTimeoutRef` not cleaned up on unmount (pre-existing, but more announce calls added)
+- E2E tests missing: clicking skip buttons (only tests keyboard J/L), PiP exit flow, Shift+Arrow shortcuts
+
 ## Project Conventions
 - Import alias: `@/` resolves to `./src`
 - Card border radius: `rounded-[24px]`
@@ -26,3 +57,5 @@
 - shadcn/ui components in `src/app/components/ui/`
 - Custom components in `src/app/components/figma/`
 - Dexie.js DB defined in `src/db/schema.ts`, re-exported from `src/db/index.ts`
+- tsconfig.json has `noFallthroughCasesInSwitch: true` -- fallthrough switch requires special handling
+- `Tooltip` component from shadcn/ui wraps each instance in its own `TooltipProvider`, so multiple Tooltip uses are fine

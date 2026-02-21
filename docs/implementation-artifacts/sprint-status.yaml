@@ -46,13 +46,17 @@ development_status:
   1-4-manage-course-status: done
   epic-1-retrospective: done
 
-  # Epic 2: Video & PDF Content Playback (5 stories)
-  epic-2: backlog
-  2-1-lesson-player-page-with-video-playback: backlog
-  2-2-video-playback-controls-and-keyboard-shortcuts: backlog
-  2-3-video-bookmarking-and-resume: backlog
-  2-4-pdf-viewer-with-page-navigation: backlog
-  2-5-course-structure-navigation: backlog
+  # Epic 2: Video & PDF Content Playback (9 stories)
+  epic-2: in-progress
+  2-1-lesson-player-page-with-video-playback: done
+  2-2-video-playback-controls-and-keyboard-shortcuts: done
+  2-3-video-bookmarking-and-resume: done
+  2-4-pdf-viewer-with-page-navigation: done
+  2-5-course-structure-navigation: done
+  2-6-video-player-ux-fixes-accessibility: done
+  2-7-skip-controls-pip-shortcuts-help: done
+  2-8-chapter-progress-bar-transcript-panel: backlog
+  2-9-mini-player-theater-mode: backlog
   epic-2-retrospective: optional
 
   # Epic 3: Note-Taking & Knowledge Capture (7 stories)

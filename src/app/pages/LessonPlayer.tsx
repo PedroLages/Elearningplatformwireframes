@@ -3,10 +3,11 @@ import { useMemo, useState, useCallback, useRef, useEffect } from 'react'
 import { ArrowLeft, ChevronLeft, ChevronRight, CheckCircle2, Circle, Menu } from 'lucide-react'
 import { Button } from '../components/ui/button'
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '../components/ui/tabs'
-import { Sheet, SheetContent, SheetTrigger } from '../components/ui/sheet'
+import { Sheet, SheetContent, SheetHeader, SheetTitle, SheetTrigger } from '../components/ui/sheet'
 import { VideoPlayer } from '../components/figma/VideoPlayer'
 import { PdfViewer } from '../components/figma/PdfViewer'
-import { LessonList } from '../components/figma/LessonList'
+import { ModuleAccordion } from '../components/figma/ModuleAccordion'
+import { AutoAdvanceCountdown } from '../components/figma/AutoAdvanceCountdown'
 import { ResourceBadge } from '../components/figma/ResourceBadge'
 import { NoteEditor } from '../components/notes/NoteEditor'
 import { CompletionModal, type CelebrationType } from '../components/celebrations/CompletionModal'
@@ -18,11 +19,14 @@ import {
   markLessonComplete,
   markLessonIncomplete,
   saveVideoPosition,
+  savePdfPage,
+  getPdfPage,
   saveNote,
   getNote,
   isLessonComplete,
 } from '@/lib/progress'
-import { addBookmark, getLessonBookmarks } from '@/lib/bookmarks'
+import { addBookmark, getLessonBookmarks, formatBookmarkTimestamp } from '@/lib/bookmarks'
+import { toast } from 'sonner'
 
 export function LessonPlayer() {
   const { courseId, lessonId } = useParams<{
@@ -58,6 +62,18 @@ export function LessonPlayer() {
   const [celebrationType, setCelebrationType] = useState<CelebrationType>('lesson')
   const [celebrationTitle, setCelebrationTitle] = useState('')
 
+  // Auto-advance countdown state
+  const [showAutoAdvance, setShowAutoAdvance] = useState(false)
+
+  // Reset auto-advance and completion state when lesson changes
+  useEffect(() => {
+    setShowAutoAdvance(false)
+    if (courseId && lessonId) {
+      setCompleted(isLessonComplete(courseId, lessonId))
+      setNoteText(getNote(courseId, lessonId))
+    }
+  }, [courseId, lessonId])
+
   // Update bookmarks when lesson changes
   useEffect(() => {
     if (courseId && lessonId) {
@@ -70,15 +86,51 @@ export function LessonPlayer() {
     titleRef.current?.focus()
   }, [lessonId])
 
+  // Resume toast — show "Resuming from MM:SS" when restoring a saved position
+  const hasShownResumeToast = useRef(false)
+
+  useEffect(() => {
+    hasShownResumeToast.current = false
+  }, [lessonId])
+
+  useEffect(() => {
+    if (
+      !hasShownResumeToast.current &&
+      progress?.lastWatchedLesson === lessonId &&
+      progress?.lastVideoPosition &&
+      progress.lastVideoPosition > 0
+    ) {
+      hasShownResumeToast.current = true
+      toast(`Resuming from ${formatBookmarkTimestamp(progress.lastVideoPosition)}`, { duration: 2000 })
+    }
+  }, [progress, lessonId])
+
   const prevLesson = currentIndex > 0 ? allLessons[currentIndex - 1] : null
   const nextLesson = currentIndex < allLessons.length - 1 ? allLessons[currentIndex + 1] : null
 
   const videoResource = lesson?.resources.find(r => r.type === 'video')
-  const pdfResources = lesson?.resources.filter(r => r.type === 'pdf') ?? []
+  const allPdfResources = lesson?.resources.filter(r => r.type === 'pdf') ?? []
+  // When no video exists, promote first PDF to primary content
+  const primaryPdf = !videoResource && allPdfResources.length > 0 ? allPdfResources[0] : null
+  const pdfResources = primaryPdf ? allPdfResources.slice(1) : allPdfResources
 
+  const handlePdfPageChangeRef = useRef<ReturnType<typeof setTimeout>>(undefined)
+  const handlePdfPageChange = useCallback(
+    (page: number) => {
+      if (!courseId || !primaryPdf) return
+      clearTimeout(handlePdfPageChangeRef.current)
+      handlePdfPageChangeRef.current = setTimeout(() => {
+        savePdfPage(courseId, primaryPdf.id, page)
+      }, 500)
+    },
+    [courseId, primaryPdf]
+  )
+
+  const lastSaveTimeRef = useRef(-Infinity)
   const handleTimeUpdate = useCallback(
     (time: number) => {
-      if (courseId && lessonId && Math.floor(time) % 5 === 0) {
+      if (courseId && lessonId && time - lastSaveTimeRef.current >= 5) {
+        lastSaveTimeRef.current = time
         saveVideoPosition(courseId, lessonId, time)
       }
     },
@@ -94,7 +146,11 @@ export function LessonPlayer() {
       setCelebrationTitle(lesson?.title || 'Lesson')
       setCelebrationModal(true)
     }
-  }, [courseId, lessonId, completed, lesson])
+    // Show auto-advance countdown if there's a next lesson
+    if (nextLesson) {
+      setShowAutoAdvance(true)
+    }
+  }, [courseId, lessonId, completed, lesson, nextLesson])
 
   const handleVideoSeek = useCallback((timestamp: number) => {
     setSeekToTime(timestamp)
@@ -109,6 +165,7 @@ export function LessonPlayer() {
       if (courseId && lessonId) {
         addBookmark(courseId, lessonId, timestamp)
         setBookmarks(getLessonBookmarks(courseId, lessonId))
+        toast(`Bookmarked at ${formatBookmarkTimestamp(timestamp)}`, { duration: 2000 })
       }
     },
     [courseId, lessonId]
@@ -146,17 +203,17 @@ export function LessonPlayer() {
     return (
       <div className="flex flex-col items-center justify-center py-24">
         <h2 className="text-xl font-semibold mb-2">Lesson Not Found</h2>
-        <Link to="/courses">
-          <Button>Back to Courses</Button>
-        </Link>
+        <Button asChild>
+          <Link to="/courses">Back to Courses</Link>
+        </Button>
       </div>
     )
   }
 
   return (
-    <div className="flex gap-6 h-[calc(100vh-120px)]">
+    <div className="flex gap-6 h-full">
       {/* Main Content */}
-      <div className="flex-1 overflow-auto">
+      <div className="flex-1 min-h-0 overflow-y-auto">
         <Link
           to={`/courses/${courseId}`}
           className="inline-flex items-center gap-1 text-sm text-muted-foreground hover:text-foreground mb-4 transition-colors"
@@ -165,7 +222,7 @@ export function LessonPlayer() {
           {course.shortTitle}
         </Link>
 
-        {/* Video Player */}
+        {/* Video Player — poster prop deferred until Resource type supports it */}
         {videoResource && (
           <div className="mb-5">
             <VideoPlayer
@@ -181,6 +238,37 @@ export function LessonPlayer() {
               onEnded={handleVideoEnded}
               onSeekComplete={handleSeekComplete}
               onBookmarkAdd={handleBookmarkAdd}
+              bookmarks={bookmarks}
+              onBookmarkSeek={handleVideoSeek}
+            />
+          </div>
+        )}
+
+        {/* Auto-Advance Countdown */}
+        {showAutoAdvance && nextLesson && (
+          <div className="mb-5">
+            <AutoAdvanceCountdown
+              seconds={5}
+              nextLessonTitle={nextLesson.title}
+              onAdvance={() => {
+                setShowAutoAdvance(false)
+                navigate(`/courses/${courseId}/${nextLesson.id}`)
+              }}
+              onCancel={() => setShowAutoAdvance(false)}
+            />
+          </div>
+        )}
+
+        {/* Primary PDF (when no video) */}
+        {primaryPdf && (
+          <div className="mb-5">
+            <PdfViewer
+              src={getResourceUrl(primaryPdf)}
+              title={primaryPdf.title}
+              initialPage={courseId ? getPdfPage(courseId, primaryPdf.id) ?? 1 : 1}
+              courseId={courseId}
+              resourceId={primaryPdf.id}
+              onPageChange={handlePdfPageChange}
             />
           </div>
         )}
@@ -201,15 +289,17 @@ export function LessonPlayer() {
                   </Button>
                 </SheetTrigger>
                 <SheetContent side="bottom" className="h-[80vh] overflow-y-auto">
-                  <div className="mb-4">
-                    <h3 className="text-sm font-semibold">Course Content</h3>
+                  <SheetHeader>
+                    <SheetTitle className="text-sm">Course Content</SheetTitle>
+                  </SheetHeader>
+                  <div data-testid="mobile-course-accordion">
+                    <ModuleAccordion
+                      modules={course.modules}
+                      courseId={course.id}
+                      activeLessonId={lessonId}
+                      completedLessons={progress?.completedLessons ?? []}
+                    />
                   </div>
-                  <LessonList
-                    modules={course.modules}
-                    courseId={course.id}
-                    activeLessonId={lessonId}
-                    completedLessons={progress?.completedLessons ?? []}
-                  />
                 </SheetContent>
               </Sheet>
 
@@ -257,7 +347,7 @@ export function LessonPlayer() {
         </div>
 
         {/* Tabs: PDFs / Notes / Bookmarks */}
-        <Tabs defaultValue={pdfResources.length > 0 ? 'materials' : 'notes'}>
+        <Tabs defaultValue={pdfResources.length > 0 ? 'materials' : 'notes'} key={lessonId}>
           <TabsList>
             {pdfResources.length > 0 && (
               <TabsTrigger value="materials">Materials ({pdfResources.length})</TabsTrigger>
@@ -271,7 +361,17 @@ export function LessonPlayer() {
           {pdfResources.length > 0 && (
             <TabsContent value="materials" className="mt-4 space-y-4">
               {pdfResources.map(pdf => (
-                <PdfViewer key={pdf.id} src={getResourceUrl(pdf)} title={pdf.title} />
+                <PdfViewer
+                  key={pdf.id}
+                  src={getResourceUrl(pdf)}
+                  title={pdf.title}
+                  initialPage={courseId ? getPdfPage(courseId, pdf.id) ?? 1 : 1}
+                  courseId={courseId}
+                  resourceId={pdf.id}
+                  onPageChange={(page) => {
+                    if (courseId) savePdfPage(courseId, pdf.id, page)
+                  }}
+                />
               ))}
             </TabsContent>
           )}
@@ -316,7 +416,7 @@ export function LessonPlayer() {
           {nextLesson ? (
             <Button
               onClick={() => navigate(`/courses/${courseId}/${nextLesson.id}`)}
-              className="bg-blue-600 hover:bg-blue-700"
+              className="bg-brand hover:bg-brand-hover"
             >
               Next
               <ChevronRight className="ml-1 h-4 w-4" />
@@ -327,17 +427,19 @@ export function LessonPlayer() {
         </div>
       </div>
 
-      {/* Sidebar Lesson List */}
+      {/* Sidebar Course Structure */}
       <div className="hidden xl:block w-72 bg-card rounded-2xl shadow-sm overflow-hidden">
         <div className="px-4 py-3 border-b border-border">
           <h3 className="text-sm font-semibold">Course Content</h3>
         </div>
-        <LessonList
-          modules={course.modules}
-          courseId={course.id}
-          activeLessonId={lessonId}
-          completedLessons={progress?.completedLessons ?? []}
-        />
+        <div className="p-3 overflow-y-auto h-[calc(100%-49px)] [scrollbar-gutter:stable]" data-testid="course-sidebar-accordion">
+          <ModuleAccordion
+            modules={course.modules}
+            courseId={course.id}
+            activeLessonId={lessonId}
+            completedLessons={progress?.completedLessons ?? []}
+          />
+        </div>
       </div>
 
       {/* Completion Celebration Modal */}
