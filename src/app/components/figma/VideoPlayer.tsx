@@ -554,12 +554,12 @@ export function VideoPlayer({
           break
         case 'j':
           e.preventDefault()
-          seek(-10)
+          seekWithOverlay(-10)
           announce('Skipped back 10 seconds')
           break
         case 'l':
           e.preventDefault()
-          seek(10)
+          seekWithOverlay(10)
           announce('Skipped forward 10 seconds')
           break
         case 'ArrowLeft':
@@ -569,14 +569,6 @@ export function VideoPlayer({
         case 'ArrowRight':
           e.preventDefault()
           seekWithOverlay(5)
-          break
-        case 'j':
-          e.preventDefault()
-          seekWithOverlay(-10)
-          break
-        case 'l':
-          e.preventDefault()
-          seekWithOverlay(10)
           break
         case 'ArrowUp':
           e.preventDefault()

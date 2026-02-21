@@ -125,6 +125,14 @@ Report: `docs/reviews/code/code-review-2026-02-21-E02-S09.md`
 
 - **E2E scroll tests: verify the actual scroll container**: `scrollLessonContent` was calling `scrollBy` on the inner content div, which had become `overflow: visible` after the layout refactor. Scrolling a non-scrollable element throws no error and silently does nothing, so tests appeared to run but the mini-player never triggered. Lesson: when scroll-triggered behavior fails in E2E but no assertion fires, add a quick `scrollTop` check to confirm the target element actually scrolled.
 
+- **`inset-0` carries into `position: fixed`, creating an invisible click trap**: The mini-player wrapper had `absolute inset-0` in its base class and added `fixed bottom-4 right-4` for the mini state. Tailwind's `inset-0` sets all four sides — `bottom` and `right` were overridden but `top: 0` and `left: 0` were not, stretching the transparent div across the full left column (320×884px). Fix: always add `top-auto left-auto` when switching from `absolute inset-0` to a `fixed` element. Lesson: `inset-0` is four properties — overriding two leaves the other two active.
+
+- **E2E tests can pass for the wrong reason when a symptom has multiple causes**: The "clicking mini-player scrolls back" test only asserted `position !== fixed`, which went true because the click *paused* the video (hiding the mini-player), not because scroll-back worked. No assertion checked that the video was still playing after the click. Lesson: assert the intended outcome directly (e.g., `expect(isPlaying).toBe(true)` or `expect(scrollTop).toBeGreaterThan(0)`), not just a downstream symptom that multiple code paths can satisfy.
+
+- **Callbacks passed to child `useEffect` deps need `useCallback`**: `onTheaterModeToggle={() => setIsTheaterMode(prev => !prev)}` as an inline arrow caused VideoPlayer's `window` keydown listener to tear down and re-attach on every LessonPlayer render (the prop was in the effect's dep array). Fix: `useCallback(() => setIsTheaterMode(prev => !prev), [])`. Lesson: any callback passed as a prop to a child that references it in a `useEffect` dependency array must be stable — wrap in `useCallback` at the parent.
+
+- **Rebase merges can silently re-introduce deleted code**: After rebasing, a previously removed duplicate PiP button and `PictureInPicture2` import reappeared in VideoPlayer. The rebase merge treated the earlier deletion as a conflict to resolve by re-adding the deleted lines. Lesson: always scan the full diff after a rebase — look specifically for code that was intentionally deleted in earlier commits.
+
 ## Implementation Plan
 
 See [plan](../../.claude/plans/sunny-snacking-dongarra.md) for implementation approach.
