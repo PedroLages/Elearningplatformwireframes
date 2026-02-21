@@ -180,7 +180,7 @@ export default function MyClass() {
                 <section className="mb-8">
                   <div className="bg-blue-50 dark:bg-blue-900/10 p-4 rounded-xl mb-4">
                     <h2 className="text-lg font-semibold flex items-center gap-2">
-                      <Clock className="w-6 h-6 text-blue-600" />
+                      <Clock className="w-6 h-6 text-brand" />
                       In Progress
                     </h2>
                   </div>

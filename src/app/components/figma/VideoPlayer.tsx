@@ -17,6 +17,7 @@ import { Button } from '@/app/components/ui/button'
 import { Slider } from '@/app/components/ui/slider'
 // Radix Popover Portal miscalculates position inside scroll containers — using plain CSS dropdown
 import { cn } from '@/app/components/ui/utils'
+import { Tooltip, TooltipTrigger, TooltipContent } from '@/app/components/ui/tooltip'
 
 interface VideoPlayerProps {
   src: string
@@ -31,6 +32,8 @@ interface VideoPlayerProps {
   onEnded?: () => void
   onSeekComplete?: () => void
   onBookmarkAdd?: (timestamp: number) => void
+  bookmarks?: Array<{ id: string; timestamp: number; label: string }>
+  onBookmarkSeek?: (timestamp: number) => void
 }
 
 const PLAYBACK_SPEEDS = [0.5, 0.75, 1, 1.25, 1.5, 2]
@@ -383,6 +386,11 @@ export function VideoPlayer({
 
       switch (e.key) {
         case ' ':
+          // Don't toggle play/pause if a Slider thumb has focus — let Slider handle Space natively
+          if (document.activeElement?.getAttribute('role') === 'slider') return
+          e.preventDefault()
+          togglePlayPause()
+          break
         case 'k':
           e.preventDefault()
           togglePlayPause()
@@ -414,6 +422,10 @@ export function VideoPlayer({
         case 'f':
           e.preventDefault()
           toggleFullscreen()
+          break
+        case 'b':
+          e.preventDefault()
+          handleAddBookmark()
           break
         case '0':
         case '1':
@@ -519,6 +531,7 @@ export function VideoPlayer({
       tabIndex={0}
       role="region"
       aria-label={title || 'Video player'}
+      data-testid="video-player"
     >
       <AspectRatio ratio={16 / 9}>
         <video
@@ -578,14 +591,32 @@ export function VideoPlayer({
               <span className="text-white text-xs font-medium min-w-[45px]">
                 {formatTime(currentTime)}
               </span>
-              <Slider
-                value={[progress]}
-                onValueChange={handleProgressChange}
-                max={100}
-                step={0.1}
-                className="flex-1"
-                aria-label="Video progress"
-              />
+              <div className="relative flex-1">
+                <Slider
+                  value={[progress]}
+                  onValueChange={handleProgressChange}
+                  max={100}
+                  step={0.1}
+                  aria-label="Video progress"
+                />
+                {/* Bookmark markers — visible dot is w-2 h-2, wrapped in 44x44px hit area for touch targets */}
+                {bookmarks && duration > 0 && bookmarks.map(bm => (
+                  <Tooltip key={bm.id}>
+                    <TooltipTrigger asChild>
+                      <button
+                        data-testid="bookmark-marker"
+                        className="absolute top-1/2 -translate-y-1/2 -translate-x-1/2 min-w-[44px] min-h-[44px] flex items-center justify-center z-10 cursor-pointer group/marker"
+                        style={{ left: `${(bm.timestamp / duration) * 100}%` }}
+                        onClick={(e) => { e.stopPropagation(); onBookmarkSeek?.(bm.timestamp) }}
+                        aria-label={`Bookmark at ${formatTime(bm.timestamp)}`}
+                      >
+                        <span className="w-2 h-2 rounded-full bg-yellow-400 border border-yellow-600 group-hover/marker:scale-150 transition-transform" />
+                      </button>
+                    </TooltipTrigger>
+                    <TooltipContent side="top">{formatTime(bm.timestamp)}</TooltipContent>
+                  </Tooltip>
+                ))}
+              </div>
               <span className="text-white text-xs font-medium min-w-[45px] text-right">
                 {formatTime(duration)}
               </span>

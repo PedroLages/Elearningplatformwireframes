@@ -83,7 +83,7 @@ export function ImportedCourseCard({ course, allTags }: ImportedCourseCardProps)
                   <button
                     data-testid="status-badge"
                     onClick={e => e.stopPropagation()}
-                    className="focus-visible:ring-2 focus-visible:ring-blue-600 focus-visible:ring-offset-2 rounded-full outline-none"
+                    className="focus-visible:ring-2 focus-visible:ring-brand focus-visible:ring-offset-2 rounded-full outline-none"
                     aria-label={`Course status: ${config.label}. Click to change.`}
                   >
                     <Badge
@@ -108,7 +108,7 @@ export function ImportedCourseCard({ course, allTags }: ImportedCourseCardProps)
                           {cfg.label}
                           {key === status && (
                             <CheckCircle2
-                              className="size-3.5 ml-auto text-blue-600"
+                              className="size-3.5 ml-auto text-brand"
                               aria-hidden="true"
                             />
                           )}

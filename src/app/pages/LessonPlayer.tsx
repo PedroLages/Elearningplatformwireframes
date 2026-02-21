@@ -23,7 +23,8 @@ import {
   getNote,
   isLessonComplete,
 } from '@/lib/progress'
-import { addBookmark, getLessonBookmarks } from '@/lib/bookmarks'
+import { addBookmark, getLessonBookmarks, formatBookmarkTimestamp } from '@/lib/bookmarks'
+import { toast } from 'sonner'
 
 export function LessonPlayer() {
   const { courseId, lessonId } = useParams<{
@@ -83,15 +84,36 @@ export function LessonPlayer() {
     titleRef.current?.focus()
   }, [lessonId])
 
+  // Resume toast — show "Resuming from MM:SS" when restoring a saved position
+  const hasShownResumeToast = useRef(false)
+
+  useEffect(() => {
+    hasShownResumeToast.current = false
+  }, [lessonId])
+
+  useEffect(() => {
+    if (
+      !hasShownResumeToast.current &&
+      progress?.lastWatchedLesson === lessonId &&
+      progress?.lastVideoPosition &&
+      progress.lastVideoPosition > 0
+    ) {
+      hasShownResumeToast.current = true
+      toast(`Resuming from ${formatBookmarkTimestamp(progress.lastVideoPosition)}`, { duration: 2000 })
+    }
+  }, [progress, lessonId])
+
   const prevLesson = currentIndex > 0 ? allLessons[currentIndex - 1] : null
   const nextLesson = currentIndex < allLessons.length - 1 ? allLessons[currentIndex + 1] : null
 
   const videoResource = lesson?.resources.find(r => r.type === 'video')
   const pdfResources = lesson?.resources.filter(r => r.type === 'pdf') ?? []
 
+  const lastSaveTimeRef = useRef(-Infinity)
   const handleTimeUpdate = useCallback(
     (time: number) => {
-      if (courseId && lessonId && Math.floor(time) % 5 === 0) {
+      if (courseId && lessonId && time - lastSaveTimeRef.current >= 5) {
+        lastSaveTimeRef.current = time
         saveVideoPosition(courseId, lessonId, time)
       }
     },
@@ -126,6 +148,7 @@ export function LessonPlayer() {
       if (courseId && lessonId) {
         addBookmark(courseId, lessonId, timestamp)
         setBookmarks(getLessonBookmarks(courseId, lessonId))
+        toast(`Bookmarked at ${formatBookmarkTimestamp(timestamp)}`, { duration: 2000 })
       }
     },
     [courseId, lessonId]
@@ -163,9 +186,9 @@ export function LessonPlayer() {
     return (
       <div className="flex flex-col items-center justify-center py-24">
         <h2 className="text-xl font-semibold mb-2">Lesson Not Found</h2>
-        <Link to="/courses">
-          <Button>Back to Courses</Button>
-        </Link>
+        <Button asChild>
+          <Link to="/courses">Back to Courses</Link>
+        </Button>
       </div>
     )
   }
@@ -198,6 +221,8 @@ export function LessonPlayer() {
               onEnded={handleVideoEnded}
               onSeekComplete={handleSeekComplete}
               onBookmarkAdd={handleBookmarkAdd}
+              bookmarks={bookmarks}
+              onBookmarkSeek={handleVideoSeek}
             />
           </div>
         )}
@@ -350,7 +375,7 @@ export function LessonPlayer() {
           {nextLesson ? (
             <Button
               onClick={() => navigate(`/courses/${courseId}/${nextLesson.id}`)}
-              className="bg-blue-600 hover:bg-blue-700"
+              className="bg-brand hover:bg-brand-hover"
             >
               Next
               <ChevronRight className="ml-1 h-4 w-4" />

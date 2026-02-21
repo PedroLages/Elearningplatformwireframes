@@ -49,3 +49,5 @@
 - shadcn/ui components in `src/app/components/ui/`
 - Custom components in `src/app/components/figma/`
 - Dexie.js DB defined in `src/db/schema.ts`, re-exported from `src/db/index.ts`
+- tsconfig.json has `noFallthroughCasesInSwitch: true` -- fallthrough switch requires special handling
+- `Tooltip` component from shadcn/ui wraps each instance in its own `TooltipProvider`, so multiple Tooltip uses are fine

@@ -42,7 +42,7 @@ export function ModuleAccordion({ modules, courseId, completedLessons, activeLes
           <AccordionItem
             key={module.id}
             value={module.id}
-            className="rounded-2xl border border-border bg-card px-5 shadow-sm"
+            className="rounded-[24px] border border-border bg-card px-5 shadow-sm"
           >
             <AccordionTrigger className="hover:no-underline">
               <div className="flex flex-col items-start gap-1">

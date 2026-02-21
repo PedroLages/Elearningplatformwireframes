@@ -66,7 +66,7 @@ export function ProgressCourseCard({
 
   return (
     <Card
-      className={`card-hover-lift h-full rounded-[24px] ${
+      className={`card-hover-lift h-full ${
         status === 'completed'
           ? 'border-green-200 dark:border-green-800'
           : status === 'not-started'
@@ -84,7 +84,7 @@ export function ProgressCourseCard({
           />
           {status === 'completed' && (
             <div
-              className="absolute top-2 right-2 bg-green-600 text-white rounded-full p-1"
+              className="absolute top-2 right-2 bg-success text-success-foreground rounded-full p-1"
               role="status"
               aria-label="Course completed"
             >
@@ -92,7 +92,7 @@ export function ProgressCourseCard({
             </div>
           )}
         </div>
-        <div className="p-4 flex flex-col gap-3">
+        <div className="p-5 flex flex-col gap-3">
           <div className="flex items-center gap-2 flex-wrap">
             <Badge variant="secondary" className="badge-entrance">
               {course.category}
@@ -111,7 +111,7 @@ export function ProgressCourseCard({
             </Badge>
           </div>
 
-          <h3 className="font-medium line-clamp-2" title={course.title}>
+          <h3 className="font-semibold line-clamp-2" title={course.title}>
             {course.title}
           </h3>
 

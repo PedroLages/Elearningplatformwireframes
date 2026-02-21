@@ -90,7 +90,7 @@ export function CourseDetail() {
           {/* Progress sidebar */}
           <div className="w-full lg:w-64 bg-muted rounded-2xl p-5">
             <h3 className="font-semibold text-sm mb-3">Your Progress</h3>
-            <div className="text-3xl font-bold text-blue-600 mb-1">{completionPercent}%</div>
+            <div className="text-3xl font-bold text-brand mb-1">{completionPercent}%</div>
             <Progress value={completionPercent} className="mb-3" />
             <p className="text-xs text-muted-foreground">
               {progress.completedLessons.length} of {course.totalLessons} lessons completed
