@@ -13,11 +13,17 @@ interface ModuleAccordionProps {
   modules: Module[]
   courseId: string
   completedLessons: string[]
+  activeLessonId?: string
 }
 
-export function ModuleAccordion({ modules, courseId, completedLessons }: ModuleAccordionProps) {
+export function ModuleAccordion({ modules, courseId, completedLessons, activeLessonId }: ModuleAccordionProps) {
+  // Auto-expand the module containing the active lesson
+  const defaultOpen = activeLessonId
+    ? modules.filter(m => m.lessons.some(l => l.id === activeLessonId)).map(m => m.id)
+    : undefined
+
   return (
-    <Accordion type="multiple" className="space-y-3">
+    <Accordion type="multiple" defaultValue={defaultOpen} className="space-y-3">
       {modules.map(module => {
         const completedInModule = module.lessons.filter(l => completedLessons.includes(l.id)).length
 
@@ -46,6 +52,7 @@ export function ModuleAccordion({ modules, courseId, completedLessons }: ModuleA
               <ul className="space-y-1">
                 {module.lessons.map(lesson => {
                   const isComplete = completedLessons.includes(lesson.id)
+                  const isActive = lesson.id === activeLessonId
                   const hasVideo = lesson.resources.some(r => r.type === 'video')
                   const hasPdf = lesson.resources.some(r => r.type === 'pdf')
 
@@ -53,7 +60,11 @@ export function ModuleAccordion({ modules, courseId, completedLessons }: ModuleA
                     <li key={lesson.id}>
                       <Link
                         to={`/courses/${courseId}/${lesson.id}`}
-                        className="flex items-center gap-3 rounded-xl px-3 py-2.5 hover:bg-accent transition-colors"
+                        className={`flex items-center gap-3 rounded-xl px-3 py-2.5 transition-colors ${
+                          isActive
+                            ? 'bg-blue-50 dark:bg-blue-900/30 text-blue-700 dark:text-blue-300 font-medium'
+                            : 'hover:bg-accent'
+                        }`}
                       >
                         {isComplete ? (
                           <CheckCircle2 className="h-5 w-5 text-green-500 shrink-0" />
