@@ -17,7 +17,6 @@ import {
   BookmarkCheck,
   ChevronLeft,
   ChevronRight,
-  PictureInPicture2,
 } from 'lucide-react'
 import type { CaptionTrack } from '@/data/types'
 import { AspectRatio } from '@/app/components/ui/aspect-ratio'
@@ -126,16 +125,8 @@ export function VideoPlayer({
   // Mobile volume popover state
   const [mobileVolumeOpen, setMobileVolumeOpen] = useState(false)
 
-  // Picture-in-Picture state
-  const [isPiP, setIsPiP] = useState(false)
-
   // Video shortcuts overlay state
   const [shortcutsOpen, setShortcutsOpen] = useState(false)
-
-  // Progress bar hover state for expand-on-hover effect
-
-  // Bookmark confirmation flash state
-  const [justBookmarked, setJustBookmarked] = useState(false)
 
   // Refs for speed menu focus trap
   const speedTriggerRef = useRef<HTMLButtonElement>(null)
@@ -375,18 +366,6 @@ export function VideoPlayer({
     setSeekOverlay({ direction, amount: Math.abs(seconds), id: Date.now() })
     seekOverlayTimeoutRef.current = setTimeout(() => setSeekOverlay(null), 650)
   }, [seek])
-
-  // PiP toggle
-  const togglePiP = useCallback(async () => {
-    if (!videoRef.current) return
-    try {
-      if (document.pictureInPictureElement) {
-        await document.exitPictureInPicture()
-      } else {
-        await videoRef.current.requestPictureInPicture()
-      }
-    } catch { /* PiP not supported or denied — silent fail */ }
-  }, [])
 
   // Add bookmark at current timestamp
   const handleAddBookmark = useCallback(() => {
@@ -1097,23 +1076,6 @@ export function VideoPlayer({
                   )}
                 </div>
 
-                {/* Picture-in-Picture — only if browser supports it */}
-                {typeof document !== 'undefined' && document.pictureInPictureEnabled && (
-                  <Button
-                    variant="ghost"
-                    size="icon"
-                    className={cn(
-                      'size-11 text-white hover:bg-white/20',
-                      isPiP && 'bg-white/20'
-                    )}
-                    onClick={togglePiP}
-                    aria-label={isPiP ? 'Exit Picture-in-Picture' : 'Enter Picture-in-Picture'}
-                    aria-pressed={isPiP}
-                  >
-                    <PictureInPicture2 className="size-5" />
-                  </Button>
-                )}
-
                 {/* Bookmark Button */}
                 {onBookmarkAdd && (
                   <Tooltip>
@@ -1189,7 +1151,8 @@ export function VideoPlayer({
                         size="icon"
                         className={cn('size-11 text-white hover:bg-white/20', isPiP && 'bg-white/20')}
                         onClick={togglePiP}
-                        aria-label={isPiP ? 'Exit picture in picture' : 'Picture in picture'}
+                        aria-label={isPiP ? 'Exit Picture-in-Picture' : 'Enter Picture-in-Picture'}
+                        aria-pressed={isPiP}
                       >
                         <PictureInPicture2 className="size-5" />
                       </Button>
