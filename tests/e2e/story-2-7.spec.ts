@@ -21,6 +21,11 @@ import { navigateAndWait } from '../support/helpers/navigation'
 // ---------------------------------------------------------------------------
 
 async function goToFirstLesson(page: Parameters<typeof navigateAndWait>[0]) {
+  // Seed localStorage before navigation so the tablet sidebar Sheet starts closed.
+  // Without this, the sidebar defaults to open at 640-1023px viewports, creating a
+  // fullscreen overlay that blocks all pointer events.
+  await page.goto('/')
+  await page.evaluate(() => localStorage.setItem('eduvi-sidebar-v1', 'false'))
   await navigateAndWait(page, '/courses/operative-six/op6-introduction')
 }
 
@@ -140,7 +145,10 @@ test.describe('AC2: Picture-in-Picture', () => {
     await pressKeyAndExpectAnnouncement(page, 'p', /picture-in-picture/i)
   })
 
-  test('PiP button shows active state when PiP is active', async ({ page }) => {
+  test('PiP button shows active state when PiP is active', async ({ page, browserName }) => {
+    // WebKit (Safari) does not support requestPictureInPicture() via JS API — skip
+    test.skip(browserName === 'webkit', 'PiP JS API not supported in WebKit')
+
     // GIVEN: Video player is focused
     await goToFirstLesson(page)
     await focusPlayer(page)

@@ -1,6 +1,7 @@
 import { useState, useEffect, useCallback } from 'react'
 import { Outlet, Link, useLocation, useNavigate } from 'react-router'
-import { GraduationCap, Search, Bell, ChevronDown, Sun, Moon, Menu } from 'lucide-react'
+import { Search, Bell, ChevronDown, Sun, Moon, Menu } from 'lucide-react'
+import { LevelUpLogo } from './figma/LevelUpLogo'
 import { Avatar, AvatarFallback } from './ui/avatar'
 import { useTheme } from 'next-themes'
 import { SearchCommandPalette } from './figma/SearchCommandPalette'
@@ -18,14 +19,8 @@ function SidebarContent({ onNavigate }: { onNavigate?: () => void }) {
   return (
     <>
       {/* Logo */}
-      <div className="flex items-center gap-2 mb-8">
-        <div
-          className="w-8 h-8 bg-brand rounded-lg flex items-center justify-center"
-          aria-hidden="true"
-        >
-          <GraduationCap className="w-5 h-5 text-white" />
-        </div>
-        <span className="font-bold text-xl">Eduvi</span>
+      <div className="mb-8">
+        <LevelUpLogo />
       </div>
 
       {/* Navigation */}

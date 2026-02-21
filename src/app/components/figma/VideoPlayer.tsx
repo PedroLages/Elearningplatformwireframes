@@ -629,7 +629,7 @@ export function VideoPlayer({
   return (
     <div
       ref={containerRef}
-      data-testid="video-player"
+      data-testid="video-player-container"
       className="relative w-full overflow-hidden rounded-2xl bg-black group focus-visible:outline focus-visible:outline-2 focus-visible:outline-blue-600 focus-visible:outline-offset-2"
       onMouseDown={() => containerRef.current?.focus()}
       onMouseMove={resetControlsTimeout}
