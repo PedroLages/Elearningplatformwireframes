@@ -40,6 +40,7 @@
   --sidebar-border: oklch(0.922 0 0);
   --sidebar-ring: oklch(0.708 0 0);
   --scrollbar-thumb: oklch(0.7 0 0);
+  --scrollbar-thumb-hover: oklch(0.55 0 0);
   --scrollbar-track: transparent;
 }
 
@@ -81,6 +82,7 @@
   --sidebar-border: oklch(0.269 0 0);
   --sidebar-ring: oklch(0.439 0 0);
   --scrollbar-thumb: oklch(0.45 0 0);
+  --scrollbar-thumb-hover: oklch(0.6 0 0);
   --scrollbar-track: oklch(0.2 0 0);
 }
 

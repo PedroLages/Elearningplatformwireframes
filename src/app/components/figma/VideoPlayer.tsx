@@ -25,6 +25,7 @@ interface VideoPlayerProps {
   seekToTime?: number
   courseId?: string
   lessonId?: string
+  poster?: string
   onTimeUpdate?: (currentTime: number) => void
   onEnded?: () => void
   onSeekComplete?: () => void
@@ -58,6 +59,7 @@ export function VideoPlayer({
   onEnded,
   onSeekComplete,
   onBookmarkAdd,
+  poster,
 }: VideoPlayerProps) {
   const videoRef = useRef<HTMLVideoElement>(null)
   const containerRef = useRef<HTMLDivElement>(null)
@@ -82,6 +84,13 @@ export function VideoPlayer({
 
   // Track whether speed menu is open (prevents controls auto-hide)
   const [speedMenuOpen, setSpeedMenuOpen] = useState(false)
+
+  // Mobile volume popover state
+  const [mobileVolumeOpen, setMobileVolumeOpen] = useState(false)
+
+  // Refs for speed menu focus trap
+  const speedTriggerRef = useRef<HTMLButtonElement>(null)
+  const speedMenuItemsRef = useRef<(HTMLButtonElement | null)[]>([])
 
   // Load saved caption preference from localStorage
   const [captionsEnabled, setCaptionsEnabled] = useState(() => {
@@ -273,11 +282,67 @@ export function VideoPlayer({
     }
   }, [onBookmarkAdd, currentTime])
 
+  // Speed menu keyboard navigation (focus trap)
+  const handleSpeedMenuKeyDown = useCallback((e: React.KeyboardEvent) => {
+    const items = speedMenuItemsRef.current.filter(Boolean) as HTMLButtonElement[]
+    const currentIdx = items.indexOf(e.target as HTMLButtonElement)
+
+    switch (e.key) {
+      case 'Tab': {
+        e.preventDefault()
+        if (e.shiftKey) {
+          const prevIdx = currentIdx <= 0 ? items.length - 1 : currentIdx - 1
+          items[prevIdx]?.focus()
+        } else {
+          const nextIdx = currentIdx >= items.length - 1 ? 0 : currentIdx + 1
+          items[nextIdx]?.focus()
+        }
+        break
+      }
+      case 'ArrowDown': {
+        e.preventDefault()
+        const nextIdx = currentIdx >= items.length - 1 ? 0 : currentIdx + 1
+        items[nextIdx]?.focus()
+        break
+      }
+      case 'ArrowUp': {
+        e.preventDefault()
+        const prevIdx = currentIdx <= 0 ? items.length - 1 : currentIdx - 1
+        items[prevIdx]?.focus()
+        break
+      }
+      case 'Escape': {
+        e.preventDefault()
+        setSpeedMenuOpen(false)
+        speedTriggerRef.current?.focus()
+        break
+      }
+    }
+  }, [])
+
+  // Auto-focus first speed menu item on open
+  useEffect(() => {
+    if (speedMenuOpen) {
+      requestAnimationFrame(() => {
+        speedMenuItemsRef.current[0]?.focus()
+      })
+    }
+  }, [speedMenuOpen])
+
+  // Close mobile volume popover when controls hide
+  useEffect(() => {
+    if (!showControls) {
+      setMobileVolumeOpen(false)
+    }
+  }, [showControls])
+
   // Keyboard shortcuts
   useEffect(() => {
     const handleKeyDown = (e: KeyboardEvent) => {
       // Only handle if video player is in focus or controls are visible
       if (!containerRef.current?.contains(document.activeElement)) return
+      // Speed menu handles its own keyboard events
+      if (speedMenuOpen) return
 
       switch (e.key) {
         case ' ':
@@ -339,6 +404,7 @@ export function VideoPlayer({
     toggleCaptions,
     toggleFullscreen,
     jumpToPercentage,
+    speedMenuOpen,
   ])
 
   // Auto-hide controls
@@ -389,9 +455,11 @@ export function VideoPlayer({
   return (
     <div
       ref={containerRef}
-      className="relative w-full overflow-hidden rounded-2xl bg-black group"
+      data-testid="video-player-container"
+      className="relative w-full overflow-hidden rounded-2xl bg-black group focus:outline focus:outline-2 focus:outline-blue-600 focus:outline-offset-2"
       onMouseMove={resetControlsTimeout}
       onMouseLeave={() => isPlaying && !speedMenuOpen && setShowControls(false)}
+      onTouchStart={resetControlsTimeout}
       tabIndex={0}
       role="region"
       aria-label={title || 'Video player'}
@@ -402,6 +470,9 @@ export function VideoPlayer({
           src={src}
           title={title}
           className="h-full w-full object-contain"
+          preload="metadata"
+          playsInline
+          poster={poster}
           onLoadedMetadata={handleLoadedMetadata}
           onTimeUpdate={handleTimeUpdate}
           onEnded={handleEnded}
@@ -423,10 +494,12 @@ export function VideoPlayer({
 
         {/* Custom Controls Overlay */}
         <div
+          data-testid="player-controls-overlay"
           className={cn(
             'absolute inset-0 bg-gradient-to-t from-black/70 via-transparent to-transparent transition-opacity duration-300',
             showControls || !isPlaying ? 'opacity-100' : 'opacity-0 pointer-events-none'
           )}
+          onTouchStart={resetControlsTimeout}
         >
           {/* Play/Pause Button Center */}
           <div className="absolute inset-0 flex items-center justify-center">
@@ -462,34 +535,44 @@ export function VideoPlayer({
             </div>
 
             {/* Control Buttons */}
-            <div className="flex items-center justify-between">
+            <div data-testid="player-bottom-controls" className="flex items-center justify-between">
               <div className="flex items-center gap-2">
                 {/* Play/Pause */}
                 <Button
                   variant="ghost"
                   size="icon"
-                  className="h-8 w-8 text-white hover:bg-white/20"
+                  className="size-11 text-white hover:bg-white/20"
                   onClick={togglePlayPause}
                   aria-label={isPlaying ? 'Pause' : 'Play'}
                 >
-                  {isPlaying ? <Pause className="h-4 w-4" /> : <Play className="h-4 w-4" />}
+                  {isPlaying ? <Pause className="size-5" /> : <Play className="size-5" />}
                 </Button>
 
                 {/* Volume */}
-                <div className="flex items-center gap-2">
+                <div className="relative flex items-center gap-2">
                   <Button
                     variant="ghost"
                     size="icon"
-                    className="h-8 w-8 text-white hover:bg-white/20"
-                    onClick={toggleMute}
+                    data-testid="volume-button"
+                    className="size-11 text-white hover:bg-white/20"
+                    onClick={() => {
+                      const isMobile = !window.matchMedia('(min-width: 640px)').matches
+                      if (isMobile) {
+                        setMobileVolumeOpen(prev => !prev)
+                      } else {
+                        toggleMute()
+                      }
+                    }}
                     aria-label={isMuted ? 'Unmute' : 'Mute'}
                   >
                     {isMuted || volume === 0 ? (
-                      <VolumeX className="h-4 w-4" />
+                      <VolumeX className="size-5" />
                     ) : (
-                      <Volume2 className="h-4 w-4" />
+                      <Volume2 className="size-5" />
                     )}
                   </Button>
+
+                  {/* Desktop: inline volume slider */}
                   <Slider
                     value={[isMuted ? 0 : volume * 100]}
                     onValueChange={handleVolumeChange}
@@ -498,6 +581,22 @@ export function VideoPlayer({
                     className="w-20 hidden sm:block"
                     aria-label="Volume"
                   />
+
+                  {/* Mobile: volume popover */}
+                  {mobileVolumeOpen && (
+                    <div
+                      data-testid="mobile-volume-popover"
+                      className="absolute bottom-full left-0 mb-2 w-36 p-3 rounded-md bg-popover border shadow-md z-50 sm:hidden"
+                    >
+                      <Slider
+                        value={[isMuted ? 0 : volume * 100]}
+                        onValueChange={handleVolumeChange}
+                        max={100}
+                        step={1}
+                        aria-label="Volume"
+                      />
+                    </div>
+                  )}
                 </div>
               </div>
 
@@ -505,25 +604,38 @@ export function VideoPlayer({
                 {/* Playback Speed */}
                 <div className="relative">
                   <Button
+                    ref={speedTriggerRef}
                     variant="ghost"
                     size="sm"
-                    className="h-8 px-2 text-white hover:bg-white/20 text-xs font-medium"
+                    data-testid="speed-menu-trigger"
+                    className="h-11 px-3 text-white hover:bg-white/20 text-xs font-medium"
                     aria-label="Playback speed"
                     aria-expanded={speedMenuOpen}
+                    aria-haspopup="menu"
                     onClick={() => setSpeedMenuOpen(prev => !prev)}
                   >
-                    <Settings className="h-4 w-4 mr-1" />
+                    <Settings className="size-5 mr-1" />
                     {playbackSpeed}x
                   </Button>
                   {speedMenuOpen && (
-                    <div className="absolute bottom-full right-0 mb-2 w-32 rounded-md border bg-popover p-2 shadow-md z-50">
+                    <div
+                      role="menu"
+                      aria-label="Playback speed"
+                      className="absolute bottom-full right-0 mb-2 w-32 rounded-md border bg-popover p-2 shadow-md z-50"
+                      onKeyDown={handleSpeedMenuKeyDown}
+                    >
                       <p className="text-xs font-semibold mb-2">Speed</p>
-                      {PLAYBACK_SPEEDS.map(speed => (
+                      {PLAYBACK_SPEEDS.map((speed, index) => (
                         <button
                           key={speed}
+                          ref={(el) => { speedMenuItemsRef.current[index] = el }}
+                          role="menuitem"
+                          aria-checked={speed === playbackSpeed}
+                          tabIndex={-1}
                           onClick={() => {
                             changePlaybackSpeed(speed)
                             setSpeedMenuOpen(false)
+                            speedTriggerRef.current?.focus()
                           }}
                           className={cn(
                             'w-full text-left px-2 py-1 text-sm rounded hover:bg-accent',
@@ -542,11 +654,11 @@ export function VideoPlayer({
                   <Button
                     variant="ghost"
                     size="icon"
-                    className="h-8 w-8 text-white hover:bg-white/20"
+                    className="size-11 text-white hover:bg-white/20"
                     onClick={handleAddBookmark}
                     aria-label="Add bookmark at current time"
                   >
-                    <Bookmark className="h-4 w-4" />
+                    <Bookmark className="size-5" />
                   </Button>
                 )}
 
@@ -556,13 +668,13 @@ export function VideoPlayer({
                     variant="ghost"
                     size="icon"
                     className={cn(
-                      'h-8 w-8 text-white hover:bg-white/20',
+                      'size-11 text-white hover:bg-white/20',
                       captionsEnabled && 'bg-white/20'
                     )}
                     onClick={toggleCaptions}
                     aria-label={captionsEnabled ? 'Disable captions' : 'Enable captions'}
                   >
-                    <Subtitles className="h-4 w-4" />
+                    <Subtitles className="size-5" />
                   </Button>
                 )}
 
@@ -570,14 +682,14 @@ export function VideoPlayer({
                 <Button
                   variant="ghost"
                   size="icon"
-                  className="h-8 w-8 text-white hover:bg-white/20"
+                  className="size-11 text-white hover:bg-white/20"
                   onClick={toggleFullscreen}
                   aria-label={isFullscreen ? 'Exit fullscreen' : 'Enter fullscreen'}
                 >
                   {isFullscreen ? (
-                    <Minimize className="h-4 w-4" />
+                    <Minimize className="size-5" />
                   ) : (
-                    <Maximize className="h-4 w-4" />
+                    <Maximize className="size-5" />
                   )}
                 </Button>
               </div>
