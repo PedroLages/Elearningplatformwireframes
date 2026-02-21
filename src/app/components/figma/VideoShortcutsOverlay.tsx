@@ -1,3 +1,4 @@
+import { useEffect, useRef } from 'react'
 import { X } from 'lucide-react'
 import { Button } from '@/app/components/ui/button'
 
@@ -27,13 +28,12 @@ const controlShortcuts: ShortcutEntry[] = [
   { keys: ['C'], description: 'Captions' },
   { keys: ['F'], description: 'Fullscreen' },
   { keys: ['B'], description: 'Add bookmark' },
-  { keys: ['Shift', '\u2190\u2192'], description: 'Seek \u00b110s' },
   { keys: ['?'], description: 'Show shortcuts' },
 ]
 
 function Kbd({ children }: { children: React.ReactNode }) {
   return (
-    <kbd className="inline-flex items-center justify-center min-w-[24px] h-6 px-1.5 rounded bg-white/20 border border-white/30 text-xs font-mono font-medium text-white">
+    <kbd className="inline-flex items-center justify-center min-w-6 h-6 px-1.5 rounded bg-white/20 border border-white/30 text-xs font-mono font-medium text-white">
       {children}
     </kbd>
   )
@@ -56,18 +56,37 @@ function ShortcutRow({ shortcut }: { shortcut: ShortcutEntry }) {
 }
 
 export function VideoShortcutsOverlay({ open, onClose }: VideoShortcutsOverlayProps) {
+  const dialogRef = useRef<HTMLDivElement>(null)
+
+  useEffect(() => {
+    if (open) {
+      dialogRef.current?.focus()
+    }
+  }, [open])
+
   if (!open) return null
 
   return (
     <div
+      ref={dialogRef}
       data-testid="video-shortcuts-overlay"
-      className="absolute inset-0 z-50 bg-black/80 flex items-center justify-center transition-opacity duration-200"
+      role="dialog"
+      aria-modal="true"
+      aria-labelledby="shortcuts-title"
+      tabIndex={-1}
+      className="absolute inset-0 z-50 bg-black/80 flex items-center justify-center"
+      onKeyDown={(e) => {
+        if (e.key === 'Escape') {
+          e.stopPropagation()
+          onClose()
+        }
+      }}
     >
       {/* Close button */}
       <Button
         variant="ghost"
         size="icon"
-        className="absolute top-3 right-3 size-9 text-white/70 hover:text-white hover:bg-white/20"
+        className="absolute top-3 right-3 size-11 text-white/70 hover:text-white hover:bg-white/20"
         onClick={onClose}
         aria-label="Close shortcuts"
       >
@@ -75,9 +94,9 @@ export function VideoShortcutsOverlay({ open, onClose }: VideoShortcutsOverlayPr
       </Button>
 
       <div className="w-full max-w-lg px-6">
-        <h3 className="text-white text-base font-semibold text-center mb-4">Keyboard Shortcuts</h3>
+        <h3 id="shortcuts-title" className="text-white text-base font-semibold text-center mb-4">Keyboard Shortcuts</h3>
 
-        <div className="grid grid-cols-2 gap-x-8 gap-y-0">
+        <div className="grid grid-cols-1 sm:grid-cols-2 gap-x-8 gap-y-0">
           {/* Column 1: Playback */}
           <div data-column="playback" className="space-y-2">
             <p className="text-xs font-semibold text-white/50 uppercase tracking-wider mb-2">Playback</p>
@@ -95,7 +114,7 @@ export function VideoShortcutsOverlay({ open, onClose }: VideoShortcutsOverlayPr
           </div>
         </div>
 
-        <p className="text-xs text-white/40 text-center mt-4">Press ? or Esc to close</p>
+        <p className="text-xs text-white/60 text-center mt-4">Press ? or Esc to close</p>
       </div>
     </div>
   )

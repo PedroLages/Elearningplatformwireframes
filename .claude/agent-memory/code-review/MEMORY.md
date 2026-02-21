@@ -41,6 +41,14 @@
 - String interpolation for className persists in ModuleAccordion Link (not using `cn()`)
 - `openModules` referenced in useEffect but not in dependency array (lint warning suppressed?)
 
+### E02-S07: Skip Controls, PiP & Shortcuts Help
+- Removal of `data-testid="video-player"` breaks 3 existing E2E tests (story-e02-s03, story-2-1-lesson-player)
+- `Shift+ArrowLeft/Right` listed in shortcuts overlay but NOT implemented in keyboard handler
+- VideoShortcutsOverlay has no ARIA role/aria-modal/focus trap -- accessibility gap for screen readers
+- Close button on overlay is `size-9` (36px), below 44px WCAG touch target minimum
+- `announceTimeoutRef` not cleaned up on unmount (pre-existing, but more announce calls added)
+- E2E tests missing: clicking skip buttons (only tests keyboard J/L), PiP exit flow, Shift+Arrow shortcuts
+
 ## Project Conventions
 - Import alias: `@/` resolves to `./src`
 - Card border radius: `rounded-[24px]`

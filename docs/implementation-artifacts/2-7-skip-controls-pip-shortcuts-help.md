@@ -1,12 +1,12 @@
 ---
 story_id: E02-S07
 story_name: "Skip Controls, Picture-in-Picture & Shortcuts Help"
-status: in-progress
+status: done
 started: 2026-02-21
-completed:
-reviewed: false
-review_started:
-review_gates_passed: []
+completed: 2026-02-21
+reviewed: true
+review_started: 2026-02-21
+review_gates_passed: [build, lint, unit-tests, e2e-tests, design-review, code-review]
 ---
 
 # Story 2.7: Skip Controls, Picture-in-Picture & Shortcuts Help
@@ -83,11 +83,15 @@ See [plan](../../.claude/plans/stateless-cuddling-hejlsberg.md) for implementati
 
 ## Design Review Feedback
 
-[Populated by /review-story]
+Reviewed 2026-02-21. Report: `docs/reviews/design/design-review-2026-02-21-E02-S07.md`
+
+Touch targets pass (44x44px on all new buttons). ARIA labels and live region announcements are solid. Two high-priority findings: missing `handleAddBookmark` useEffect dependency (H1), and shortcuts overlay needs dialog ARIA semantics + focus management (H2). Medium findings: close button 36px (M1), mobile layout wrapping (M2), phantom Shift+Arrow shortcut (M3), footer contrast (M4), reduced-motion guards (M5).
 
 ## Code Review Feedback
 
-[Populated by /review-story]
+Reviewed 2026-02-21. Report: `docs/reviews/code/code-review-2026-02-21-E02-S07.md`
+
+Two blockers: (B1) `data-testid="video-player"` renamed to `video-player-container` breaks 3 existing tests, (B2) Shift+Arrow shortcut documented in overlay but not implemented. Three high-priority: overlay missing dialog ARIA (H1), close button below 44px (H2), missing E2E tests for skip button click and PiP exit (H3). AC coverage: 11/14 criteria have tests, 3 gaps identified.
 
 ## Challenges and Lessons Learned
 

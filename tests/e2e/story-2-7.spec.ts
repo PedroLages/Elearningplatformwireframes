@@ -27,8 +27,26 @@ async function goToFirstLesson(page: Parameters<typeof navigateAndWait>[0]) {
 /** Focus the video player container so keyboard shortcuts are active */
 async function focusPlayer(page: Parameters<typeof navigateAndWait>[0]) {
   const player = page.getByTestId('video-player-container')
-  await player.hover()
-  await player.click()
+  // Wait for page to be fully settled — PDF viewer and other async components
+  // can temporarily steal focus during initial load
+  await page.waitForLoadState('networkidle')
+  await player.focus()
+  await expect(player).toBeFocused()
+}
+
+/**
+ * Press a key and assert that the ARIA live region shows an announcement.
+ * Announcements persist for 3s, giving Playwright's auto-retry assertions
+ * a comfortable window to detect them.
+ */
+async function pressKeyAndExpectAnnouncement(
+  page: Parameters<typeof navigateAndWait>[0],
+  key: string,
+  pattern: RegExp,
+) {
+  await page.keyboard.press(key)
+  const announcement = page.locator('[role="status"][aria-live="polite"]')
+  await expect(announcement).toContainText(pattern)
 }
 
 // ===========================================================================
@@ -81,12 +99,8 @@ test.describe('AC1: Skip Controls', () => {
     await goToFirstLesson(page)
     await focusPlayer(page)
 
-    // WHEN: User presses J
-    await page.keyboard.press('j')
-
-    // THEN: ARIA live region announces the skip
-    const announcement = page.locator('[role="status"][aria-live="polite"]')
-    await expect(announcement).toContainText(/skipped back 10 seconds/i)
+    // WHEN: User presses J / THEN: ARIA live region announces the skip
+    await pressKeyAndExpectAnnouncement(page, 'j', /skipped back 10 seconds/i)
   })
 
   test('L key skips forward 10 seconds with ARIA announcement', async ({ page }) => {
@@ -94,12 +108,8 @@ test.describe('AC1: Skip Controls', () => {
     await goToFirstLesson(page)
     await focusPlayer(page)
 
-    // WHEN: User presses L
-    await page.keyboard.press('l')
-
-    // THEN: ARIA live region announces the skip
-    const announcement = page.locator('[role="status"][aria-live="polite"]')
-    await expect(announcement).toContainText(/skipped forward 10 seconds/i)
+    // WHEN: User presses L / THEN: ARIA live region announces the skip
+    await pressKeyAndExpectAnnouncement(page, 'l', /skipped forward 10 seconds/i)
   })
 })
 
@@ -126,12 +136,8 @@ test.describe('AC2: Picture-in-Picture', () => {
     await goToFirstLesson(page)
     await focusPlayer(page)
 
-    // WHEN: User presses P
-    await page.keyboard.press('p')
-
-    // THEN: ARIA announcement confirms PiP activation
-    const announcement = page.locator('[role="status"][aria-live="polite"]')
-    await expect(announcement).toContainText(/picture-in-picture/i)
+    // WHEN: User presses P / THEN: ARIA announcement confirms PiP activation
+    await pressKeyAndExpectAnnouncement(page, 'p', /picture-in-picture/i)
   })
 
   test('PiP button shows active state when PiP is active', async ({ page }) => {
@@ -139,10 +145,12 @@ test.describe('AC2: Picture-in-Picture', () => {
     await goToFirstLesson(page)
     await focusPlayer(page)
 
-    // WHEN: PiP is activated
-    await page.keyboard.press('p')
+    // WHEN: PiP is activated via keyboard
+    await pressKeyAndExpectAnnouncement(page, 'p', /picture-in-picture activated/i)
 
     // THEN: PiP button has active/pressed styling
+    const playerContainer = page.getByTestId('video-player-container')
+    await playerContainer.hover()
     const pipButton = page.getByRole('button', { name: /picture-in-picture/i })
     await expect(pipButton).toHaveAttribute('aria-pressed', 'true')
   })
@@ -178,7 +186,7 @@ test.describe('AC3: Shortcuts Help Overlay', () => {
     await focusPlayer(page)
 
     // WHEN: User presses ?
-    await page.keyboard.press('Shift+/')
+    await page.keyboard.press('?')
 
     // THEN: Shortcuts overlay appears with two columns
     const overlay = page.getByTestId('video-shortcuts-overlay')
@@ -193,7 +201,7 @@ test.describe('AC3: Shortcuts Help Overlay', () => {
     // GIVEN: Shortcuts overlay is open
     await goToFirstLesson(page)
     await focusPlayer(page)
-    await page.keyboard.press('Shift+/')
+    await page.keyboard.press('?')
 
     // THEN: Key shortcuts are listed
     const overlay = page.getByTestId('video-shortcuts-overlay')
@@ -208,13 +216,13 @@ test.describe('AC3: Shortcuts Help Overlay', () => {
     // GIVEN: Shortcuts overlay is open
     await goToFirstLesson(page)
     await focusPlayer(page)
-    await page.keyboard.press('Shift+/')
+    await page.keyboard.press('?')
 
     const overlay = page.getByTestId('video-shortcuts-overlay')
     await expect(overlay).toBeVisible()
 
     // WHEN: User presses ? again
-    await page.keyboard.press('Shift+/')
+    await page.keyboard.press('?')
 
     // THEN: Overlay is dismissed
     await expect(overlay).not.toBeVisible()
@@ -224,7 +232,7 @@ test.describe('AC3: Shortcuts Help Overlay', () => {
     // GIVEN: Shortcuts overlay is open
     await goToFirstLesson(page)
     await focusPlayer(page)
-    await page.keyboard.press('Shift+/')
+    await page.keyboard.press('?')
 
     const overlay = page.getByTestId('video-shortcuts-overlay')
     await expect(overlay).toBeVisible()
@@ -242,14 +250,15 @@ test.describe('AC3: Shortcuts Help Overlay', () => {
     await focusPlayer(page)
 
     // WHEN: User presses ?
-    await page.keyboard.press('Shift+/')
+    await page.keyboard.press('?')
 
     // THEN: Video shortcuts overlay is visible
     const videoOverlay = page.getByTestId('video-shortcuts-overlay')
     await expect(videoOverlay).toBeVisible()
 
     // AND: Layout-level keyboard shortcuts dialog is NOT visible
-    const layoutDialog = page.getByRole('dialog', { name: /keyboard shortcuts/i })
-    await expect(layoutDialog).toHaveCount(0)
+    // (video overlay itself is now a dialog, so expect exactly 1 — our overlay only)
+    const allShortcutDialogs = page.getByRole('dialog', { name: /keyboard shortcuts/i })
+    await expect(allShortcutDialogs).toHaveCount(1)
   })
 })

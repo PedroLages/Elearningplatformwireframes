@@ -215,7 +215,7 @@ test.describe('AC-1: Video Playback from Imported Course', () => {
     await goToImportedLessonPlayer(page, 'course-react-101', 'video-intro')
 
     // THEN: Video player is visible
-    await expect(page.getByTestId('video-player')).toBeVisible()
+    await expect(page.getByTestId('video-player-container')).toBeVisible()
   })
 
   test('should display video title in header', async ({
@@ -363,7 +363,7 @@ test.describe('AC-2: File Access Error Recovery', () => {
     await expect(page.locator('body')).not.toContainText(/something went wrong/i)
     // AND: Either video player or error state is shown (not blank)
     const hasContent =
-      (await page.getByTestId('video-player').isVisible().catch(() => false)) ||
+      (await page.getByTestId('video-player-container').isVisible().catch(() => false)) ||
       (await page.getByTestId('lesson-error-state').isVisible().catch(() => false))
     expect(hasContent).toBe(true)
   })

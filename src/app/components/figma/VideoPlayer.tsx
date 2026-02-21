@@ -67,13 +67,17 @@ export function VideoPlayer({
   onEnded,
   onSeekComplete,
   onBookmarkAdd,
+  bookmarks,
+  onBookmarkSeek,
   poster,
 }: VideoPlayerProps) {
   const videoRef = useRef<HTMLVideoElement>(null)
   const containerRef = useRef<HTMLDivElement>(null)
   const hasRestoredPosition = useRef(false)
   const controlsTimeoutRef = useRef<ReturnType<typeof setTimeout> | undefined>(undefined)
+  const announceTimeoutRef = useRef<ReturnType<typeof setTimeout> | undefined>(undefined)
   const touchActiveRef = useRef(false)
+  const bookmarkTimeoutRef = useRef<ReturnType<typeof setTimeout> | undefined>(undefined)
 
   // Video state
   const [isPlaying, setIsPlaying] = useState(false)
@@ -102,6 +106,12 @@ export function VideoPlayer({
 
   // Video shortcuts overlay state
   const [shortcutsOpen, setShortcutsOpen] = useState(false)
+
+  // Progress bar hover state for expand-on-hover effect
+  const [progressHovered, setProgressHovered] = useState(false)
+
+  // Bookmark confirmation flash state
+  const [justBookmarked, setJustBookmarked] = useState(false)
 
   // Refs for speed menu focus trap
   const speedTriggerRef = useRef<HTMLButtonElement>(null)
@@ -198,7 +208,6 @@ export function VideoPlayer({
       )
       videoRef.current.currentTime = newTime
       setCurrentTime(newTime)
-      announce(`Seeked to ${formatTime(newTime)}`)
     }
   }, [])
 
@@ -286,10 +295,12 @@ export function VideoPlayer({
     }
   }, [])
 
-  // ARIA announcement helper
+  // ARIA announcement helper — clears after 3s so screen readers
+  // have time to process and the next announcement triggers a fresh change
   const announce = useCallback((message: string) => {
+    clearTimeout(announceTimeoutRef.current)
     setAnnouncement(message)
-    setTimeout(() => setAnnouncement(''), 1000)
+    announceTimeoutRef.current = setTimeout(() => setAnnouncement(''), 3000)
   }, [])
 
   // Add bookmark at current timestamp
@@ -297,8 +308,11 @@ export function VideoPlayer({
     if (onBookmarkAdd) {
       onBookmarkAdd(currentTime)
       announce(`Bookmark added at ${formatTime(currentTime)}`)
+      setJustBookmarked(true)
+      clearTimeout(bookmarkTimeoutRef.current)
+      bookmarkTimeoutRef.current = setTimeout(() => setJustBookmarked(false), 1500)
     }
-  }, [onBookmarkAdd, currentTime])
+  }, [onBookmarkAdd, currentTime, announce])
 
   // Toggle Picture-in-Picture
   const togglePiP = useCallback(async () => {
@@ -538,6 +552,7 @@ export function VideoPlayer({
     jumpToPercentage,
     speedMenuOpen,
     shortcutsOpen,
+    handleAddBookmark,
   ])
 
   // Auto-hide controls (mouse interaction — only hides when playing)
@@ -574,11 +589,18 @@ export function VideoPlayer({
 
   useEffect(() => {
     return () => {
-      if (controlsTimeoutRef.current) {
-        clearTimeout(controlsTimeoutRef.current)
-      }
+      if (controlsTimeoutRef.current) clearTimeout(controlsTimeoutRef.current)
+      if (announceTimeoutRef.current) clearTimeout(announceTimeoutRef.current)
+      if (bookmarkTimeoutRef.current) clearTimeout(bookmarkTimeoutRef.current)
     }
   }, [])
+
+  // When controls auto-hide, move focus to the container so keyboard shortcuts remain active
+  useEffect(() => {
+    if (!showControls && containerRef.current?.contains(document.activeElement)) {
+      containerRef.current?.focus()
+    }
+  }, [showControls])
 
   // Handle progress bar change
   const handleProgressChange = useCallback(
@@ -607,8 +629,9 @@ export function VideoPlayer({
   return (
     <div
       ref={containerRef}
-      data-testid="video-player-container"
+      data-testid="video-player"
       className="relative w-full overflow-hidden rounded-2xl bg-black group focus-visible:outline focus-visible:outline-2 focus-visible:outline-blue-600 focus-visible:outline-offset-2"
+      onMouseDown={() => containerRef.current?.focus()}
       onMouseMove={resetControlsTimeout}
       onMouseLeave={() => isPlaying && !speedMenuOpen && !shortcutsOpen && setShowControls(false)}
       onTouchStart={handleTouchShow}
@@ -648,7 +671,7 @@ export function VideoPlayer({
         <div
           data-testid="player-controls-overlay"
           className={cn(
-            'absolute inset-0 bg-gradient-to-t from-black/70 via-transparent to-transparent transition-[opacity,visibility] duration-300',
+            'absolute inset-0 bg-gradient-to-t from-black/70 via-transparent to-transparent transition-[opacity,visibility] duration-300 motion-reduce:transition-none',
             showControls ? 'opacity-100' : 'opacity-0 invisible pointer-events-none'
           )}
           onTouchStart={handleTouchShow}
@@ -674,13 +697,26 @@ export function VideoPlayer({
               <span className="text-white text-xs font-medium min-w-[45px]">
                 {formatTime(currentTime)}
               </span>
-              <div className="relative flex-1">
+              <div
+                className="relative flex-1 py-3 -my-3 cursor-pointer"
+                onMouseEnter={() => setProgressHovered(true)}
+                onMouseLeave={() => setProgressHovered(false)}
+              >
                 <Slider
                   value={[progress]}
                   onValueChange={handleProgressChange}
                   max={100}
                   step={0.1}
                   aria-label="Video progress"
+                  trackClassName={cn(
+                    'bg-white/30',
+                    progressHovered ? '' : '!h-1'
+                  )}
+                  rangeClassName="bg-white"
+                  thumbClassName={cn(
+                    'bg-white border-2 border-white shadow-[0_0_0_3px_rgba(255,255,255,0.25)] transition-[opacity,width,height] duration-200 motion-reduce:transition-none',
+                    progressHovered ? 'opacity-100' : 'opacity-0 !size-2.5'
+                  )}
                 />
                 {/* Bookmark markers — visible dot is w-2 h-2, wrapped in 44x44px hit area for touch targets */}
                 {bookmarks && duration > 0 && bookmarks.map(bm => (
@@ -693,7 +729,7 @@ export function VideoPlayer({
                         onClick={(e) => { e.stopPropagation(); onBookmarkSeek?.(bm.timestamp) }}
                         aria-label={`Bookmark at ${formatTime(bm.timestamp)}`}
                       >
-                        <span className="w-2 h-2 rounded-full bg-yellow-400 border border-yellow-600 group-hover/marker:scale-150 transition-transform" />
+                        <span className="w-2 h-2 rounded-full bg-yellow-400 border border-yellow-600 group-hover/marker:scale-150 transition-transform motion-reduce:transition-none" />
                       </button>
                     </TooltipTrigger>
                     <TooltipContent side="top">{formatTime(bm.timestamp)}</TooltipContent>
@@ -773,6 +809,9 @@ export function VideoPlayer({
                     step={1}
                     className="w-20 hidden sm:block"
                     aria-label="Volume"
+                    trackClassName="bg-white/30"
+                    rangeClassName="bg-white"
+                    thumbClassName="bg-white border-white"
                   />
 
                   {/* Mobile: volume popover */}
@@ -787,6 +826,9 @@ export function VideoPlayer({
                         max={100}
                         step={1}
                         aria-label="Volume"
+                        trackClassName="bg-white/30"
+                        rangeClassName="bg-white"
+                        thumbClassName="bg-white border-white"
                       />
                     </div>
                   )}
@@ -863,11 +905,19 @@ export function VideoPlayer({
                   <Button
                     variant="ghost"
                     size="icon"
-                    className="size-11 text-white hover:bg-white/20"
+                    className={cn(
+                      'size-11 hover:bg-white/20 transition-colors duration-200',
+                      justBookmarked ? 'text-yellow-400' : 'text-white'
+                    )}
                     onClick={handleAddBookmark}
                     aria-label="Add bookmark at current time"
                   >
-                    <Bookmark className="size-5" />
+                    <Bookmark
+                      className={cn(
+                        'size-5 transition-all duration-300 motion-reduce:transition-none',
+                        justBookmarked && 'fill-yellow-400 scale-125'
+                      )}
+                    />
                   </Button>
                 )}
 

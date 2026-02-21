@@ -183,7 +183,7 @@ test.describe('AC3: Bookmark Creation', () => {
     await navigateAndWait(page, LESSON_PATH)
 
     // Focus the video player area
-    const videoPlayer = page.getByTestId('video-player')
+    const videoPlayer = page.getByTestId('video-player-container')
     await videoPlayer.click()
 
     // WHEN: User presses B key
