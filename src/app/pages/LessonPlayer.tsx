@@ -85,11 +85,20 @@ export function LessonPlayer() {
     [courseId, lessonId]
   )
 
+  const handleAutoComplete = useCallback(() => {
+    if (courseId && lessonId && !completed) {
+      markLessonComplete(courseId, lessonId)
+      setCompleted(true)
+      setCelebrationType('lesson')
+      setCelebrationTitle(lesson?.title || 'Lesson')
+      setCelebrationModal(true)
+    }
+  }, [courseId, lessonId, completed, lesson])
+
   const handleVideoEnded = useCallback(() => {
     if (courseId && lessonId && !completed) {
       markLessonComplete(courseId, lessonId)
       setCompleted(true)
-      // Trigger celebration
       setCelebrationType('lesson')
       setCelebrationTitle(lesson?.title || 'Lesson')
       setCelebrationModal(true)
@@ -179,6 +188,7 @@ export function LessonPlayer() {
               lessonId={lessonId}
               onTimeUpdate={handleTimeUpdate}
               onEnded={handleVideoEnded}
+              onAutoComplete={handleAutoComplete}
               onSeekComplete={handleSeekComplete}
               onBookmarkAdd={handleBookmarkAdd}
             />
