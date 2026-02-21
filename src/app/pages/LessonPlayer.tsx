@@ -78,6 +78,16 @@ export function LessonPlayer() {
 
   const handleTheaterModeToggle = useCallback(() => setIsTheaterMode((prev) => !prev), [])
 
+  // Sync theater mode to <html> data attribute so Layout can hide the left sidebar via CSS
+  useEffect(() => {
+    if (isTheaterMode) {
+      document.documentElement.setAttribute('data-theater-mode', 'true')
+    } else {
+      document.documentElement.removeAttribute('data-theater-mode')
+    }
+    return () => document.documentElement.removeAttribute('data-theater-mode')
+  }, [isTheaterMode])
+
   const handleMiniPlayerClick = useCallback(() => {
     const reduceMotion = window.matchMedia('(prefers-reduced-motion: reduce)').matches
     videoWrapperRef.current?.scrollIntoView({
@@ -101,6 +111,11 @@ export function LessonPlayer() {
       setBookmarks(getLessonBookmarks(courseId, lessonId))
     }
   }, [courseId, lessonId])
+
+  // Scroll to top when navigating to a new lesson
+  useEffect(() => {
+    document.getElementById('main-content')?.scrollTo({ top: 0, behavior: 'instant' })
+  }, [lessonId])
 
   // Focus management for accessibility
   useEffect(() => {
@@ -259,7 +274,10 @@ export function LessonPlayer() {
           <div
             ref={videoWrapperRef}
             data-testid="video-anchor"
-            className="relative mb-5 aspect-video w-full"
+            className={cn(
+              'relative mb-5 aspect-video',
+              isTheaterMode ? 'w-full max-h-[calc(100svh-6rem)]' : 'w-full'
+            )}
           >
             {/* Inner: becomes fixed mini-player when scrolled past while playing */}
             <div

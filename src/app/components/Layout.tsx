@@ -129,6 +129,7 @@ export function Layout() {
       {/* Desktop Sidebar - Persistent on desktop (≥1024px), hidden on tablet/mobile */}
       {isDesktop && (
         <aside
+          data-theater-hide
           className="w-[220px] bg-card m-6 p-6 flex flex-col"
           aria-label="Sidebar"
         >

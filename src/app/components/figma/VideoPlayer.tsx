@@ -530,8 +530,27 @@ export function VideoPlayer({
         return
       }
 
-      // All other shortcuts: only when video player has focus
-      if (!containerRef.current?.contains(document.activeElement)) return
+      // All other shortcuts: only when video player has focus.
+      // Exception: spacebar also fires when nothing specific has focus (body/document),
+      // matching YouTube-style where space pauses from anywhere on the page.
+      const isPlayerFocused = containerRef.current?.contains(document.activeElement)
+      const isGenericFocus =
+        !document.activeElement ||
+        document.activeElement === document.body ||
+        document.activeElement === document.documentElement
+      const isInputFocused =
+        ['INPUT', 'TEXTAREA', 'SELECT'].includes(
+          (document.activeElement as HTMLElement)?.tagName ?? ''
+        ) || (document.activeElement as HTMLElement)?.isContentEditable
+
+      if (e.key === ' ' && isGenericFocus && !isInputFocused && !speedMenuOpen && !shortcutsOpen) {
+        e.preventDefault()
+        togglePlayPause()
+        containerRef.current?.focus({ preventScroll: true })
+        return
+      }
+
+      if (!isPlayerFocused) return
       // Speed menu handles its own keyboard events
       if (speedMenuOpen) return
 
@@ -794,6 +813,12 @@ export function VideoPlayer({
             showControls ? 'opacity-100' : 'opacity-0 invisible pointer-events-none'
           )}
           onTouchStart={(e) => handleTouchShow(e)}
+          onClick={(e) => {
+            // Toggle play/pause when clicking the canvas (not buttons, sliders, or controls bar)
+            const target = e.target as HTMLElement
+            if (target.closest('button') || target.closest('input') || target.closest('[data-controls]')) return
+            togglePlayPause()
+          }}
         >
           {/* Buffering Spinner */}
           {isBuffering && !hasError && (
@@ -841,7 +866,7 @@ export function VideoPlayer({
           )}
 
           {/* Bottom Controls */}
-          <div className="absolute bottom-0 left-0 right-0 p-4 space-y-2">
+          <div data-controls className="absolute bottom-0 left-0 right-0 p-4 space-y-2">
             {/* Progress Bar */}
             <div className="flex items-center gap-2">
               <span data-testid="current-time" className="text-white text-xs font-medium min-w-[45px]">
@@ -1059,26 +1084,29 @@ export function VideoPlayer({
                   </Tooltip>
                 )}
 
-                {/* Captions Toggle - Only show if captions are available */}
-                {captions && captions.length > 0 && (
-                  <Tooltip>
-                    <TooltipTrigger asChild>
-                      <Button
-                        variant="ghost"
-                        size="icon"
-                        className={cn(
-                          'size-11 text-white hover:bg-white/20',
-                          captionsEnabled && 'bg-white/20'
-                        )}
-                        onClick={toggleCaptions}
-                        aria-label={captionsEnabled ? 'Disable captions' : 'Enable captions'}
-                      >
-                        <Subtitles className="size-5" />
-                      </Button>
-                    </TooltipTrigger>
-                    <TooltipContent side="top">Captions (C)</TooltipContent>
-                  </Tooltip>
-                )}
+                {/* Captions Toggle - always visible; grayed out when no captions available */}
+                <Tooltip>
+                  <TooltipTrigger asChild>
+                    <Button
+                      variant="ghost"
+                      size="icon"
+                      className={cn(
+                        'size-11 text-white hover:bg-white/20',
+                        captionsEnabled && 'bg-white/20',
+                        (!captions || captions.length === 0) && 'opacity-40 cursor-not-allowed'
+                      )}
+                      onClick={toggleCaptions}
+                      disabled={!captions || captions.length === 0}
+                      aria-label={captionsEnabled ? 'Disable captions' : 'Enable captions'}
+                      aria-pressed={captionsEnabled}
+                    >
+                      <Subtitles className="size-5" />
+                    </Button>
+                  </TooltipTrigger>
+                  <TooltipContent side="top">
+                    {captions && captions.length > 0 ? 'Captions (C)' : 'No captions available'}
+                  </TooltipContent>
+                </Tooltip>
 
                 {/* Theater Mode - desktop only (sidebar already hidden on mobile) */}
                 {onTheaterModeToggle && (

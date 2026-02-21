@@ -170,6 +170,7 @@
 
   html {
     font-size: var(--font-size);
+    scrollbar-gutter: stable;
   }
 
   h1 {
@@ -225,6 +226,11 @@
     line-height: 1.6;
     padding: 0.25rem 0.5rem;
     border-radius: 0.25rem;
+  }
+
+  /* Theater / cinema mode: hide sidebar so video uses full available width */
+  html[data-theater-mode='true'] [data-theater-hide] {
+    display: none;
   }
 
   /* Highlighted/active cue styling */
