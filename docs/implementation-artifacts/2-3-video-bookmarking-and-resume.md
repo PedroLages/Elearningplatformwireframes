@@ -112,4 +112,9 @@ Full report: `docs/reviews/code/code-review-2026-02-21-e02-s03.md`
 
 ## Challenges and Lessons Learned
 
-[Document issues, solutions, and patterns worth remembering]
+- **Prototype-heavy iteration created cleanup debt**: Six `new_vp_v*.tsx` scratch files and multiple update scripts accumulated at the project root during VideoPlayer iteration. Treat scratch files as ephemeral — delete before review or use a dedicated `scratch/` directory excluded via `.gitignore`.
+- **localStorage used instead of IndexedDB despite ACs specifying IndexedDB**: The `bookmarks.ts` module shipped with `localStorage`. When an AC names a specific technology, treat it as a hard constraint, not a suggestion.
+- **Debounce logic required mid-story rewrite**: The initial modulo approach to throttling position saves was broken and replaced with a ref-based throttle. Use `useRef` + timestamp comparison for time-based throttling in React from the start.
+- **Touch target sizing caught as blocker, fixed with hit-area pattern**: Bookmark markers at 8x8px failed the 44x44px WCAG minimum. Fixed with a 44x44px transparent `<button>` wrapping the visible dot. This pattern (invisible padded hit area around a small visual element) is reusable for any sub-44px interactive indicator.
+- **TypeScript strictness divergence between Vite and tsc**: A `case ' ':` fallthrough passed Vite builds (esbuild skips type-checking) but fails `tsc --noEmit` with TS7029. Run `tsc --noEmit` as a pre-commit or CI gate.
+- **Working-tree fixes not committed before review created false "pass" state**: Commit fixes atomically before requesting review so reviewers evaluate the actual branch state, not a local working tree.
