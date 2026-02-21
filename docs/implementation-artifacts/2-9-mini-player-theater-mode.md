@@ -121,6 +121,10 @@ Report: `docs/reviews/code/code-review-2026-02-21-E02-S09.md`
 
 - **Anchor + inner-div pattern for layout stability**: Instead of a conditional spacer div, using an outer flow-preserving anchor with `aspect-video` and an inner div that switches between `relative` and `position: fixed` eliminates layout shift cleanly. This is now a known-good pattern for sticky/floating media elements.
 
+- **Single scroll container**: The original layout had `overflow-y-auto` on both the inner content div and the outer Layout `<main>`. The IntersectionObserver reported the video as always intersecting because the scroll happened on a sibling container, not the one containing the observed element. Fix: make `<main>` the sole scroll source; the sidebar becomes `sticky + self-start + max-h` so it stays in the viewport without needing its own scroll root. Lesson: IntersectionObserver only fires correctly when scroll happens on an ancestor of the observed element — always trace the actual scroll container before wiring up intersection logic.
+
+- **E2E scroll tests: verify the actual scroll container**: `scrollLessonContent` was calling `scrollBy` on the inner content div, which had become `overflow: visible` after the layout refactor. Scrolling a non-scrollable element throws no error and silently does nothing, so tests appeared to run but the mini-player never triggered. Lesson: when scroll-triggered behavior fails in E2E but no assertion fires, add a quick `scrollTop` check to confirm the target element actually scrolled.
+
 ## Implementation Plan
 
 See [plan](../../.claude/plans/sunny-snacking-dongarra.md) for implementation approach.
