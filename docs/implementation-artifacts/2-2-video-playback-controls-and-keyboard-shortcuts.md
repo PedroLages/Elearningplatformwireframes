@@ -1,12 +1,12 @@
 ---
 story_id: E02-S02
 story_name: "Video Playback Controls and Keyboard Shortcuts"
-status: in-progress
+status: done
 started: 2026-02-20
-completed:
-reviewed: false
-review_started:
-review_gates_passed: []
+completed: 2026-02-21
+reviewed: true
+review_started: 2026-02-21
+review_gates_passed: [build, unit-tests, e2e-tests, design-review, code-review]
 ---
 
 # Story 2.2: Video Playback Controls and Keyboard Shortcuts

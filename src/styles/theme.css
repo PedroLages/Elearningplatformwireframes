@@ -206,7 +206,7 @@
   video::cue {
     background-color: rgba(0, 0, 0, 0.85);
     color: #ffffff;
-    font-size: var(--caption-font-size, 1.125rem);
+    font-size: 1.125rem; /* Overridden dynamically by VideoPlayer component */
     line-height: 1.6;
     padding: 0.25rem 0.5rem;
     border-radius: 0.25rem;

@@ -36,6 +36,8 @@ async function goToLessonPlayer(page: Parameters<typeof navigateAndWait>[0]) {
 // ===========================================================================
 
 test.describe('AC1: Shift+Arrow ±10s Seeking', () => {
+  test.skip(({ browserName }) => browserName === 'webkit', 'Keyboard events not supported on mobile webkit')
+
   test('Shift+ArrowRight should seek forward 10 seconds', async ({ page }) => {
     await goToLessonPlayer(page)
 
@@ -47,7 +49,7 @@ test.describe('AC1: Shift+Arrow ±10s Seeking', () => {
     await page.keyboard.press('Shift+ArrowRight')
 
     // THEN: Current time should advance by ~10s (from 0)
-    const timeDisplay = page.locator('[data-testid="current-time"], .text-white').filter({ hasText: /\d+:\d+/ }).first()
+    const timeDisplay = page.getByTestId('current-time')
     // After Shift+ArrowRight from 0:00, should show ~0:10
     await expect(timeDisplay).toContainText('0:10')
   })
@@ -66,7 +68,7 @@ test.describe('AC1: Shift+Arrow ±10s Seeking', () => {
     await page.keyboard.press('Shift+ArrowLeft')
 
     // THEN: Current time should go back by ~10s (from ~20s to ~10s)
-    const timeDisplay = page.locator('[data-testid="current-time"], .text-white').filter({ hasText: /\d+:\d+/ }).first()
+    const timeDisplay = page.getByTestId('current-time')
     await expect(timeDisplay).toContainText('0:10')
   })
 
@@ -80,7 +82,7 @@ test.describe('AC1: Shift+Arrow ±10s Seeking', () => {
     await page.keyboard.press('ArrowRight')
 
     // THEN: Current time should advance by ~5s (not 10s)
-    const timeDisplay = page.locator('[data-testid="current-time"], .text-white').filter({ hasText: /\d+:\d+/ }).first()
+    const timeDisplay = page.getByTestId('current-time')
     await expect(timeDisplay).toContainText('0:05')
   })
 })
