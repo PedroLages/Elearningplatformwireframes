@@ -9,6 +9,8 @@ import {
   Settings,
   Subtitles,
   Bookmark,
+  Minus,
+  Plus,
 } from 'lucide-react'
 import type { CaptionTrack } from '@/data/types'
 import { AspectRatio } from '@/app/components/ui/aspect-ratio'
@@ -35,6 +37,8 @@ interface VideoPlayerProps {
 const PLAYBACK_SPEEDS = [0.5, 0.75, 1, 1.25, 1.5, 2]
 const STORAGE_KEY_PLAYBACK_SPEED = 'video-playback-speed'
 const STORAGE_KEY_CAPTIONS_ENABLED = 'video-captions-enabled'
+const STORAGE_KEY_CAPTION_FONT_SIZE = 'video-caption-font-size'
+const CAPTION_FONT_SIZES = [14, 16, 18, 20]
 const COMPLETION_THRESHOLD = 0.95
 
 function formatTime(seconds: number): string {
@@ -96,6 +100,12 @@ export function VideoPlayer({
   const [captionsEnabled, setCaptionsEnabled] = useState(() => {
     const saved = localStorage.getItem(STORAGE_KEY_CAPTIONS_ENABLED)
     return saved === 'true'
+  })
+
+  // Caption font size (14-20pt, persisted to localStorage)
+  const [captionFontSize, setCaptionFontSize] = useState(() => {
+    const saved = localStorage.getItem(STORAGE_KEY_CAPTION_FONT_SIZE)
+    return saved ? parseInt(saved, 10) : 18
   })
 
   // Reset position flag when source changes
@@ -266,6 +276,18 @@ export function VideoPlayer({
     setPlaybackSpeed(speed)
     localStorage.setItem(STORAGE_KEY_PLAYBACK_SPEED, speed.toString())
     announce(`Speed changed to ${speed}x`)
+  }, [])
+
+  // Change caption font size
+  const changeCaptionFontSize = useCallback((delta: number) => {
+    setCaptionFontSize(prev => {
+      const currentIdx = CAPTION_FONT_SIZES.indexOf(prev)
+      const newIdx = Math.max(0, Math.min(CAPTION_FONT_SIZES.length - 1, currentIdx + delta))
+      const newSize = CAPTION_FONT_SIZES[newIdx]
+      localStorage.setItem(STORAGE_KEY_CAPTION_FONT_SIZE, newSize.toString())
+      announce(`Caption font size ${newSize}pt`)
+      return newSize
+    })
   }, [])
 
   // Jump to percentage
@@ -445,6 +467,7 @@ export function VideoPlayer({
     <div
       ref={containerRef}
       className="relative w-full overflow-hidden rounded-2xl bg-black group"
+      style={{ '--caption-font-size': `${captionFontSize / 16}rem` } as React.CSSProperties}
       onMouseMove={resetControlsTimeout}
       onMouseLeave={() => isPlaying && !speedMenuOpen && setShowControls(false)}
       tabIndex={0}
@@ -625,19 +648,50 @@ export function VideoPlayer({
 
                 {/* Captions Toggle - Only show if captions are available */}
                 {captions && captions.length > 0 && (
-                  <Button
-                    variant="ghost"
-                    size="icon"
-                    className={cn(
-                      'h-8 w-8 text-white hover:bg-white/20 focus-visible:ring-2 focus-visible:ring-white',
-                      captionsEnabled && 'bg-white/20'
+                  <>
+                    <Button
+                      variant="ghost"
+                      size="icon"
+                      className={cn(
+                        'h-8 w-8 text-white hover:bg-white/20 focus-visible:ring-2 focus-visible:ring-white',
+                        captionsEnabled && 'bg-white/20'
+                      )}
+                      onClick={toggleCaptions}
+                      aria-label={captionsEnabled ? 'Disable captions' : 'Enable captions'}
+                      aria-pressed={captionsEnabled}
+                    >
+                      <Subtitles className="h-4 w-4" />
+                    </Button>
+
+                    {/* Caption Font Size Controls */}
+                    {captionsEnabled && (
+                      <div className="flex items-center gap-0.5" data-testid="caption-font-size">
+                        <Button
+                          variant="ghost"
+                          size="icon"
+                          className="h-6 w-6 text-white hover:bg-white/20 focus-visible:ring-2 focus-visible:ring-white"
+                          onClick={() => changeCaptionFontSize(-1)}
+                          aria-label="Decrease caption font size"
+                          disabled={captionFontSize <= CAPTION_FONT_SIZES[0]}
+                        >
+                          <Minus className="h-3 w-3" />
+                        </Button>
+                        <span className="text-white text-[10px] font-medium min-w-[28px] text-center">
+                          {captionFontSize}pt
+                        </span>
+                        <Button
+                          variant="ghost"
+                          size="icon"
+                          className="h-6 w-6 text-white hover:bg-white/20 focus-visible:ring-2 focus-visible:ring-white"
+                          onClick={() => changeCaptionFontSize(1)}
+                          aria-label="Increase caption font size"
+                          disabled={captionFontSize >= CAPTION_FONT_SIZES[CAPTION_FONT_SIZES.length - 1]}
+                        >
+                          <Plus className="h-3 w-3" />
+                        </Button>
+                      </div>
                     )}
-                    onClick={toggleCaptions}
-                    aria-label={captionsEnabled ? 'Disable captions' : 'Enable captions'}
-                    aria-pressed={captionsEnabled}
-                  >
-                    <Subtitles className="h-4 w-4" />
-                  </Button>
+                  </>
                 )}
 
                 {/* Fullscreen */}
