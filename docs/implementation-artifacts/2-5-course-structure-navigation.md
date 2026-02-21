@@ -99,7 +99,15 @@ Report: `docs/reviews/code/code-review-2026-02-21-E02-S05.md`
 
 ## Challenges and Lessons Learned
 
-[Document issues, solutions, and patterns worth remembering]
+- **Stabilize effects that depend on their own output:** The `AutoAdvanceCountdown` timer broke because `useEffect` listed `remaining` in its dependency array, tearing down and recreating the interval every tick. Store callbacks in refs and use a single stable `setInterval` — any effect that both reads and writes a value it depends on is a red flag for infinite re-fire.
+
+- **Controlled vs. uncontrolled components matter for dynamic state:** Using `defaultValue` on the Accordion meant it only auto-expanded on initial mount. When the active lesson changed to a different module via the Next button, the accordion stayed collapsed. Switching to controlled `value`/`onValueChange` with a `useEffect` sync fixed this. Default to controlled mode whenever the "selected" state can change after mount.
+
+- **Inline arrow callbacks in JSX cause cascading re-render bugs:** Inline `onAdvance`/`onCancel` arrows changed identity every render, causing the countdown effect to re-fire. Extracting to `useCallback` eliminated an entire class of timer-reset bugs — always memoize callbacks passed to components with effects.
+
+- **Accessibility requirements surface structural issues early:** The design review caught a missing `<SheetTitle>`, insufficient touch targets, and heading hierarchy gaps. Treating WCAG AA as a first-class acceptance criterion keeps fixes cheap.
+
+- **E2E tests need to assert the outcome, not just the trigger:** The auto-advance test verified the countdown appeared but never asserted the URL changed. Each acceptance criterion should have at least one test that would fail if the feature were removed.
 
 ## Implementation Plan
 
