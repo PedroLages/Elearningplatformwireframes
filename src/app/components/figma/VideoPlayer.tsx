@@ -20,7 +20,6 @@ import {
 } from 'lucide-react'
 import type { CaptionTrack, Chapter } from '@/data/types'
 import { ChapterProgressBar } from './ChapterProgressBar'
-import { AspectRatio } from '@/app/components/ui/aspect-ratio'
 import { Button } from '@/app/components/ui/button'
 import { Slider } from '@/app/components/ui/slider'
 // Radix Popover Portal miscalculates position inside scroll containers — using plain CSS dropdown
@@ -550,6 +549,13 @@ export function VideoPlayer({
         return
       }
 
+      if ((e.key === 'ArrowLeft' || e.key === 'ArrowRight') && isGenericFocus && !isInputFocused && !speedMenuOpen && !shortcutsOpen) {
+        e.preventDefault()
+        seekWithOverlay(e.key === 'ArrowLeft' ? -5 : 5)
+        containerRef.current?.focus({ preventScroll: true })
+        return
+      }
+
       if (!isPlayerFocused) return
       // Speed menu handles its own keyboard events
       if (speedMenuOpen) return
@@ -748,7 +754,10 @@ export function VideoPlayer({
     <div
       ref={containerRef}
       data-testid="video-player-container"
-      className="relative w-full overflow-hidden rounded-2xl bg-black group focus-visible:outline focus-visible:outline-2 focus-visible:outline-blue-600 focus-visible:outline-offset-2"
+      className={cn(
+        'relative w-full overflow-hidden rounded-2xl bg-black group focus:outline-none',
+        theaterMode && 'h-full'
+      )}
       onMouseDown={() => containerRef.current?.focus()}
       onMouseMove={resetControlsTimeout}
       onMouseLeave={() => isPlaying && !speedMenuOpen && !shortcutsOpen && setShowControls(false)}
@@ -757,7 +766,7 @@ export function VideoPlayer({
       role="region"
       aria-label={title || 'Video player'}
     >
-      <AspectRatio ratio={16 / 9}>
+      <div className={cn('relative', theaterMode ? 'h-full' : 'aspect-video')}>
         <video
           ref={videoRef}
           src={src}
@@ -1173,7 +1182,7 @@ export function VideoPlayer({
         </div>
         {/* Video Shortcuts Overlay */}
         <VideoShortcutsOverlay open={shortcutsOpen} onClose={() => setShortcutsOpen(false)} />
-      </AspectRatio>
+      </div>
 
       {/* ARIA Live Region for Announcements */}
       <div role="status" aria-live="polite" aria-atomic="true" className="sr-only">

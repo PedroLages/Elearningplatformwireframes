@@ -275,8 +275,8 @@ export function LessonPlayer() {
             ref={videoWrapperRef}
             data-testid="video-anchor"
             className={cn(
-              'relative mb-5 aspect-video',
-              isTheaterMode ? 'w-full max-h-[calc(100svh-6rem)]' : 'w-full'
+              'relative mb-5',
+              isTheaterMode ? 'w-full h-[calc(100svh-6rem)]' : 'w-full aspect-video'
             )}
           >
             {/* Inner: becomes fixed mini-player when scrolled past while playing */}
