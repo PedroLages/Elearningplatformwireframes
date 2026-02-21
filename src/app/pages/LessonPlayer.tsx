@@ -5,6 +5,8 @@ import { Button } from '../components/ui/button'
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '../components/ui/tabs'
 import { Sheet, SheetContent, SheetHeader, SheetTitle, SheetTrigger } from '../components/ui/sheet'
 import { VideoPlayer } from '../components/figma/VideoPlayer'
+import { cn } from '../components/ui/utils'
+import { useIntersectionObserver } from '../hooks/useIntersectionObserver'
 import { PdfViewer } from '../components/figma/PdfViewer'
 import { ModuleAccordion } from '../components/figma/ModuleAccordion'
 import { AutoAdvanceCountdown } from '../components/figma/AutoAdvanceCountdown'
@@ -64,6 +66,21 @@ export function LessonPlayer() {
 
   // Auto-advance countdown state
   const [showAutoAdvance, setShowAutoAdvance] = useState(false)
+
+  // Mini-player + theater mode state
+  const [isTheaterMode, setIsTheaterMode] = useState(false)
+  const [isVideoPlaying, setIsVideoPlaying] = useState(false)
+  const videoWrapperRef = useRef<HTMLDivElement>(null)
+  const isVideoIntersecting = useIntersectionObserver(videoWrapperRef, { threshold: 0.3 })
+  const isMiniPlayer = !isVideoIntersecting && isVideoPlaying
+
+  const handleMiniPlayerClick = useCallback(() => {
+    const reduceMotion = window.matchMedia('(prefers-reduced-motion: reduce)').matches
+    videoWrapperRef.current?.scrollIntoView({
+      behavior: reduceMotion ? 'instant' : 'smooth',
+      block: 'start',
+    })
+  }, [])
 
   // Reset auto-advance and completion state when lesson changes
   useEffect(() => {
@@ -222,26 +239,53 @@ export function LessonPlayer() {
           {course.shortTitle}
         </Link>
 
-        {/* Video Player — poster prop deferred until Resource type supports it */}
+        {/* Video Player */}
         {videoResource && (
-          <div className="mb-5">
-            <VideoPlayer
-              src={getResourceUrl(videoResource)}
-              title={lesson.title}
-              initialPosition={
-                progress?.lastWatchedLesson === lessonId ? progress?.lastVideoPosition : undefined
-              }
-              seekToTime={seekToTime}
-              courseId={courseId}
-              lessonId={lessonId}
-              onTimeUpdate={handleTimeUpdate}
-              onEnded={handleVideoEnded}
-              onSeekComplete={handleSeekComplete}
-              onBookmarkAdd={handleBookmarkAdd}
-              bookmarks={bookmarks}
-              onBookmarkSeek={handleVideoSeek}
-            />
-          </div>
+          <>
+            {/* Spacer — preserves layout height when mini-player is floating */}
+            {isMiniPlayer && (
+              <div className="w-full aspect-video mb-5" data-testid="mini-player-spacer" />
+            )}
+
+            {/* Video wrapper — repositions to fixed bottom-right when mini-player is active */}
+            <div
+              ref={videoWrapperRef}
+              data-testid="mini-player"
+              tabIndex={0}
+              className={cn(
+                'mb-5',
+                isMiniPlayer &&
+                  'fixed bottom-4 right-4 w-80 z-50 rounded-2xl overflow-hidden shadow-2xl cursor-pointer'
+              )}
+              onClick={isMiniPlayer ? handleMiniPlayerClick : undefined}
+              onKeyDown={(e) => {
+                if (e.key === 't') {
+                  e.preventDefault()
+                  setIsTheaterMode((prev) => !prev)
+                }
+              }}
+            >
+              <VideoPlayer
+                src={getResourceUrl(videoResource)}
+                title={lesson.title}
+                initialPosition={
+                  progress?.lastWatchedLesson === lessonId ? progress?.lastVideoPosition : undefined
+                }
+                seekToTime={seekToTime}
+                courseId={courseId}
+                lessonId={lessonId}
+                onTimeUpdate={handleTimeUpdate}
+                onEnded={handleVideoEnded}
+                onSeekComplete={handleSeekComplete}
+                onBookmarkAdd={handleBookmarkAdd}
+                bookmarks={bookmarks}
+                onBookmarkSeek={handleVideoSeek}
+                onPlayStateChange={setIsVideoPlaying}
+                theaterMode={isTheaterMode}
+                onTheaterModeToggle={() => setIsTheaterMode((prev) => !prev)}
+              />
+            </div>
+          </>
         )}
 
         {/* Auto-Advance Countdown */}
@@ -427,8 +471,8 @@ export function LessonPlayer() {
         </div>
       </div>
 
-      {/* Sidebar Course Structure */}
-      <div className="hidden xl:block w-72 bg-card rounded-2xl shadow-sm overflow-hidden">
+      {/* Sidebar Course Structure — hidden in theater mode */}
+      <div className={cn('w-72 bg-card rounded-2xl shadow-sm overflow-hidden', isTheaterMode ? 'hidden' : 'hidden xl:block')}>
         <div className="px-4 py-3 border-b border-border">
           <h3 className="text-sm font-semibold">Course Content</h3>
         </div>
