@@ -74,7 +74,7 @@ export function ProgressCourseCard({
             : ''
       }`}
     >
-      <CardContent className="p-0">
+      <CardContent className="p-0 flex flex-col h-full">
         <div className="relative">
           <img
             src={`${course.coverImage}-640w.webp`}
@@ -82,6 +82,7 @@ export function ProgressCourseCard({
             className="w-full h-36 object-cover rounded-t-[24px]"
             loading="lazy"
           />
+          <div className="absolute inset-0 bg-gradient-to-t from-black/30 via-transparent to-transparent rounded-t-[24px]" aria-hidden="true" />
           {status === 'completed' && (
             <div
               className="absolute top-2 right-2 bg-success text-success-foreground rounded-full p-1"
@@ -92,7 +93,7 @@ export function ProgressCourseCard({
             </div>
           )}
         </div>
-        <div className="p-5 flex flex-col gap-3">
+        <div className="p-5 flex flex-col gap-3 flex-1">
           <div className="flex items-center gap-2 flex-wrap">
             <Badge variant="secondary" className="badge-entrance">
               {course.category}
@@ -144,7 +145,7 @@ export function ProgressCourseCard({
           {status === 'completed' && (
             <>
               <p className="text-sm text-green-600 dark:text-green-400 font-medium">
-                Completed • {totalLessons} lessons
+                Completed · {totalLessons} lessons · ~{course.estimatedHours}h
               </p>
               <Button asChild variant="outline" className="button-press w-full mt-auto">
                 <Link to={`/courses/${course.id}`}>
@@ -156,7 +157,9 @@ export function ProgressCourseCard({
 
           {status === 'not-started' && (
             <>
-              <p className="text-xs text-muted-foreground">{totalLessons} lessons</p>
+              <p className="text-xs text-muted-foreground">
+                {course.modules.length} modules · {totalLessons} lessons · ~{course.estimatedHours}h
+              </p>
               <Button asChild className="button-press w-full bg-blue-600 hover:bg-blue-700 mt-auto">
                 <Link to={`/courses/${course.id}`}>
                   Start Course

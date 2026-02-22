@@ -15,6 +15,10 @@ test-results/
 test-results.json/
 test-output.txt
 coverage/
+.playwright-mcp/
+
+# Playwright screenshots
+*.png
 
 # Lighthouse
 .lighthouseci/

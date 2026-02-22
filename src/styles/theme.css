@@ -42,6 +42,15 @@
   --scrollbar-thumb: oklch(0.7 0 0);
   --scrollbar-thumb-hover: oklch(0.55 0 0);
   --scrollbar-track: transparent;
+  --brand: #2563eb;
+  --brand-hover: #1d4ed8;
+  --brand-foreground: #ffffff;
+  --success: #16a34a;
+  --success-foreground: #ffffff;
+  --warning: #d97706;
+  --warning-foreground: #ffffff;
+  --info: #3b82f6;
+  --info-foreground: #ffffff;
 }
 
 .dark {
@@ -84,6 +93,15 @@
   --scrollbar-thumb: oklch(0.45 0 0);
   --scrollbar-thumb-hover: oklch(0.6 0 0);
   --scrollbar-track: oklch(0.2 0 0);
+  --brand: #3b82f6;
+  --brand-hover: #2563eb;
+  --brand-foreground: #ffffff;
+  --success: #22c55e;
+  --success-foreground: #ffffff;
+  --warning: #f59e0b;
+  --warning-foreground: #ffffff;
+  --info: #60a5fa;
+  --info-foreground: #000000;
 }
 
 @theme inline {
