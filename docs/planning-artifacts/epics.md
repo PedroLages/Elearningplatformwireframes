@@ -968,6 +968,13 @@ So that I can watch and take notes simultaneously without context switching.
 - LessonPlayer reads `?panel=notes` search param to control initial tab/panel state (enables deep-linking from search results and "Continue Learning")
 - Convert Tabs from uncontrolled (`defaultValue`) to controlled (`value` + `onChange`) to support programmatic tab switching
 
+**Given** the side-by-side layout has been implemented
+**When** the Epic 2 E2E tests run
+**Then** all existing LessonPlayer E2E tests pass, including mini-player and theater mode
+**And** the following testids are preserved: `video-anchor`, `mini-player`, `lesson-content-scroll`, `desktop-sidebar`
+**And** the single scroll container for IntersectionObserver mini-player detection is maintained
+**And** VideoPlayer props `onPlayStateChange`, `theaterMode`, `onTheaterModeToggle`, `chapters`, `captions` remain wired from LessonPlayer
+
 ---
 
 ### Story 3.3: Timestamp Notes and Video Navigation
