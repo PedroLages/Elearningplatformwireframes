@@ -1,6 +1,7 @@
 import { Clock, Trash2 } from 'lucide-react'
 import { Button } from '@/app/components/ui/button'
-import { type VideoBookmark, formatBookmarkTimestamp, deleteBookmark } from '@/lib/bookmarks'
+import type { VideoBookmark } from '@/data/types'
+import { formatBookmarkTimestamp, deleteBookmark } from '@/lib/bookmarks'
 
 interface BookmarksListProps {
   bookmarks: VideoBookmark[]
@@ -9,8 +10,8 @@ interface BookmarksListProps {
 }
 
 export function BookmarksList({ bookmarks, onSeek, onBookmarksChange }: BookmarksListProps) {
-  const handleDelete = (bookmarkId: string) => {
-    deleteBookmark(bookmarkId)
+  const handleDelete = async (bookmarkId: string) => {
+    await deleteBookmark(bookmarkId)
     onBookmarksChange?.()
   }
 

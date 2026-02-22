@@ -56,9 +56,7 @@ export function LessonPlayer() {
     courseId && lessonId ? getNote(courseId, lessonId) : ''
   )
   const [seekToTime, setSeekToTime] = useState<number | undefined>(undefined)
-  const [bookmarks, setBookmarks] = useState(() =>
-    courseId && lessonId ? getLessonBookmarks(courseId, lessonId) : []
-  )
+  const [bookmarks, setBookmarks] = useState<import('@/data/types').VideoBookmark[]>([])
 
   // Celebration modal state
   const [celebrationModal, setCelebrationModal] = useState(false)
@@ -115,7 +113,7 @@ export function LessonPlayer() {
   // Update bookmarks when lesson changes
   useEffect(() => {
     if (courseId && lessonId) {
-      setBookmarks(getLessonBookmarks(courseId, lessonId))
+      getLessonBookmarks(courseId, lessonId).then(setBookmarks)
     }
   }, [courseId, lessonId])
 
@@ -213,17 +211,17 @@ export function LessonPlayer() {
     setSeekToTime(undefined)
   }
 
-  const handleBookmarkAdd = (timestamp: number) => {
+  const handleBookmarkAdd = async (timestamp: number) => {
     if (courseId && lessonId) {
-      addBookmark(courseId, lessonId, timestamp)
-      setBookmarks(getLessonBookmarks(courseId, lessonId))
+      await addBookmark(courseId, lessonId, timestamp)
+      setBookmarks(await getLessonBookmarks(courseId, lessonId))
       toast(`Bookmarked at ${formatBookmarkTimestamp(timestamp)}`, { duration: 2000 })
     }
   }
 
-  const handleBookmarksChange = () => {
+  const handleBookmarksChange = async () => {
     if (courseId && lessonId) {
-      setBookmarks(getLessonBookmarks(courseId, lessonId))
+      setBookmarks(await getLessonBookmarks(courseId, lessonId))
     }
   }
 

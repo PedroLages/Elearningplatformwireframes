@@ -154,5 +154,6 @@ export interface VideoBookmark {
   courseId: string
   lessonId: string
   timestamp: number // seconds
+  label: string
   createdAt: string // ISO 8601
 }

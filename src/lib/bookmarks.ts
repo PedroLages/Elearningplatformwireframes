@@ -1,118 +1,72 @@
-const STORAGE_KEY = 'video-bookmarks'
+import { db } from '@/db/schema'
+import type { VideoBookmark } from '@/data/types'
 
-export interface VideoBookmark {
-  id: string
-  courseId: string
-  lessonId: string
-  timestamp: number // seconds
-  label: string
-  createdAt: string
-}
-
-/**
- * Get all bookmarks from localStorage
- */
-function getAllBookmarks(): VideoBookmark[] {
-  try {
-    const raw = localStorage.getItem(STORAGE_KEY)
-    return raw ? JSON.parse(raw) : []
-  } catch (error) {
-    console.error('[Bookmarks] Error loading bookmarks:', error)
-    return []
-  }
-}
-
-/**
- * Save all bookmarks to localStorage
- */
-function saveAllBookmarks(bookmarks: VideoBookmark[]) {
-  try {
-    localStorage.setItem(STORAGE_KEY, JSON.stringify(bookmarks))
-  } catch (error) {
-    console.error('[Bookmarks] Error saving bookmarks:', error)
-  }
-}
+const LEGACY_STORAGE_KEY = 'video-bookmarks'
 
 /**
  * Add a new bookmark
  */
-export function addBookmark(
+export async function addBookmark(
   courseId: string,
   lessonId: string,
   timestamp: number,
   label?: string
-): string {
-  const bookmarks = getAllBookmarks()
-
-  // Generate default label if not provided
+): Promise<string> {
   const defaultLabel = formatTimestamp(timestamp)
 
-  const newBookmark: VideoBookmark = {
+  const bookmark: VideoBookmark = {
     id: crypto.randomUUID(),
     courseId,
     lessonId,
-    timestamp: Math.floor(timestamp), // Ensure integer seconds
+    timestamp: Math.floor(timestamp),
     label: label || defaultLabel,
     createdAt: new Date().toISOString(),
   }
 
-  bookmarks.push(newBookmark)
-  saveAllBookmarks(bookmarks)
-
-  return newBookmark.id
+  await db.bookmarks.add(bookmark)
+  return bookmark.id
 }
 
 /**
  * Get all bookmarks for a specific lesson
  */
-export function getLessonBookmarks(courseId: string, lessonId: string): VideoBookmark[] {
-  const bookmarks = getAllBookmarks()
-  return bookmarks
-    .filter(b => b.courseId === courseId && b.lessonId === lessonId)
-    .sort((a, b) => a.timestamp - b.timestamp) // Sort by timestamp
+export async function getLessonBookmarks(courseId: string, lessonId: string): Promise<VideoBookmark[]> {
+  const bookmarks = await db.bookmarks
+    .where({ courseId, lessonId })
+    .toArray()
+  return bookmarks.sort((a, b) => a.timestamp - b.timestamp)
 }
 
 /**
  * Get all bookmarks for a specific course
  */
-export function getCourseBookmarks(courseId: string): VideoBookmark[] {
-  const bookmarks = getAllBookmarks()
-  return bookmarks.filter(b => b.courseId === courseId).sort((a, b) => a.timestamp - b.timestamp)
+export async function getCourseBookmarks(courseId: string): Promise<VideoBookmark[]> {
+  const bookmarks = await db.bookmarks
+    .where({ courseId })
+    .toArray()
+  return bookmarks.sort((a, b) => a.timestamp - b.timestamp)
 }
 
 /**
  * Update bookmark label
  */
-export function updateBookmarkLabel(bookmarkId: string, label: string): boolean {
-  const bookmarks = getAllBookmarks()
-  const bookmark = bookmarks.find(b => b.id === bookmarkId)
-
-  if (!bookmark) return false
-
-  bookmark.label = label
-  saveAllBookmarks(bookmarks)
-  return true
+export async function updateBookmarkLabel(bookmarkId: string, label: string): Promise<boolean> {
+  const updated = await db.bookmarks.update(bookmarkId, { label })
+  return updated === 1
 }
 
 /**
  * Delete a bookmark
  */
-export function deleteBookmark(bookmarkId: string): boolean {
-  const bookmarks = getAllBookmarks()
-  const initialLength = bookmarks.length
-  const filtered = bookmarks.filter(b => b.id !== bookmarkId)
-
-  if (filtered.length === initialLength) return false // Bookmark not found
-
-  saveAllBookmarks(filtered)
-  return true
+export async function deleteBookmark(bookmarkId: string): Promise<void> {
+  await db.bookmarks.delete(bookmarkId)
 }
 
 /**
  * Check if a bookmark exists at a specific timestamp (within 1 second tolerance)
  */
-export function hasBookmarkAt(courseId: string, lessonId: string, timestamp: number): boolean {
-  const bookmarks = getLessonBookmarks(courseId, lessonId)
+export async function hasBookmarkAt(courseId: string, lessonId: string, timestamp: number): Promise<boolean> {
+  const bookmarks = await getLessonBookmarks(courseId, lessonId)
   return bookmarks.some(b => Math.abs(b.timestamp - timestamp) < 1)
 }
 
@@ -140,13 +94,41 @@ export function formatBookmarkTimestamp(seconds: number): string {
 /**
  * Get total bookmark count across all courses
  */
-export function getTotalBookmarkCount(): number {
-  return getAllBookmarks().length
+export async function getTotalBookmarkCount(): Promise<number> {
+  return db.bookmarks.count()
 }
 
 /**
  * Clear all bookmarks (for debugging/testing)
  */
-export function clearAllBookmarks() {
-  localStorage.removeItem(STORAGE_KEY)
+export async function clearAllBookmarks(): Promise<void> {
+  await db.bookmarks.clear()
+}
+
+/**
+ * Migrate bookmarks from localStorage to IndexedDB.
+ * Idempotent — skips if localStorage key is already gone.
+ */
+export async function migrateBookmarksFromLocalStorage(): Promise<void> {
+  try {
+    const raw = localStorage.getItem(LEGACY_STORAGE_KEY)
+    if (!raw) return
+
+    const legacy: VideoBookmark[] = JSON.parse(raw)
+    if (legacy.length === 0) {
+      localStorage.removeItem(LEGACY_STORAGE_KEY)
+      return
+    }
+
+    // Ensure label exists on legacy records
+    const withLabels = legacy.map(b => ({
+      ...b,
+      label: b.label || formatTimestamp(b.timestamp),
+    }))
+
+    await db.bookmarks.bulkPut(withLabels)
+    localStorage.removeItem(LEGACY_STORAGE_KEY)
+  } catch (error) {
+    console.error('[Bookmarks] Migration from localStorage failed:', error)
+  }
 }

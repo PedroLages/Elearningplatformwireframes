@@ -97,6 +97,9 @@
     "vite": "^6.4.1",
     "vitest": "^4.0.18"
   },
+  "overrides": {
+    "minimatch": ">=3.1.2"
+  },
   "msw": {
     "workerDirectory": [
       "public"
