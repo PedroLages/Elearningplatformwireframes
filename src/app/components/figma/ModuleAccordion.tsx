@@ -19,6 +19,15 @@ interface ModuleAccordionProps {
   compact?: boolean
 }
 
+function formatDuration(seconds: number): string {
+  const h = Math.floor(seconds / 3600)
+  const m = Math.floor((seconds % 3600) / 60)
+  const s = Math.floor(seconds % 60)
+  if (h > 0) return `${h}h ${m}m`
+  if (m > 0) return `${m}m`
+  return `${s}s`
+}
+
 export function ModuleAccordion({ modules, courseId, completedLessons, activeLessonId, compact }: ModuleAccordionProps) {
   // Controlled accordion — auto-expand module containing the active lesson
   const [openModules, setOpenModules] = useState<string[]>(() => {
@@ -67,6 +76,8 @@ export function ModuleAccordion({ modules, courseId, completedLessons, activeLes
                   const isActive = lesson.id === activeLessonId
                   const hasVideo = lesson.resources.some(r => r.type === 'video')
                   const hasPdf = lesson.resources.some(r => r.type === 'pdf')
+                  const videoDuration = lesson.resources.find(r => r.type === 'video')?.metadata?.duration
+                  const duration = videoDuration != null ? formatDuration(videoDuration) : lesson.duration
 
                   return (
                     <li key={lesson.id}>
@@ -86,8 +97,8 @@ export function ModuleAccordion({ modules, courseId, completedLessons, activeLes
                         )}
                         <div className="flex-1 min-w-0">
                           <p className="text-sm font-medium truncate">{lesson.title}</p>
-                          {lesson.duration && (
-                            <p className="text-xs text-muted-foreground">{lesson.duration}</p>
+                          {duration && (
+                            <p className="text-xs text-muted-foreground">{duration}</p>
                           )}
                         </div>
                         <div className="flex items-center gap-1.5 shrink-0">

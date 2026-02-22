@@ -44,7 +44,7 @@ export const operativeSix: Course = {
           description:
             'Course orientation and overview of the Operative Six training program, its goals, and the skills you will develop.',
           order: 1,
-          duration: '1h',
+          duration: '2m',
           keyTopics: ['course-overview', 'operative-training', 'learning-objectives'],
           resources: [
             {
@@ -54,7 +54,7 @@ export const operativeSix: Course = {
               filePath: `${BASE}/01-The Course/01-00- Introduction.mp4`,
               fileName: '01-00- Introduction.mp4',
               metadata: {
-                duration: 360,
+                duration: 144,
                 chapters: [
                   { time: 30, title: 'Course Overview' },
                   { time: 120, title: 'Training Objectives' },
@@ -82,7 +82,7 @@ export const operativeSix: Course = {
           description:
             'The foundational pillars that underpin all effective influence, including psychological principles and behavioral leverage points.',
           order: 2,
-          duration: '1h',
+          duration: '16m',
           keyTopics: ['pillars-of-influence', 'psychological-principles', 'behavioral-leverage'],
           resources: [
             {
@@ -91,6 +91,7 @@ export const operativeSix: Course = {
               type: 'video',
               filePath: `${BASE}/01-The Course/02-01- The Pillars of Influence.mp4`,
               fileName: '02-01- The Pillars of Influence.mp4',
+              metadata: { duration: 964 },
             },
           ],
         },
@@ -102,7 +103,7 @@ export const operativeSix: Course = {
           description:
             'Analysis of the Milgram experiment and its implications for understanding obedience, authority, and compliance in real-world scenarios.',
           order: 3,
-          duration: '1h',
+          duration: '15m',
           keyTopics: ['milgram-experiment', 'obedience', 'authority', 'compliance'],
           resources: [
             {
@@ -111,6 +112,7 @@ export const operativeSix: Course = {
               type: 'video',
               filePath: `${BASE}/01-The Course/03-02- The Milgram Experiment.mp4`,
               fileName: '03-02- The Milgram Experiment.mp4',
+              metadata: { duration: 903 },
             },
           ],
         },
@@ -122,7 +124,7 @@ export const operativeSix: Course = {
           description:
             'The Hughes Six-Axis Model for profiling individuals across six behavioral dimensions to predict actions and tailor influence strategies.',
           order: 4,
-          duration: '1h',
+          duration: '12m',
           keyTopics: [
             'six-axis-model',
             'behavioral-profiling',
@@ -136,6 +138,7 @@ export const operativeSix: Course = {
               type: 'video',
               filePath: `${BASE}/01-The Course/04-03- The Six-Axis Model.mp4`,
               fileName: '04-03- The Six-Axis Model.mp4',
+              metadata: { duration: 714 },
             },
           ],
         },
@@ -147,7 +150,7 @@ export const operativeSix: Course = {
           description:
             'Building and projecting genuine confidence as a core operative skill, including body language, voice tonality, and mental frameworks.',
           order: 5,
-          duration: '1h',
+          duration: '15m',
           keyTopics: [
             'confidence',
             'presence',
@@ -162,6 +165,7 @@ export const operativeSix: Course = {
               type: 'video',
               filePath: `${BASE}/01-The Course/05-04- Confidence.mp4`,
               fileName: '05-04- Confidence.mp4',
+              metadata: { duration: 882 },
             },
           ],
         },
@@ -173,7 +177,7 @@ export const operativeSix: Course = {
           description:
             'Techniques for rapidly assessing and reading people through behavioral cues, body language, and verbal patterns.',
           order: 6,
-          duration: '1h',
+          duration: '24m',
           keyTopics: ['reading-people', 'behavioral-cues', 'rapid-assessment', 'body-language'],
           resources: [
             {
@@ -182,6 +186,7 @@ export const operativeSix: Course = {
               type: 'video',
               filePath: `${BASE}/01-The Course/06-05- Reading People.mp4`,
               fileName: '06-05- Reading People.mp4',
+              metadata: { duration: 1451 },
             },
             {
               id: 'op6-reading-people-pdf',
@@ -200,7 +205,7 @@ export const operativeSix: Course = {
           description:
             'Identifying deceptive behavior through verbal and nonverbal indicators, baseline deviations, and cluster analysis.',
           order: 7,
-          duration: '1h',
+          duration: '15m',
           keyTopics: [
             'deception-detection',
             'verbal-indicators',
@@ -214,6 +219,7 @@ export const operativeSix: Course = {
               type: 'video',
               filePath: `${BASE}/01-The Course/07-06- Deception Detection.mp4`,
               fileName: '07-06- Deception Detection.mp4',
+              metadata: { duration: 889 },
             },
           ],
         },
@@ -225,7 +231,7 @@ export const operativeSix: Course = {
           description:
             'Conversational elicitation techniques for extracting information without direct questioning, using natural dialogue patterns.',
           order: 8,
-          duration: '1h',
+          duration: '11m',
           keyTopics: [
             'elicitation',
             'information-extraction',
@@ -239,6 +245,7 @@ export const operativeSix: Course = {
               type: 'video',
               filePath: `${BASE}/01-The Course/08-07- Elicitation.mp4`,
               fileName: '08-07- Elicitation.mp4',
+              metadata: { duration: 675 },
             },
           ],
         },
@@ -250,7 +257,7 @@ export const operativeSix: Course = {
           description:
             'Leveraging influence and authority dynamics for persuasion, including social proof, reciprocity, and authority positioning.',
           order: 9,
-          duration: '1h',
+          duration: '12m',
           keyTopics: ['influence', 'authority', 'social-proof', 'reciprocity', 'persuasion'],
           resources: [
             {
@@ -259,6 +266,7 @@ export const operativeSix: Course = {
               type: 'video',
               filePath: `${BASE}/01-The Course/09-08- Influence and Authority.mp4`,
               fileName: '09-08- Influence and Authority.mp4',
+              metadata: { duration: 700 },
             },
           ],
         },
@@ -270,7 +278,7 @@ export const operativeSix: Course = {
           description:
             'Specific language patterns, word choices, and verbal frameworks designed to maximize persuasive impact in any conversation.',
           order: 10,
-          duration: '1h',
+          duration: '16m',
           keyTopics: [
             'persuasive-language',
             'word-choice',
@@ -284,6 +292,7 @@ export const operativeSix: Course = {
               type: 'video',
               filePath: `${BASE}/01-The Course/10-09- Words to Influence Anyone.mp4`,
               fileName: '10-09- Words to Influence Anyone.mp4',
+              metadata: { duration: 969 },
             },
           ],
         },
@@ -295,7 +304,7 @@ export const operativeSix: Course = {
           description:
             'Operative tradecraft principles including situational awareness, operational security, and practical field techniques.',
           order: 11,
-          duration: '1h',
+          duration: '12m',
           keyTopics: [
             'tradecraft',
             'situational-awareness',
@@ -309,6 +318,7 @@ export const operativeSix: Course = {
               type: 'video',
               filePath: `${BASE}/01-The Course/11-10- The Art of Tradecraft.mp4`,
               fileName: '11-10- The Art of Tradecraft.mp4',
+              metadata: { duration: 734 },
             },
           ],
         },
@@ -320,7 +330,7 @@ export const operativeSix: Course = {
           description:
             'Applying the Behavior Compass framework in interview settings to read, assess, and influence subjects effectively.',
           order: 12,
-          duration: '1h',
+          duration: '7m',
           keyTopics: [
             'behavior-compass',
             'interview-techniques',
@@ -334,6 +344,7 @@ export const operativeSix: Course = {
               type: 'video',
               filePath: `${BASE}/01-The Course/12-11- Behavior Compass Interview.mp4`,
               fileName: '12-11- Behavior Compass Interview.mp4',
+              metadata: { duration: 415 },
             },
           ],
         },
@@ -345,7 +356,6 @@ export const operativeSix: Course = {
           description:
             'Supplementary reference materials including the Operative Six handbook, Behavior Compass breakdown, compass reference, and the Hughes Authority Behavior Inventory.',
           order: 13,
-          duration: '1.25h',
           keyTopics: [
             'reference-materials',
             'behavior-compass',
