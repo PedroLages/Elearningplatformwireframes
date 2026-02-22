@@ -1,5 +1,5 @@
 import 'fake-indexeddb/auto'
-import { describe, it, expect, beforeEach } from 'vitest'
+import { describe, it, expect, beforeEach, vi } from 'vitest'
 import Dexie from 'dexie'
 
 // Must import after fake-indexeddb/auto polyfill is active
@@ -43,19 +43,20 @@ function makeVideo(overrides: Record<string, unknown> = {}) {
 }
 
 describe('ElearningDB schema', () => {
-  it('should create the database with correct tables', async () => {
+  it('should create the database with correct tables including notes', async () => {
     expect(db.name).toBe('ElearningDB')
     expect(db.tables.map(t => t.name).sort()).toEqual([
       'bookmarks',
       'importedCourses',
       'importedPdfs',
       'importedVideos',
+      'notes',
       'progress',
     ])
   })
 
-  it('should be at version 3', () => {
-    expect(db.verno).toBe(3)
+  it('should be at version 4', () => {
+    expect(db.verno).toBe(4)
   })
 })
 
@@ -190,5 +191,137 @@ describe('bulk operations', () => {
     await db.importedVideos.bulkAdd(videos)
     const count = await db.importedVideos.where('courseId').equals(courseId).count()
     expect(count).toBe(50)
+  })
+})
+
+describe('notes table (v4)', () => {
+  function makeNote(overrides: Record<string, unknown> = {}) {
+    return {
+      id: crypto.randomUUID(),
+      courseId: 'course-1',
+      videoId: crypto.randomUUID(),
+      content: 'Test note',
+      createdAt: new Date().toISOString(),
+      updatedAt: new Date().toISOString(),
+      tags: [] as string[],
+      ...overrides,
+    }
+  }
+
+  it('should add and retrieve a note', async () => {
+    const note = makeNote({ content: 'Study notes on influence' })
+    await db.notes.add(note)
+
+    const retrieved = await db.notes.get(note.id)
+    expect(retrieved).toBeDefined()
+    expect(retrieved!.content).toBe('Study notes on influence')
+  })
+
+  it('should enforce unique videoId index', async () => {
+    const videoId = 'lesson-1'
+    await db.notes.add(makeNote({ videoId }))
+
+    await expect(db.notes.add(makeNote({ videoId }))).rejects.toThrow()
+  })
+
+  it('should query notes by courseId index', async () => {
+    await db.notes.bulkAdd([
+      makeNote({ courseId: 'c1', videoId: 'v1' }),
+      makeNote({ courseId: 'c1', videoId: 'v2' }),
+      makeNote({ courseId: 'c2', videoId: 'v3' }),
+    ])
+
+    const results = await db.notes.where('courseId').equals('c1').toArray()
+    expect(results).toHaveLength(2)
+  })
+
+  it('should query notes by tags multi-entry index', async () => {
+    await db.notes.bulkAdd([
+      makeNote({ videoId: 'v1', tags: ['react', 'hooks'] }),
+      makeNote({ videoId: 'v2', tags: ['typescript'] }),
+    ])
+
+    const reactNotes = await db.notes.where('tags').equals('react').toArray()
+    expect(reactNotes).toHaveLength(1)
+    expect(reactNotes[0].tags).toContain('react')
+  })
+
+  it('should query notes by videoId unique index', async () => {
+    const note = makeNote({ videoId: 'unique-lesson' })
+    await db.notes.add(note)
+
+    const result = await db.notes.where('videoId').equals('unique-lesson').first()
+    expect(result).toBeDefined()
+    expect(result!.id).toBe(note.id)
+  })
+})
+
+describe('v4 migration from localStorage', () => {
+  it('should migrate notes from localStorage course-progress', async () => {
+    // Step 1: Seed localStorage with legacy notes data
+    const legacyData = {
+      'course-1': {
+        courseId: 'course-1',
+        completedLessons: [],
+        notes: {
+          'lesson-1': [{
+            id: 'note-1',
+            content: 'Important concept',
+            createdAt: '2025-01-01T00:00:00.000Z',
+            updatedAt: '2025-01-02T00:00:00.000Z',
+            tags: ['important'],
+          }],
+          'lesson-2': [{
+            id: 'note-2',
+            content: 'Key takeaway',
+            createdAt: '2025-01-03T00:00:00.000Z',
+            updatedAt: '2025-01-03T00:00:00.000Z',
+            tags: [],
+          }],
+        },
+        startedAt: '2025-01-01T00:00:00.000Z',
+        lastAccessedAt: '2025-01-03T00:00:00.000Z',
+      },
+    }
+    localStorage.setItem('course-progress', JSON.stringify(legacyData))
+
+    // Step 2: Create a v3 database (without notes table) so the v4 upgrade triggers
+    await Dexie.delete('ElearningDB')
+    const v3Db = new Dexie('ElearningDB')
+    v3Db.version(3).stores({
+      importedCourses: 'id, name, importedAt, status, *tags',
+      importedVideos: 'id, courseId, filename',
+      importedPdfs: 'id, courseId, filename',
+      progress: '[courseId+videoId], courseId, videoId',
+      bookmarks: 'id, courseId, lessonId, createdAt',
+    })
+    await v3Db.open()
+    v3Db.close()
+
+    // Step 3: Re-import the real schema module (v4) to trigger upgrade
+    vi.resetModules()
+    const module = await import('@/db/schema')
+    db = module.db
+
+    // Verify notes were migrated
+    const notes = await db.notes.toArray()
+    expect(notes).toHaveLength(2)
+
+    const note1 = notes.find(n => n.id === 'note-1')
+    expect(note1).toBeDefined()
+    expect(note1!.courseId).toBe('course-1')
+    expect(note1!.videoId).toBe('lesson-1')
+    expect(note1!.content).toBe('Important concept')
+    expect(note1!.tags).toEqual(['important'])
+
+    const note2 = notes.find(n => n.id === 'note-2')
+    expect(note2).toBeDefined()
+    expect(note2!.videoId).toBe('lesson-2')
+
+    // Verify localStorage was NOT deleted (retained as backup per AC)
+    expect(localStorage.getItem('course-progress')).not.toBeNull()
+
+    // Clean up
+    localStorage.removeItem('course-progress')
   })
 })
