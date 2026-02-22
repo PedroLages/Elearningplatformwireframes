@@ -138,3 +138,21 @@ export interface ImportedPdf {
   pageCount: number
   fileHandle: FileSystemFileHandle
 }
+
+// --- Video Progress & Bookmarks (Story 2.1) ---
+
+export interface VideoProgress {
+  courseId: string
+  videoId: string
+  currentTime: number
+  completionPercentage: number
+  completedAt?: string // ISO 8601
+}
+
+export interface VideoBookmark {
+  id: string
+  courseId: string
+  lessonId: string
+  timestamp: number // seconds
+  createdAt: string // ISO 8601
+}
