@@ -237,6 +237,15 @@ See [plan](/Users/pedro/.claude/plans/agile-forging-gem.md) for implementation a
 
 ### Completion Notes List
 
+### Challenges and Lessons Learned
+
+1. **Always create a feature branch before starting work.** E02-S01 was implemented directly on `main`, requiring a retroactive branch + reset to create a proper PR. Added friction to the shipping process.
+2. **`<button>` inside `<a>` is invalid HTML.** Screen readers merge the accessible names, keyboard users get duplicate interaction targets. The fix — wrapping cards in `<article tabIndex={0}>` with `onKeyDown` navigation — works but requires `e.target === e.currentTarget` guards to prevent double-firing on nested interactive elements.
+3. **Cancellation guards on async queries are essential.** Both `ImportedCourseDetail` and `ImportedLessonPlayer` had race conditions where Dexie queries could update unmounted components. The `let cancelled = false` + cleanup pattern should be standard for any `useEffect` with async data fetching.
+4. **`formatDuration` was duplicated six times.** Extract shared utilities to `src/lib/format.ts` early. The code review flagged this — a shared utility would have saved review cycles.
+5. **E2E tests that assert on non-existent testids pass trivially.** Playwright's `.not.toBeVisible()` returns true for elements that don't exist in the DOM. Always verify the testid exists in source before writing assertions against it.
+6. **Touch target compliance (44x44px) requires deliberate padding.** Default shadcn button sizes (`h-10` = 40px) fall short. Use `p-3` or larger padding on icon-only buttons to reach WCAG 2.5.5 minimum.
+
 ### File List
 
 ## Design Review Feedback
