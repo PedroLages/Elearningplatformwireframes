@@ -1,6 +1,8 @@
 import {
   ChevronLeft,
   ChevronRight,
+  ChevronUp,
+  ChevronDown,
   ZoomIn,
   ZoomOut,
   ExternalLink,
@@ -25,6 +27,7 @@ import { ZOOM_PRESETS, ZOOM_LABELS, type ZoomMode, type ScrollMode } from './typ
 
 interface PdfToolbarProps {
   src: string
+  title?: string
   currentPage: number
   totalPages: number
   scale: number
@@ -57,6 +60,9 @@ interface PdfToolbarProps {
   isFullscreen: boolean
   toggleFullscreen: () => void
   compact?: boolean
+  collapsible?: boolean
+  collapsed?: boolean
+  toggleCollapsed?: () => void
 }
 
 function handlePrint(src: string) {
@@ -68,6 +74,7 @@ function handlePrint(src: string) {
 
 export function PdfToolbar({
   src,
+  title,
   currentPage,
   totalPages,
   scale,
@@ -100,6 +107,9 @@ export function PdfToolbar({
   isFullscreen,
   toggleFullscreen,
   compact,
+  collapsible,
+  collapsed,
+  toggleCollapsed,
 }: PdfToolbarProps) {
   return (
     <div
@@ -108,8 +118,34 @@ export function PdfToolbar({
       aria-label="PDF controls"
       className="flex flex-wrap items-center gap-1 border-b border-border bg-muted px-2 py-1.5 sm:gap-2 sm:px-3"
     >
+      {/* Collapse toggle */}
+      {collapsible && (
+        <Button
+          data-testid="pdf-toggle-collapse"
+          variant="ghost"
+          size="icon"
+          className="h-8 w-8"
+          onClick={toggleCollapsed}
+          aria-label={collapsed ? 'Expand PDF viewer' : 'Collapse PDF viewer'}
+          aria-expanded={!collapsed}
+          title={collapsed ? 'Expand' : 'Collapse'}
+        >
+          {collapsed ? <ChevronDown className="h-4 w-4" /> : <ChevronUp className="h-4 w-4" />}
+        </Button>
+      )}
+
+      {/* Title (always when collapsed, hidden on small screens when expanded) */}
+      {title && (
+        <span className={`truncate text-sm font-medium ${collapsed ? 'max-w-[200px]' : 'hidden max-w-[140px] sm:inline'}`}>
+          {title}
+        </span>
+      )}
+
+      {/* Separator after title */}
+      {title && !collapsed && <div className="hidden h-5 w-px bg-border sm:block" />}
+
       {/* Panel toggles */}
-      {!compact && <div className="hidden items-center gap-1 sm:flex">
+      {!compact && !collapsed && <div className="hidden items-center gap-1 sm:flex">
         <Button
           data-testid="pdf-toggle-thumbnails"
           variant={thumbnailsOpen ? 'secondary' : 'ghost'}
@@ -189,265 +225,272 @@ export function PdfToolbar({
         </Button>
       </div>
 
-      {/* Separator */}
-      <div className="hidden h-5 w-px bg-border sm:block" />
+      {/* Everything below hidden when collapsed */}
+      {!collapsed && (
+        <>
+          {/* Separator */}
+          <div className="hidden h-5 w-px bg-border sm:block" />
 
-      {/* Zoom controls */}
-      <div className="flex items-center gap-1">
-        <Button
-          data-testid="pdf-zoom-out"
-          variant="ghost"
-          size="icon"
-          className="h-11 w-11 sm:h-8 sm:w-8"
-          onClick={zoomOut}
-          aria-label="Zoom out"
-        >
-          <ZoomOut className="h-4 w-4" />
-        </Button>
-
-        {/* Zoom dropdown */}
-        <div className="relative" ref={dropdownRef}>
-          <button
-            data-testid="pdf-zoom-select"
-            onClick={() => setZoomDropdownOpen(o => !o)}
-            className="flex h-11 sm:h-8 items-center rounded px-2 text-sm hover:bg-accent"
-            aria-label="Zoom level"
-            aria-expanded={zoomDropdownOpen}
-            aria-haspopup="listbox"
-          >
-            {displayZoom()}
-          </button>
-          {zoomDropdownOpen && (
-            <div
-              role="listbox"
-              aria-label="Zoom presets"
-              className="absolute left-0 top-full z-50 mt-1 min-w-[100px] rounded-md border border-border bg-popover py-1 shadow-md"
+          {/* Zoom controls */}
+          <div className="flex items-center gap-1">
+            <Button
+              data-testid="pdf-zoom-out"
+              variant="ghost"
+              size="icon"
+              className="h-11 w-11 sm:h-8 sm:w-8"
+              onClick={zoomOut}
+              aria-label="Zoom out"
             >
-              {ZOOM_PRESETS.map(z => (
-                <button
-                  key={z}
-                  role="option"
-                  aria-selected={zoomMode === 'custom' && Math.abs(scale - z) < 0.01}
-                  onClick={() => setZoomPreset(z)}
-                  className="block w-full px-3 py-1.5 text-left text-sm hover:bg-accent"
+              <ZoomOut className="h-4 w-4" />
+            </Button>
+
+            {/* Zoom dropdown */}
+            <div className="relative" ref={dropdownRef}>
+              <button
+                data-testid="pdf-zoom-select"
+                onClick={() => setZoomDropdownOpen(o => !o)}
+                className="flex h-11 sm:h-8 items-center rounded px-2 text-sm hover:bg-accent"
+                aria-label="Zoom level"
+                aria-expanded={zoomDropdownOpen}
+                aria-haspopup="listbox"
+              >
+                {displayZoom()}
+              </button>
+              {zoomDropdownOpen && (
+                <div
+                  role="listbox"
+                  aria-label="Zoom presets"
+                  className="absolute left-0 top-full z-50 mt-1 min-w-[100px] rounded-md border border-border bg-popover py-1 shadow-md"
                 >
-                  {ZOOM_LABELS[z]}
-                </button>
-              ))}
+                  {ZOOM_PRESETS.map(z => (
+                    <button
+                      key={z}
+                      role="option"
+                      aria-selected={zoomMode === 'custom' && Math.abs(scale - z) < 0.01}
+                      onClick={() => setZoomPreset(z)}
+                      className="block w-full px-3 py-1.5 text-left text-sm hover:bg-accent"
+                    >
+                      {ZOOM_LABELS[z]}
+                    </button>
+                  ))}
+                </div>
+              )}
             </div>
-          )}
-        </div>
 
-        <Button
-          data-testid="pdf-zoom-in"
-          variant="ghost"
-          size="icon"
-          className="h-11 w-11 sm:h-8 sm:w-8"
-          onClick={zoomIn}
-          aria-label="Zoom in"
-        >
-          <ZoomIn className="h-4 w-4" />
-        </Button>
-
-        {/* Fit width / Fit page */}
-        <Button
-          data-testid="pdf-fit-width"
-          variant={zoomMode === 'fit-width' ? 'secondary' : 'ghost'}
-          size="icon"
-          className="hidden h-11 w-11 sm:inline-flex sm:h-8 sm:w-8"
-          onClick={fitWidth}
-          aria-label="Fit to width"
-          title="Fit to width"
-        >
-          <ChevronsLeftRight className="h-4 w-4" />
-        </Button>
-
-        <Button
-          data-testid="pdf-fit-page"
-          variant={zoomMode === 'fit-page' ? 'secondary' : 'ghost'}
-          size="icon"
-          className="hidden h-11 w-11 sm:inline-flex sm:h-8 sm:w-8"
-          onClick={fitPage}
-          aria-label="Fit to page"
-          title="Fit to page"
-        >
-          <Maximize2 className="h-4 w-4" />
-        </Button>
-      </div>
-
-      {/* Separator */}
-      <div className="hidden h-5 w-px bg-border sm:block" />
-
-      {/* Secondary actions */}
-      <div className="hidden items-center gap-1 sm:flex">
-        <Button
-          data-testid="pdf-toggle-search"
-          variant={searchOpen ? 'secondary' : 'ghost'}
-          size="icon"
-          className="h-8 w-8"
-          onClick={toggleSearch}
-          aria-label={searchOpen ? 'Close search' : 'Search'}
-          aria-pressed={searchOpen}
-          title="Search (Ctrl+F)"
-        >
-          <Search className="h-4 w-4" />
-        </Button>
-
-        {!compact && (
-          <Button
-            data-testid="pdf-toggle-scroll-mode"
-            variant={scrollMode === 'continuous' ? 'secondary' : 'ghost'}
-            size="icon"
-            className="h-8 w-8"
-            onClick={toggleScrollMode}
-            aria-label={scrollMode === 'single' ? 'Continuous scroll' : 'Single page'}
-            title={scrollMode === 'single' ? 'Continuous scroll' : 'Single page'}
-          >
-            <Rows3 className="h-4 w-4" />
-          </Button>
-        )}
-
-        <div className="h-5 w-px bg-border" />
-
-        <Button
-          variant="ghost"
-          size="icon"
-          className="h-8 w-8"
-          onClick={rotateClockwise}
-          aria-label="Rotate clockwise"
-          title="Rotate"
-        >
-          <RotateCw className="h-4 w-4" />
-        </Button>
-
-        <Button
-          variant={darkMode ? 'secondary' : 'ghost'}
-          size="icon"
-          className="h-8 w-8"
-          onClick={toggleDarkMode}
-          aria-label={darkMode ? 'Light mode' : 'Dark mode'}
-          title={darkMode ? 'Light mode' : 'Dark mode'}
-        >
-          {darkMode ? <Sun className="h-4 w-4" /> : <Moon className="h-4 w-4" />}
-        </Button>
-
-        <Button
-          variant="ghost"
-          size="icon"
-          className="h-8 w-8"
-          onClick={() => handlePrint(src)}
-          aria-label="Print"
-          title="Print"
-        >
-          <Printer className="h-4 w-4" />
-        </Button>
-
-        <a href={src} download aria-label="Download PDF" title="Download">
-          <Button variant="ghost" size="icon" className="h-8 w-8" asChild>
-            <span><Download className="h-4 w-4" /></span>
-          </Button>
-        </a>
-      </div>
-
-      {/* Mobile overflow menu */}
-      <Popover>
-        <PopoverTrigger asChild>
-          <Button
-            variant="ghost"
-            size="icon"
-            className="h-11 w-11 sm:hidden"
-            aria-label="More actions"
-          >
-            <MoreHorizontal className="h-4 w-4" />
-          </Button>
-        </PopoverTrigger>
-        <PopoverContent align="end" className="w-48 p-1">
-          {!compact && (
-            <>
-              <button
-                onClick={toggleThumbnails}
-                className="flex w-full items-center gap-2 rounded px-3 py-2 text-sm hover:bg-accent"
-              >
-                <PanelLeft className="h-4 w-4" />
-                {thumbnailsOpen ? 'Hide thumbnails' : 'Thumbnails'}
-              </button>
-              <button
-                onClick={toggleOutline}
-                className="flex w-full items-center gap-2 rounded px-3 py-2 text-sm hover:bg-accent"
-              >
-                <BookOpen className="h-4 w-4" />
-                {outlineOpen ? 'Hide outline' : 'Outline'}
-              </button>
-            </>
-          )}
-          <button
-            onClick={toggleSearch}
-            className="flex w-full items-center gap-2 rounded px-3 py-2 text-sm hover:bg-accent"
-          >
-            <Search className="h-4 w-4" />
-            {searchOpen ? 'Close search' : 'Search'}
-          </button>
-          {!compact && (
-            <button
-              onClick={toggleScrollMode}
-              className="flex w-full items-center gap-2 rounded px-3 py-2 text-sm hover:bg-accent"
+            <Button
+              data-testid="pdf-zoom-in"
+              variant="ghost"
+              size="icon"
+              className="h-11 w-11 sm:h-8 sm:w-8"
+              onClick={zoomIn}
+              aria-label="Zoom in"
             >
-              <Rows3 className="h-4 w-4" />
-              {scrollMode === 'single' ? 'Continuous scroll' : 'Single page'}
-            </button>
-          )}
-          <div className="my-1 h-px bg-border" />
-          <button
-            onClick={rotateClockwise}
-            className="flex w-full items-center gap-2 rounded px-3 py-2 text-sm hover:bg-accent"
-          >
-            <RotateCw className="h-4 w-4" /> Rotate
-          </button>
-          <button
-            onClick={toggleDarkMode}
-            className="flex w-full items-center gap-2 rounded px-3 py-2 text-sm hover:bg-accent"
-          >
-            {darkMode ? <Sun className="h-4 w-4" /> : <Moon className="h-4 w-4" />}
-            {darkMode ? 'Light mode' : 'Dark mode'}
-          </button>
-          <button
-            onClick={() => handlePrint(src)}
-            className="flex w-full items-center gap-2 rounded px-3 py-2 text-sm hover:bg-accent"
-          >
-            <Printer className="h-4 w-4" /> Print
-          </button>
-          <a
-            href={src}
-            download
-            className="flex w-full items-center gap-2 rounded px-3 py-2 text-sm hover:bg-accent"
-          >
-            <Download className="h-4 w-4" /> Download
-          </a>
-          <button
-            onClick={toggleFullscreen}
-            className="flex w-full items-center gap-2 rounded px-3 py-2 text-sm hover:bg-accent"
-          >
-            {isFullscreen ? <Minimize className="h-4 w-4" /> : <Maximize className="h-4 w-4" />}
-            {isFullscreen ? 'Exit fullscreen' : 'Fullscreen'}
-          </button>
-        </PopoverContent>
-      </Popover>
+              <ZoomIn className="h-4 w-4" />
+            </Button>
+
+            {/* Fit width / Fit page */}
+            <Button
+              data-testid="pdf-fit-width"
+              variant={zoomMode === 'fit-width' ? 'secondary' : 'ghost'}
+              size="icon"
+              className="hidden h-11 w-11 sm:inline-flex sm:h-8 sm:w-8"
+              onClick={fitWidth}
+              aria-label="Fit to width"
+              title="Fit to width"
+            >
+              <ChevronsLeftRight className="h-4 w-4" />
+            </Button>
+
+            <Button
+              data-testid="pdf-fit-page"
+              variant={zoomMode === 'fit-page' ? 'secondary' : 'ghost'}
+              size="icon"
+              className="hidden h-11 w-11 sm:inline-flex sm:h-8 sm:w-8"
+              onClick={fitPage}
+              aria-label="Fit to page"
+              title="Fit to page"
+            >
+              <Maximize2 className="h-4 w-4" />
+            </Button>
+          </div>
+
+          {/* Separator */}
+          <div className="hidden h-5 w-px bg-border sm:block" />
+
+          {/* Secondary actions */}
+          <div className="hidden items-center gap-1 sm:flex">
+            <Button
+              data-testid="pdf-toggle-search"
+              variant={searchOpen ? 'secondary' : 'ghost'}
+              size="icon"
+              className="h-8 w-8"
+              onClick={toggleSearch}
+              aria-label={searchOpen ? 'Close search' : 'Search'}
+              aria-pressed={searchOpen}
+              title="Search (Ctrl+F)"
+            >
+              <Search className="h-4 w-4" />
+            </Button>
+
+            {!compact && (
+              <Button
+                data-testid="pdf-toggle-scroll-mode"
+                variant={scrollMode === 'continuous' ? 'secondary' : 'ghost'}
+                size="icon"
+                className="h-8 w-8"
+                onClick={toggleScrollMode}
+                aria-label={scrollMode === 'single' ? 'Continuous scroll' : 'Single page'}
+                title={scrollMode === 'single' ? 'Continuous scroll' : 'Single page'}
+              >
+                <Rows3 className="h-4 w-4" />
+              </Button>
+            )}
+
+            <div className="h-5 w-px bg-border" />
+
+            <Button
+              variant="ghost"
+              size="icon"
+              className="h-8 w-8"
+              onClick={rotateClockwise}
+              aria-label="Rotate clockwise"
+              title="Rotate"
+            >
+              <RotateCw className="h-4 w-4" />
+            </Button>
+
+            <Button
+              variant={darkMode ? 'secondary' : 'ghost'}
+              size="icon"
+              className="h-8 w-8"
+              onClick={toggleDarkMode}
+              aria-label={darkMode ? 'Light mode' : 'Dark mode'}
+              title={darkMode ? 'Light mode' : 'Dark mode'}
+            >
+              {darkMode ? <Sun className="h-4 w-4" /> : <Moon className="h-4 w-4" />}
+            </Button>
+
+            <Button
+              variant="ghost"
+              size="icon"
+              className="h-8 w-8"
+              onClick={() => handlePrint(src)}
+              aria-label="Print"
+              title="Print"
+            >
+              <Printer className="h-4 w-4" />
+            </Button>
+
+            <a href={src} download aria-label="Download PDF" title="Download">
+              <Button variant="ghost" size="icon" className="h-8 w-8" asChild>
+                <span><Download className="h-4 w-4" /></span>
+              </Button>
+            </a>
+          </div>
+
+          {/* Mobile overflow menu */}
+          <Popover>
+            <PopoverTrigger asChild>
+              <Button
+                variant="ghost"
+                size="icon"
+                className="h-11 w-11 sm:hidden"
+                aria-label="More actions"
+              >
+                <MoreHorizontal className="h-4 w-4" />
+              </Button>
+            </PopoverTrigger>
+            <PopoverContent align="end" className="w-48 p-1">
+              {!compact && (
+                <>
+                  <button
+                    onClick={toggleThumbnails}
+                    className="flex w-full items-center gap-2 rounded px-3 py-2 text-sm hover:bg-accent"
+                  >
+                    <PanelLeft className="h-4 w-4" />
+                    {thumbnailsOpen ? 'Hide thumbnails' : 'Thumbnails'}
+                  </button>
+                  <button
+                    onClick={toggleOutline}
+                    className="flex w-full items-center gap-2 rounded px-3 py-2 text-sm hover:bg-accent"
+                  >
+                    <BookOpen className="h-4 w-4" />
+                    {outlineOpen ? 'Hide outline' : 'Outline'}
+                  </button>
+                </>
+              )}
+              <button
+                onClick={toggleSearch}
+                className="flex w-full items-center gap-2 rounded px-3 py-2 text-sm hover:bg-accent"
+              >
+                <Search className="h-4 w-4" />
+                {searchOpen ? 'Close search' : 'Search'}
+              </button>
+              {!compact && (
+                <button
+                  onClick={toggleScrollMode}
+                  className="flex w-full items-center gap-2 rounded px-3 py-2 text-sm hover:bg-accent"
+                >
+                  <Rows3 className="h-4 w-4" />
+                  {scrollMode === 'single' ? 'Continuous scroll' : 'Single page'}
+                </button>
+              )}
+              <div className="my-1 h-px bg-border" />
+              <button
+                onClick={rotateClockwise}
+                className="flex w-full items-center gap-2 rounded px-3 py-2 text-sm hover:bg-accent"
+              >
+                <RotateCw className="h-4 w-4" /> Rotate
+              </button>
+              <button
+                onClick={toggleDarkMode}
+                className="flex w-full items-center gap-2 rounded px-3 py-2 text-sm hover:bg-accent"
+              >
+                {darkMode ? <Sun className="h-4 w-4" /> : <Moon className="h-4 w-4" />}
+                {darkMode ? 'Light mode' : 'Dark mode'}
+              </button>
+              <button
+                onClick={() => handlePrint(src)}
+                className="flex w-full items-center gap-2 rounded px-3 py-2 text-sm hover:bg-accent"
+              >
+                <Printer className="h-4 w-4" /> Print
+              </button>
+              <a
+                href={src}
+                download
+                className="flex w-full items-center gap-2 rounded px-3 py-2 text-sm hover:bg-accent"
+              >
+                <Download className="h-4 w-4" /> Download
+              </a>
+              <button
+                onClick={toggleFullscreen}
+                className="flex w-full items-center gap-2 rounded px-3 py-2 text-sm hover:bg-accent"
+              >
+                {isFullscreen ? <Minimize className="h-4 w-4" /> : <Maximize className="h-4 w-4" />}
+                {isFullscreen ? 'Exit fullscreen' : 'Fullscreen'}
+              </button>
+            </PopoverContent>
+          </Popover>
+        </>
+      )}
 
       {/* Spacer */}
       <div className="flex-1" />
 
       {/* Fullscreen */}
-      <Button
-        data-testid="pdf-toggle-fullscreen"
-        variant="ghost"
-        size="icon"
-        className="h-11 w-11 sm:h-8 sm:w-8"
-        onClick={toggleFullscreen}
-        aria-label={isFullscreen ? 'Exit fullscreen' : 'Enter fullscreen'}
-        title={isFullscreen ? 'Exit fullscreen' : 'Fullscreen'}
-      >
-        {isFullscreen ? <Minimize className="h-4 w-4" /> : <Maximize className="h-4 w-4" />}
-      </Button>
+      {!collapsed && (
+        <Button
+          data-testid="pdf-toggle-fullscreen"
+          variant="ghost"
+          size="icon"
+          className="h-11 w-11 sm:h-8 sm:w-8"
+          onClick={toggleFullscreen}
+          aria-label={isFullscreen ? 'Exit fullscreen' : 'Enter fullscreen'}
+          title={isFullscreen ? 'Exit fullscreen' : 'Fullscreen'}
+        >
+          {isFullscreen ? <Minimize className="h-4 w-4" /> : <Maximize className="h-4 w-4" />}
+        </Button>
+      )}
 
       {/* Open in new tab */}
       <Button

@@ -9,6 +9,8 @@ export interface PdfViewerProps {
   className?: string
   /** Hide panel toggles (thumbnails, outline) and scroll mode — useful inside dialogs */
   compact?: boolean
+  /** Show a collapse/expand toggle in the toolbar to minimize the PDF to toolbar-only */
+  collapsible?: boolean
 }
 
 export const ZOOM_PRESETS = [0.25, 0.5, 0.75, 1, 1.25, 1.5, 2, 3] as const

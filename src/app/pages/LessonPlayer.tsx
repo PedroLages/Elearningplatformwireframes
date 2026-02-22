@@ -368,6 +368,7 @@ export function LessonPlayer() {
               title={primaryPdf.title}
               initialPage={courseId ? getPdfPage(courseId, primaryPdf.id) ?? 1 : 1}
               onPageChange={handlePdfPageChange}
+              collapsible
             />
           </div>
         )}
@@ -470,6 +471,7 @@ export function LessonPlayer() {
                   title={pdf.title}
                   initialPage={courseId ? getPdfPage(courseId, pdf.id) ?? 1 : 1}
                   onPageChange={(page) => handleMaterialsPdfPageChange(pdf.id, page)}
+                  collapsible
                 />
               ))}
             </TabsContent>

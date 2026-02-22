@@ -1,3 +1,4 @@
+import { useState } from 'react'
 import { FileText, ExternalLink, ChevronLeft, ChevronRight } from 'lucide-react'
 import { Button } from '@/app/components/ui/button'
 import { cn } from '@/app/components/ui/utils'
@@ -20,10 +21,14 @@ export function PdfViewer({
   onPageChange,
   className,
   compact,
+  collapsible,
 }: PdfViewerProps) {
   const state = usePdfViewerState(initialPage, onPageChange)
   const search = usePdfSearch(state.pdfDocument, state.goToPage)
   const isMobile = useIsMobile()
+  const [collapsed, setCollapsed] = useState(false)
+
+  const toggleCollapsed = () => setCollapsed(prev => !prev)
 
   const toggleSearch = () => {
     if (search.searchOpen) {
@@ -82,6 +87,8 @@ export function PdfViewer({
     />
   )
 
+  const isCollapsed = collapsible && collapsed
+
   return (
     <div
       ref={state.containerRef}
@@ -97,6 +104,7 @@ export function PdfViewer({
     >
       <PdfToolbar
         src={src}
+        title={title}
         currentPage={state.currentPage}
         totalPages={state.totalPages}
         scale={state.scale}
@@ -129,123 +137,136 @@ export function PdfViewer({
         isFullscreen={state.isFullscreen}
         toggleFullscreen={state.toggleFullscreen}
         compact={compact}
+        collapsible={collapsible}
+        collapsed={collapsed}
+        toggleCollapsed={toggleCollapsed}
       />
 
-      {/* Search bar */}
-      {search.searchOpen && (
-        <PdfSearchBar
-          searchQuery={search.searchQuery}
-          matches={search.matches}
-          activeMatchIndex={search.activeMatchIndex}
-          isExtracting={search.isExtracting}
-          setSearchQuery={search.setSearchQuery}
-          nextMatch={search.nextMatch}
-          prevMatch={search.prevMatch}
-          closeSearch={search.closeSearch}
-        />
-      )}
-
-      {/* Main content area with optional side panels */}
-      <div className="flex min-h-0 flex-1">
-        {/* Thumbnail sidebar — inline on desktop, Sheet on mobile */}
-        {!compact && !isMobile && state.thumbnailsOpen && (
-          <aside className="w-[152px] shrink-0 border-r border-border overflow-y-auto">
-            {thumbnailContent}
-          </aside>
-        )}
-
-        {/* Single page or continuous scroll */}
-        {state.scrollMode === 'single' ? (
-          <div className="group/nav relative flex min-w-0 flex-1 flex-col">
-            <PdfPageRenderer
-              src={src}
-              currentPage={state.currentPage}
-              scale={state.scale}
-              rotation={state.rotation}
-              darkMode={state.darkMode}
-              isFullscreen={state.isFullscreen}
-              isLoading={state.isLoading}
-              contentRef={state.contentRef}
-              onDocumentLoadSuccess={state.handleDocumentLoadSuccess}
-              onDocumentLoadError={state.handleDocumentLoadError}
-              onPageLoadSuccess={state.handlePageLoadSuccess}
-              customTextRenderer={search.makeTextRenderer(state.currentPage)}
+      {/* Collapsible content area */}
+      {!isCollapsed && (
+        <>
+          {/* Search bar */}
+          {search.searchOpen && (
+            <PdfSearchBar
+              searchQuery={search.searchQuery}
+              matches={search.matches}
+              activeMatchIndex={search.activeMatchIndex}
+              isExtracting={search.isExtracting}
+              setSearchQuery={search.setSearchQuery}
+              nextMatch={search.nextMatch}
+              prevMatch={search.prevMatch}
+              closeSearch={search.closeSearch}
             />
+          )}
 
-            {/* Hover page navigation overlay */}
-            {state.totalPages > 1 && !state.isLoading && (
-              <>
-                {/* Previous page */}
-                {state.currentPage > 1 && (
-                  <button
-                    onClick={() => state.goToPage(state.currentPage - 1)}
-                    aria-label="Previous page"
-                    className="absolute left-2 top-1/2 -translate-y-1/2 rounded-full bg-black/50 p-2 text-white opacity-0 backdrop-blur-sm transition-opacity hover:bg-black/70 group-hover/nav:opacity-100"
-                  >
-                    <ChevronLeft className="h-5 w-5" />
-                  </button>
+          {/* Main content area with optional side panels */}
+          <div className="flex min-h-0 flex-1">
+            {/* Thumbnail sidebar — inline on desktop, Sheet on mobile */}
+            {!compact && !isMobile && state.thumbnailsOpen && (
+              <aside className="w-[152px] shrink-0 border-r border-border overflow-y-auto">
+                {thumbnailContent}
+              </aside>
+            )}
+
+            {/* Single page or continuous scroll */}
+            {state.scrollMode === 'single' ? (
+              <div className="group/nav relative flex min-w-0 flex-1 flex-col">
+                <PdfPageRenderer
+                  src={src}
+                  currentPage={state.currentPage}
+                  scale={state.scale}
+                  rotation={state.rotation}
+                  darkMode={state.darkMode}
+                  isFullscreen={state.isFullscreen}
+                  isLoading={state.isLoading}
+                  contentRef={state.contentRef}
+                  onDocumentLoadSuccess={state.handleDocumentLoadSuccess}
+                  onDocumentLoadError={state.handleDocumentLoadError}
+                  onPageLoadSuccess={state.handlePageLoadSuccess}
+                  customTextRenderer={search.makeTextRenderer(state.currentPage)}
+                />
+
+                {/* Floating bottom navigation bar */}
+                {state.totalPages > 1 && !state.isLoading && (
+                  <div className="absolute bottom-4 left-1/2 z-10 flex -translate-x-1/2 flex-col items-center gap-1.5 opacity-0 transition-opacity duration-200 group-hover/nav:opacity-100 focus-within:opacity-100 [@media(hover:none)]:opacity-100">
+                    <div className="flex items-center gap-1 rounded-full bg-black/60 px-1.5 py-1 shadow-lg backdrop-blur-md">
+                      <button
+                        onClick={() => state.goToPage(state.currentPage - 1)}
+                        disabled={state.currentPage <= 1}
+                        aria-label="Previous page"
+                        className="flex h-8 w-8 items-center justify-center rounded-full text-white transition-colors hover:bg-white/20 disabled:opacity-40 disabled:hover:bg-transparent sm:h-7 sm:w-7"
+                      >
+                        <ChevronLeft className="h-4 w-4" />
+                      </button>
+
+                      <span className="min-w-[4rem] select-none text-center text-xs font-medium text-white">
+                        {state.currentPage} / {state.totalPages}
+                      </span>
+
+                      <button
+                        onClick={() => state.goToPage(state.currentPage + 1)}
+                        disabled={state.currentPage >= state.totalPages}
+                        aria-label="Next page"
+                        className="flex h-8 w-8 items-center justify-center rounded-full text-white transition-colors hover:bg-white/20 disabled:opacity-40 disabled:hover:bg-transparent sm:h-7 sm:w-7"
+                      >
+                        <ChevronRight className="h-4 w-4" />
+                      </button>
+                    </div>
+
+                    {/* Progress bar */}
+                    <div className="h-1 w-24 overflow-hidden rounded-full bg-white/20 backdrop-blur-sm">
+                      <div
+                        className="h-full rounded-full bg-white/80 transition-[width] duration-200"
+                        style={{ width: `${(state.currentPage / state.totalPages) * 100}%` }}
+                      />
+                    </div>
+                  </div>
                 )}
+              </div>
+            ) : (
+              <PdfScrollView
+                src={src}
+                totalPages={state.totalPages}
+                currentPage={state.currentPage}
+                scale={state.scale}
+                rotation={state.rotation}
+                darkMode={state.darkMode}
+                isFullscreen={state.isFullscreen}
+                pageWidth={state.pageWidth}
+                pageHeight={state.pageHeight}
+                onPageChange={state.goToPage}
+                onDocumentLoadSuccess={state.handleDocumentLoadSuccess}
+                onDocumentLoadError={state.handleDocumentLoadError}
+                makeTextRenderer={search.makeTextRenderer}
+              />
+            )}
 
-                {/* Next page */}
-                {state.currentPage < state.totalPages && (
-                  <button
-                    onClick={() => state.goToPage(state.currentPage + 1)}
-                    aria-label="Next page"
-                    className="absolute right-2 top-1/2 -translate-y-1/2 rounded-full bg-black/50 p-2 text-white opacity-0 backdrop-blur-sm transition-opacity hover:bg-black/70 group-hover/nav:opacity-100"
-                  >
-                    <ChevronRight className="h-5 w-5" />
-                  </button>
-                )}
-
-                {/* Page indicator */}
-                <div className="absolute bottom-3 left-1/2 -translate-x-1/2 rounded-full bg-black/50 px-3 py-1 text-xs font-medium text-white opacity-0 backdrop-blur-sm transition-opacity group-hover/nav:opacity-100">
-                  {state.currentPage} / {state.totalPages}
-                </div>
-              </>
+            {/* Outline panel — inline on desktop, Sheet on mobile */}
+            {!compact && !isMobile && state.outlineOpen && (
+              <aside className="w-[220px] shrink-0 border-l border-border overflow-y-auto">
+                {outlineContent}
+              </aside>
             )}
           </div>
-        ) : (
-          <PdfScrollView
-            src={src}
-            totalPages={state.totalPages}
-            currentPage={state.currentPage}
-            scale={state.scale}
-            rotation={state.rotation}
-            darkMode={state.darkMode}
-            isFullscreen={state.isFullscreen}
-            pageWidth={state.pageWidth}
-            pageHeight={state.pageHeight}
-            onPageChange={state.goToPage}
-            onDocumentLoadSuccess={state.handleDocumentLoadSuccess}
-            onDocumentLoadError={state.handleDocumentLoadError}
-            makeTextRenderer={search.makeTextRenderer}
-          />
-        )}
 
-        {/* Outline panel — inline on desktop, Sheet on mobile */}
-        {!compact && !isMobile && state.outlineOpen && (
-          <aside className="w-[220px] shrink-0 border-l border-border overflow-y-auto">
-            {outlineContent}
-          </aside>
-        )}
-      </div>
+          {/* Mobile sheets */}
+          {!compact && isMobile && (
+            <>
+              <Sheet open={state.thumbnailsOpen} onOpenChange={state.setThumbnailsOpen}>
+                <SheetContent side="left" className="w-[200px] p-0">
+                  <SheetTitle className="sr-only">Page thumbnails</SheetTitle>
+                  {thumbnailContent}
+                </SheetContent>
+              </Sheet>
 
-      {/* Mobile sheets */}
-      {!compact && isMobile && (
-        <>
-          <Sheet open={state.thumbnailsOpen} onOpenChange={state.setThumbnailsOpen}>
-            <SheetContent side="left" className="w-[200px] p-0">
-              <SheetTitle className="sr-only">Page thumbnails</SheetTitle>
-              {thumbnailContent}
-            </SheetContent>
-          </Sheet>
-
-          <Sheet open={state.outlineOpen} onOpenChange={state.setOutlineOpen}>
-            <SheetContent side="right" className="w-[260px] p-0">
-              <SheetTitle className="sr-only">Document outline</SheetTitle>
-              {outlineContent}
-            </SheetContent>
-          </Sheet>
+              <Sheet open={state.outlineOpen} onOpenChange={state.setOutlineOpen}>
+                <SheetContent side="right" className="w-[260px] p-0">
+                  <SheetTitle className="sr-only">Document outline</SheetTitle>
+                  {outlineContent}
+                </SheetContent>
+              </Sheet>
+            </>
+          )}
         </>
       )}
 
