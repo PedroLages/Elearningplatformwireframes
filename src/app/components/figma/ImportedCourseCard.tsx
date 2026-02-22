@@ -1,4 +1,5 @@
 import { FolderOpen, Video, FileText, Circle, CheckCircle2, PauseCircle, Play } from 'lucide-react'
+import { useNavigate } from 'react-router'
 import { Card } from '@/app/components/ui/card'
 import { Badge } from '@/app/components/ui/badge'
 import { cn } from '@/app/components/ui/utils'
@@ -42,10 +43,22 @@ interface ImportedCourseCardProps {
 export function ImportedCourseCard({ course, allTags }: ImportedCourseCardProps) {
   const updateCourseTags = useCourseImportStore(state => state.updateCourseTags)
   const updateCourseStatus = useCourseImportStore(state => state.updateCourseStatus)
+  const navigate = useNavigate()
 
   const status = course.status
   const config = statusConfig[status]
   const StatusIcon = config.icon
+
+  function handleCardClick() {
+    navigate(`/imported-courses/${course.id}`)
+  }
+
+  function handleCardKeyDown(e: React.KeyboardEvent) {
+    if (e.key === 'Enter' || e.key === ' ') {
+      e.preventDefault()
+      navigate(`/imported-courses/${course.id}`)
+    }
+  }
 
   function handleRemoveTag(tag: string) {
     updateCourseTags(
@@ -69,9 +82,11 @@ export function ImportedCourseCard({ course, allTags }: ImportedCourseCardProps)
       data-testid="imported-course-card"
       aria-label={`${course.name} — ${course.videoCount} ${course.videoCount === 1 ? 'video' : 'videos'}, ${course.pdfCount} ${course.pdfCount === 1 ? 'PDF' : 'PDFs'}`}
       tabIndex={0}
-      className="group rounded-[24px] cursor-pointer focus-visible:ring-2 focus-visible:ring-blue-600 focus-visible:ring-offset-2 outline-none hover:shadow-2xl hover:[transform:scale(1.02)] transition-shadow duration-300 motion-reduce:hover:[transform:scale(1)]"
+      onClick={handleCardClick}
+      onKeyDown={handleCardKeyDown}
+      className="group rounded-[24px] cursor-pointer focus-visible:ring-2 focus-visible:ring-blue-600 focus-visible:ring-offset-2 outline-none hover:shadow-2xl hover:[transform:scale(1.02)] transition-shadow duration-300 motion-reduce:hover:[transform:scale(1)] h-full"
     >
-        <Card className="bg-card rounded-[24px] border-0 shadow-sm overflow-hidden">
+        <Card className="bg-card rounded-[24px] border-0 shadow-sm overflow-hidden h-full flex flex-col">
           <div
             data-testid="course-card-placeholder"
             className="relative h-44 bg-gradient-to-br from-emerald-50 to-teal-100 dark:from-emerald-950/50 dark:to-teal-950/50 flex items-center justify-center"

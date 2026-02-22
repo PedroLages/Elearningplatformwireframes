@@ -1,10 +1,12 @@
 import Dexie, { type EntityTable } from 'dexie'
-import type { ImportedCourse, ImportedVideo, ImportedPdf } from '@/data/types'
+import type { ImportedCourse, ImportedVideo, ImportedPdf, VideoProgress, VideoBookmark } from '@/data/types'
 
 const db = new Dexie('ElearningDB') as Dexie & {
   importedCourses: EntityTable<ImportedCourse, 'id'>
   importedVideos: EntityTable<ImportedVideo, 'id'>
   importedPdfs: EntityTable<ImportedPdf, 'id'>
+  progress: EntityTable<VideoProgress, 'courseId'>
+  bookmarks: EntityTable<VideoBookmark, 'id'>
 }
 
 db.version(1).stores({
@@ -29,5 +31,13 @@ db.version(2)
         }
       })
   })
+
+db.version(3).stores({
+  importedCourses: 'id, name, importedAt, status, *tags',
+  importedVideos: 'id, courseId, filename',
+  importedPdfs: 'id, courseId, filename',
+  progress: '[courseId+videoId], courseId, videoId',
+  bookmarks: 'id, courseId, lessonId, createdAt',
+})
 
 export { db }
