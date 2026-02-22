@@ -88,6 +88,13 @@ export function LessonPlayer() {
     return () => document.documentElement.removeAttribute('data-theater-mode')
   }, [isTheaterMode])
 
+  // Scroll to top when entering theater mode so the full video is visible without scrolling
+  useEffect(() => {
+    if (isTheaterMode) {
+      document.getElementById('main-content')?.scrollTo({ top: 0, behavior: 'instant' })
+    }
+  }, [isTheaterMode])
+
   const handleMiniPlayerClick = useCallback(() => {
     const reduceMotion = window.matchMedia('(prefers-reduced-motion: reduce)').matches
     videoWrapperRef.current?.scrollIntoView({
@@ -276,7 +283,10 @@ export function LessonPlayer() {
             data-testid="video-anchor"
             className={cn(
               'relative mb-5',
-              isTheaterMode ? 'w-full h-[calc(100svh-6rem)]' : 'w-full aspect-video'
+              // Theater mode: video fills viewport from its top offset (~160px / 10.25rem)
+              // to the viewport bottom. Calculated as: 100svh - (header ~6.25rem + main-padding
+              // 1.5rem + back-link ~1.25rem + back-link-mb 1rem) ≈ 10.25rem.
+              isTheaterMode ? 'w-full h-[calc(100svh-10.25rem)]' : 'w-full aspect-video'
             )}
           >
             {/* Inner: becomes fixed mini-player when scrolled past while playing */}

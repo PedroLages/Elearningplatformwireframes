@@ -515,52 +515,26 @@ export function VideoPlayer({
     }
   }, [showControls])
 
-  // Keyboard shortcuts
+  // Keyboard shortcuts — YouTube-style: all shortcuts fire globally, regardless of player focus.
+  // Only blocked when: user is typing in an input/textarea/contenteditable, modifier keys held
+  // (Cmd/Ctrl/Alt — reserved for browser shortcuts), or a speed menu is open.
+  // Exception: ArrowUp/Down (volume) still requires player focus to avoid hijacking page scroll.
   useEffect(() => {
     const handleKeyDown = (e: KeyboardEvent) => {
-      // T: theater toggle fires globally — not restricted to containerRef focus.
-      // This ensures T works even when focus is lost after theater mode DOM re-renders
-      // (e.g. Mobile Safari loses focus on the mini-player wrapper after toggle).
-      if (e.key === 't') {
-        if (!speedMenuOpen) {
-          e.preventDefault()
-          onTheaterModeToggle?.()
-        }
-        return
-      }
+      // Skip all shortcuts when browser modifier keys are held (e.g. Cmd+F, Ctrl+C)
+      if (e.ctrlKey || e.metaKey || e.altKey) return
 
-      // All other shortcuts: only when video player has focus.
-      // Exception: spacebar also fires when nothing specific has focus (body/document),
-      // matching YouTube-style where space pauses from anywhere on the page.
-      const isPlayerFocused = containerRef.current?.contains(document.activeElement)
-      const isGenericFocus =
-        !document.activeElement ||
-        document.activeElement === document.body ||
-        document.activeElement === document.documentElement
+      // Skip when the user is actively typing
+      const active = document.activeElement as HTMLElement | null
       const isInputFocused =
-        ['INPUT', 'TEXTAREA', 'SELECT'].includes(
-          (document.activeElement as HTMLElement)?.tagName ?? ''
-        ) || (document.activeElement as HTMLElement)?.isContentEditable
+        active !== null &&
+        (['INPUT', 'TEXTAREA', 'SELECT'].includes(active.tagName) || active.isContentEditable)
+      if (isInputFocused) return
 
-      if (e.key === ' ' && isGenericFocus && !isInputFocused && !speedMenuOpen && !shortcutsOpen) {
-        e.preventDefault()
-        togglePlayPause()
-        containerRef.current?.focus({ preventScroll: true })
-        return
-      }
-
-      if ((e.key === 'ArrowLeft' || e.key === 'ArrowRight') && isGenericFocus && !isInputFocused && !speedMenuOpen && !shortcutsOpen) {
-        e.preventDefault()
-        seekWithOverlay(e.key === 'ArrowLeft' ? -5 : 5)
-        containerRef.current?.focus({ preventScroll: true })
-        return
-      }
-
-      if (!isPlayerFocused) return
-      // Speed menu handles its own keyboard events
+      // Speed menu handles its own keyboard events via a separate capture-phase handler
       if (speedMenuOpen) return
 
-      // When shortcuts overlay is open, only Escape works
+      // When shortcuts overlay is open, only Escape closes it
       if (shortcutsOpen) {
         if (e.key === 'Escape') {
           e.preventDefault()
@@ -569,46 +543,62 @@ export function VideoPlayer({
         return
       }
 
+      // ArrowUp/Down: volume control — only when player has focus, to avoid hijacking page scroll
+      const isPlayerFocused = containerRef.current?.contains(document.activeElement)
+
       switch (e.key) {
+        case 't':
+          e.preventDefault()
+          onTheaterModeToggle?.()
+          break
         case ' ':
-          // Don't toggle play/pause if a Slider thumb has focus — let Slider handle Space natively
+          // Don't intercept if a Slider thumb is focused — Slider handles Space natively
           if (document.activeElement?.getAttribute('role') === 'slider') return
           e.preventDefault()
           togglePlayPause()
+          containerRef.current?.focus({ preventScroll: true })
           break
         case 'k':
           e.preventDefault()
           togglePlayPause()
+          containerRef.current?.focus({ preventScroll: true })
           break
         case 'j':
           e.preventDefault()
           seekWithOverlay(-10)
           announce('Skipped back 10 seconds')
+          containerRef.current?.focus({ preventScroll: true })
           break
         case 'l':
           e.preventDefault()
           seekWithOverlay(10)
           announce('Skipped forward 10 seconds')
+          containerRef.current?.focus({ preventScroll: true })
           break
         case 'ArrowLeft':
           e.preventDefault()
           seekWithOverlay(-5)
+          containerRef.current?.focus({ preventScroll: true })
           break
         case 'ArrowRight':
           e.preventDefault()
           seekWithOverlay(5)
+          containerRef.current?.focus({ preventScroll: true })
           break
         case 'ArrowUp':
+          if (!isPlayerFocused) break
           e.preventDefault()
           changeVolume(0.05)
           break
         case 'ArrowDown':
+          if (!isPlayerFocused) break
           e.preventDefault()
           changeVolume(-0.05)
           break
         case 'm':
           e.preventDefault()
           toggleMute()
+          containerRef.current?.focus({ preventScroll: true })
           break
         case 'c':
           e.preventDefault()
@@ -638,6 +628,7 @@ export function VideoPlayer({
         case '9':
           e.preventDefault()
           jumpToPercentage(parseInt(e.key) * 10)
+          containerRef.current?.focus({ preventScroll: true })
           break
       }
     }
@@ -646,7 +637,6 @@ export function VideoPlayer({
     return () => window.removeEventListener('keydown', handleKeyDown)
   }, [
     togglePlayPause,
-    seek,
     announce,
     seekWithOverlay,
     changeVolume,
@@ -756,7 +746,9 @@ export function VideoPlayer({
       data-testid="video-player-container"
       className={cn(
         'relative w-full overflow-hidden rounded-2xl bg-black group focus:outline-none',
-        theaterMode && 'h-full'
+        theaterMode && 'h-full',
+        // Hide cursor when playing and controls auto-hide (YouTube-style)
+        isPlaying && !showControls && 'cursor-none'
       )}
       onMouseDown={() => containerRef.current?.focus()}
       onMouseMove={resetControlsTimeout}
