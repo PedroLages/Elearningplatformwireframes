@@ -159,14 +159,14 @@ export function ImportedCourseCard({ course, allTags }: ImportedCourseCardProps)
             onKeyDown={handleCardKeyDown}
             {...previewHandlers}
             data-preview={showPreview && videoReady ? "" : undefined}
-            className={cn("group rounded-[24px] cursor-default focus-visible:ring-2 focus-visible:ring-blue-600 focus-visible:ring-offset-2 outline-none hover:shadow-2xl hover:[transform:scale(1.02)] transition-shadow duration-300 motion-reduce:hover:[transform:scale(1)] h-full", showPreview && videoReady && "[transform:scale(1.05)] z-10")}
+            className={cn("group rounded-[24px] cursor-default focus-visible:ring-2 focus-visible:ring-brand focus-visible:ring-offset-2 outline-none hover:shadow-xl hover:scale-[1.02] transition-[shadow,transform] duration-300 motion-reduce:hover:scale-100 h-full", showPreview && videoReady && "scale-[1.05] z-10")}
           >
-            <Card className="bg-card rounded-[24px] border-0 shadow-sm overflow-hidden h-full flex flex-col">
+            <Card className="bg-card border-0 shadow-sm overflow-hidden h-full flex flex-col">
               <div
                 data-testid="course-card-placeholder"
                 className="relative h-44 bg-gradient-to-br from-emerald-50 to-teal-100 dark:from-emerald-950/50 dark:to-teal-950/50 flex items-center justify-center"
               >
-                <FolderOpen className="size-16 text-emerald-300 dark:text-emerald-600" />
+                <FolderOpen className="size-16 text-emerald-300 dark:text-emerald-600" aria-hidden="true" />
                 {/* Inline video preview */}
                 {showPreview && previewBlobUrl && (
                   <video
@@ -234,7 +234,7 @@ export function ImportedCourseCard({ course, allTags }: ImportedCourseCardProps)
                     <button
                       onClick={e => { e.stopPropagation() }}
                       aria-label="Course details"
-                      className="absolute bottom-3 right-3 z-20 rounded-full bg-black/50 backdrop-blur-sm p-1.5 text-white opacity-0 group-hover:opacity-100 transition-all duration-300 hover:bg-black/70 hover:scale-110 cursor-pointer focus-visible:opacity-100 focus-visible:ring-2 focus-visible:ring-white outline-none"
+                      className="absolute bottom-3 right-3 z-20 rounded-full bg-black/50 backdrop-blur-sm p-1.5 text-white opacity-0 group-hover:opacity-100 transition-[opacity,background-color,transform] duration-300 hover:bg-black/70 hover:scale-110 cursor-pointer focus-visible:opacity-100 focus-visible:ring-2 focus-visible:ring-white outline-none"
                     >
                       <Info className="size-4" />
                     </button>
@@ -244,7 +244,7 @@ export function ImportedCourseCard({ course, allTags }: ImportedCourseCardProps)
                       <div>
                         <h4 className="font-semibold text-sm leading-tight">{course.name}</h4>
                         <p className="text-xs text-muted-foreground mt-1">
-                          Imported {new Date(course.importedAt).toLocaleDateString()}
+                          Imported {new Date(course.importedAt).toLocaleDateString(undefined, { dateStyle: 'medium' })}
                         </p>
                       </div>
 
@@ -277,7 +277,7 @@ export function ImportedCourseCard({ course, allTags }: ImportedCourseCardProps)
                       {course.videoCount > 0 && (
                         <Button
                           size="sm"
-                          className="w-full gap-2 hover:brightness-110 active:scale-95 transition-all"
+                          className="w-full gap-2 hover:brightness-110 active:scale-95 transition-[filter,transform]"
                           onClick={e => {
                             e.stopPropagation()
                             setInfoOpen(false)
@@ -295,14 +295,14 @@ export function ImportedCourseCard({ course, allTags }: ImportedCourseCardProps)
               <div className="p-5">
                 <h3
                   data-testid="course-card-title"
-                  className="font-bold text-base mb-1 line-clamp-2 group-hover:text-[#2563eb]"
+                  className="font-semibold text-base mb-1 line-clamp-2 group-hover:text-brand"
                 >
                   {course.name}
                 </h3>
                 <p className="text-sm text-muted-foreground mb-2">
-                  Imported {new Date(course.importedAt).toLocaleDateString()}
+                  Imported {new Date(course.importedAt).toLocaleDateString(undefined, { dateStyle: 'medium' })}
                 </p>
-                <div className="flex items-center gap-1.5 mb-3">
+                <div className="flex items-center gap-2 mb-3">
                   <TagBadgeList tags={course.tags} onRemove={handleRemoveTag} maxVisible={3} />
                   <TagEditor currentTags={course.tags} allTags={allTags} onAddTag={handleAddTag} />
                 </div>

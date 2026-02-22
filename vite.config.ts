@@ -90,6 +90,54 @@ export default defineConfig({
       '@': path.resolve(__dirname, './src')
     }
   },
+  build: {
+    rollupOptions: {
+      output: {
+        manualChunks: (id) => {
+          // React core
+          if (id.includes('node_modules/react/') || id.includes('node_modules/react-dom/')) {
+            return 'vendor-react'
+          }
+          // React Router
+          if (id.includes('node_modules/react-router') || id.includes('node_modules/@remix-run/')) {
+            return 'vendor-router'
+          }
+          // Radix UI + shadcn primitives
+          if (id.includes('node_modules/@radix-ui/')) {
+            return 'vendor-radix'
+          }
+          // Recharts + D3 (large — keep isolated)
+          if (id.includes('node_modules/recharts') || id.includes('node_modules/d3-') || id.includes('node_modules/victory-vendor')) {
+            return 'vendor-charts'
+          }
+          // pdfjs-dist (large — keep isolated)
+          if (id.includes('node_modules/pdfjs-dist') || id.includes('node_modules/react-pdf')) {
+            return 'vendor-pdf'
+          }
+          // Framer Motion (large animation lib)
+          if (id.includes('node_modules/motion') || id.includes('node_modules/framer-motion')) {
+            return 'vendor-motion'
+          }
+          // AI SDK
+          if (id.includes('node_modules/ai') || id.includes('node_modules/@ai-sdk/')) {
+            return 'vendor-ai'
+          }
+          // Data layer: Dexie + Zustand
+          if (id.includes('node_modules/dexie') || id.includes('node_modules/zustand')) {
+            return 'vendor-data'
+          }
+          // Markdown rendering
+          if (id.includes('node_modules/react-markdown') || id.includes('node_modules/remark') || id.includes('node_modules/rehype') || id.includes('node_modules/micromark') || id.includes('node_modules/mdast') || id.includes('node_modules/unist')) {
+            return 'vendor-markdown'
+          }
+          // Remaining node_modules → shared vendor chunk
+          if (id.includes('node_modules/')) {
+            return 'vendor-misc'
+          }
+        }
+      }
+    }
+  },
   // File types to support raw imports. Never add .css, .tsx, or .ts files to this.
   assetsInclude: ['**/*.svg', '**/*.csv'],
   test: {

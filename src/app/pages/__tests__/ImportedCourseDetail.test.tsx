@@ -50,28 +50,13 @@ const mockPdfs: ImportedPdf[] = [
   },
 ]
 
-const storeState = {
-  importedCourses: [mockCourse] as ImportedCourse[],
-  isImporting: false,
-  importError: null as string | null,
-  importProgress: null,
-  addImportedCourse: vi.fn(),
-  removeImportedCourse: vi.fn(),
-  updateCourseTags: vi.fn(),
-  updateCourseStatus: vi.fn(),
-  getAllTags: () => [] as string[],
-  loadImportedCourses: vi.fn(),
-  setImporting: vi.fn(),
-  setImportError: vi.fn(),
-  setImportProgress: vi.fn(),
-}
-
-vi.mock('@/stores/useCourseImportStore', () => ({
-  useCourseImportStore: (selector: (state: typeof storeState) => unknown) => selector(storeState),
-}))
+let mockCourseRecord: ImportedCourse | undefined = mockCourse
 
 vi.mock('@/db/schema', () => ({
   db: {
+    importedCourses: {
+      get: vi.fn(() => Promise.resolve(mockCourseRecord)),
+    },
     importedVideos: {
       where: () => ({
         equals: () => ({
@@ -101,12 +86,12 @@ function renderDetail(courseId = 'course-1') {
 
 describe('ImportedCourseDetail', () => {
   beforeEach(() => {
-    storeState.importedCourses = [mockCourse]
+    mockCourseRecord = mockCourse
   })
 
-  it('renders page with course title', () => {
+  it('renders page with course title', async () => {
     renderDetail()
-    expect(screen.getByTestId('imported-course-detail')).toBeInTheDocument()
+    expect(await screen.findByTestId('imported-course-detail')).toBeInTheDocument()
     expect(screen.getByTestId('course-detail-title')).toHaveTextContent('React Fundamentals')
   })
 
@@ -143,19 +128,20 @@ describe('ImportedCourseDetail', () => {
     expect(link).toHaveAttribute('href', '/imported-courses/course-1/lessons/v1')
   })
 
-  it('shows "Back to Courses" link', () => {
+  it('shows "Back to Courses" link', async () => {
     renderDetail()
+    await screen.findByTestId('imported-course-detail')
     expect(screen.getByRole('link', { name: /back to courses/i })).toHaveAttribute('href', '/courses')
   })
 
-  it('shows not found message when course does not exist', () => {
-    storeState.importedCourses = []
+  it('shows not found message when course does not exist', async () => {
+    mockCourseRecord = undefined
     renderDetail('unknown-id')
-    expect(screen.getByText('Course not found.')).toBeInTheDocument()
+    expect(await screen.findByText('Course not found')).toBeInTheDocument()
   })
 
   it('renders course content list container', async () => {
     renderDetail()
-    expect(screen.getByTestId('course-content-list')).toBeInTheDocument()
+    expect(await screen.findByTestId('course-content-list')).toBeInTheDocument()
   })
 })

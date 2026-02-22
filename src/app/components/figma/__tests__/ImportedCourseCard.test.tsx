@@ -16,6 +16,18 @@ vi.mock('@/stores/useCourseImportStore', () => ({
     }),
 }))
 
+vi.mock('@/db/schema', () => ({
+  db: {
+    importedVideos: {
+      where: vi.fn().mockReturnValue({
+        equals: vi.fn().mockReturnValue({
+          sortBy: vi.fn().mockResolvedValue([]),
+        }),
+      }),
+    },
+  },
+}))
+
 function makeCourse(overrides: Partial<ImportedCourse> = {}): ImportedCourse {
   return {
     id: 'course-1',
@@ -79,19 +91,19 @@ describe('ImportedCourseCard', () => {
 
   it('has elevated hover shadow', () => {
     const { container } = renderCard()
-    const shadow = container.querySelector('.hover\\:shadow-2xl')
+    const shadow = container.querySelector('.hover\\:shadow-xl')
     expect(shadow).toBeInTheDocument()
   })
 
   it('has hover scale effect', () => {
     const { container } = renderCard()
-    const scaled = container.querySelector('.hover\\:\\[transform\\:scale\\(1\\.02\\)\\]')
+    const scaled = container.querySelector('.hover\\:scale-\\[1\\.02\\]')
     expect(scaled).toBeInTheDocument()
   })
 
   it('has group-hover title color change', () => {
     const { container } = renderCard()
-    const title = container.querySelector('.group-hover\\:text-\\[\\#2563eb\\]')
+    const title = container.querySelector('.group-hover\\:text-brand')
     expect(title).toBeInTheDocument()
   })
 
@@ -104,7 +116,7 @@ describe('ImportedCourseCard', () => {
 
   it('respects prefers-reduced-motion', () => {
     const { container } = renderCard()
-    const motionSafe = container.querySelector('.motion-reduce\\:hover\\:\\[transform\\:scale\\(1\\)\\]')
+    const motionSafe = container.querySelector('.motion-reduce\\:hover\\:scale-100')
     expect(motionSafe).toBeInTheDocument()
   })
 

@@ -4,9 +4,10 @@ story_name: "Lesson Player Page with Video Playback"
 status: done
 created: 2026-02-15
 started: 2026-02-15
-reviewed: false
-review_started:
-review_gates_passed: []
+completed: 2026-02-22
+reviewed: true
+review_started: 2026-02-22
+review_gates_passed: [build, lint, unit-tests, e2e-tests, design-review, code-review]
 epic: 2
 story_num: 1
 ---
@@ -237,3 +238,34 @@ See [plan](/Users/pedro/.claude/plans/agile-forging-gem.md) for implementation a
 ### Completion Notes List
 
 ### File List
+
+## Design Review Feedback
+
+**Report**: [docs/reviews/design/design-review-2026-02-22-e02-s01.md](../reviews/design/design-review-2026-02-22-e02-s01.md)
+**Date**: 2026-02-22
+
+**Blockers (1)**:
+- `<button>` inside `<a>` in `CourseCard.tsx` (library/overview variants) — invalid HTML per spec; screen readers merge link and button accessible names
+
+**High Priority (5)**:
+- Hardcoded `#2563eb` in `ImportedCourseCard.tsx:298` → use `group-hover:text-brand`
+- Back arrow link only 16×16px in `ImportedLessonPlayer` → needs `p-3` padding wrapper
+- Error state buttons 36px tall → add `size="lg"` or `h-11`
+- `aria-label="Back"` too vague → restore `"Back to course"`
+- Error state `<h2>` with no `<h1>` → promote to `<h1>`
+
+## Code Review Feedback
+
+**Report**: [docs/reviews/code/code-review-2026-02-22-e02-s01.md](../reviews/code/code-review-2026-02-22-e02-s01.md)
+**Date**: 2026-02-22
+
+**High Priority (3)**:
+- No cancellation guard on Dexie queries in `ImportedCourseDetail` and `ImportedLessonPlayer` → add `cancelled` flag pattern
+- No `.catch()` handlers on Dexie queries → silent failures leave component in permanent loading state
+- `useVideoFromHandle` called unconditionally twice per card → 2N unnecessary state updates on Courses page
+
+**Medium Priority (4)**:
+- `formatDuration` doesn't handle ≥ 3600s (1-hour videos) → extract shared `formatTime` utility
+- Hardcoded `#2563eb` in `ImportedCourseCard.tsx:298` → `group-hover:text-brand`
+- Sidebar E2E assertion trivially passes (testid doesn't exist in DOM)
+- `aria-label="Back"` too vague (WCAG 2.4.9)

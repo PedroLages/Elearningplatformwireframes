@@ -27,30 +27,14 @@ const mockVideo: ImportedVideo = {
   fileHandle: null as unknown as FileSystemFileHandle, // null → triggers error state
 }
 
-const storeState = {
-  importedCourses: [mockCourse] as ImportedCourse[],
-  isImporting: false,
-  importError: null as string | null,
-  importProgress: null,
-  addImportedCourse: vi.fn(),
-  removeImportedCourse: vi.fn(),
-  updateCourseTags: vi.fn(),
-  updateCourseStatus: vi.fn(),
-  getAllTags: () => [] as string[],
-  loadImportedCourses: vi.fn(),
-  setImporting: vi.fn(),
-  setImportError: vi.fn(),
-  setImportProgress: vi.fn(),
-}
-
-vi.mock('@/stores/useCourseImportStore', () => ({
-  useCourseImportStore: (selector: (state: typeof storeState) => unknown) => selector(storeState),
-}))
-
+let mockCourseRecord: ImportedCourse | undefined = mockCourse
 let mockVideoRecord: ImportedVideo | null | undefined = mockVideo
 
 vi.mock('@/db/schema', () => ({
   db: {
+    importedCourses: {
+      get: vi.fn(() => Promise.resolve(mockCourseRecord)),
+    },
     importedVideos: {
       get: vi.fn(() => Promise.resolve(mockVideoRecord)),
       update: vi.fn(),
@@ -87,8 +71,8 @@ function renderPlayer(courseId = 'course-1', lessonId = 'v1') {
 
 describe('ImportedLessonPlayer', () => {
   beforeEach(() => {
+    mockCourseRecord = mockCourse
     mockVideoRecord = mockVideo
-    storeState.importedCourses = [mockCourse]
   })
 
   it('renders lesson player content container', () => {

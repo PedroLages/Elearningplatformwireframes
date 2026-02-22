@@ -2,26 +2,33 @@ import { useState, useEffect } from 'react'
 import { Link, useParams } from 'react-router'
 import { ArrowLeft, FileWarning, FolderSearch } from 'lucide-react'
 import { db } from '@/db/schema'
-import { useCourseImportStore } from '@/stores/useCourseImportStore'
 import { useVideoFromHandle } from '@/hooks/useVideoFromHandle'
 import { VideoPlayer } from '@/app/components/figma/VideoPlayer'
 import { Button } from '@/app/components/ui/button'
-import type { ImportedVideo } from '@/data/types'
+import type { ImportedCourse, ImportedVideo } from '@/data/types'
 
 export function ImportedLessonPlayer() {
   const { courseId, lessonId } = useParams<{ courseId: string; lessonId: string }>()
 
-  const importedCourses = useCourseImportStore(state => state.importedCourses)
-  const course = importedCourses.find(c => c.id === courseId)
-
+  const [course, setCourse] = useState<ImportedCourse | null | undefined>(undefined)
   const [video, setVideo] = useState<ImportedVideo | null | undefined>(undefined)
 
   useEffect(() => {
-    if (!lessonId) {
-      setVideo(null)
-      return
-    }
-    db.importedVideos.get(lessonId).then(v => setVideo(v ?? null))
+    if (!courseId) { setCourse(null); return }
+    let cancelled = false
+    db.importedCourses.get(courseId)
+      .then(c => { if (!cancelled) setCourse(c ?? null) })
+      .catch(() => { if (!cancelled) setCourse(null) })
+    return () => { cancelled = true }
+  }, [courseId])
+
+  useEffect(() => {
+    if (!lessonId) { setVideo(null); return }
+    let cancelled = false
+    db.importedVideos.get(lessonId)
+      .then(v => { if (!cancelled) setVideo(v ?? null) })
+      .catch(() => { if (!cancelled) setVideo(null) })
+    return () => { cancelled = true }
   }, [lessonId])
 
   const { blobUrl, error, loading } = useVideoFromHandle(video?.fileHandle)
@@ -55,7 +62,7 @@ export function ImportedLessonPlayer() {
         data-testid="lesson-player-content"
         className="flex items-center justify-center h-full text-muted-foreground"
       >
-        <span className="text-sm">Loading...</span>
+        <span className="text-sm">Loading…</span>
       </div>
     )
   }
@@ -70,7 +77,7 @@ export function ImportedLessonPlayer() {
         <p>Video not found.</p>
         <Link
           to={`/imported-courses/${courseId}`}
-          className="text-sm text-blue-600 hover:underline"
+          className="text-sm text-brand hover:underline"
         >
           Back to Course
         </Link>
@@ -84,10 +91,10 @@ export function ImportedLessonPlayer() {
       <div className="flex items-center gap-3 px-4 py-3 border-b shrink-0">
         <Link
           to={`/imported-courses/${courseId}`}
-          className="inline-flex items-center gap-1.5 text-sm text-muted-foreground hover:text-foreground transition-colors"
-          aria-label="Back to course"
+          className="inline-flex items-center justify-center p-3 -ml-3 rounded-full hover:bg-accent text-muted-foreground hover:text-foreground transition-colors"
+          aria-label="Back to Course"
         >
-          <ArrowLeft className="size-4" />
+          <ArrowLeft className="size-4" aria-hidden="true" />
         </Link>
         <div className="flex flex-col min-w-0">
           <span
@@ -116,7 +123,7 @@ export function ImportedLessonPlayer() {
           >
             <div className="flex flex-col items-center gap-3 text-center max-w-sm">
               <FileWarning className="size-12 text-muted-foreground" aria-hidden="true" />
-              <h2 className="font-semibold text-lg">Video file not found</h2>
+              <h1 className="font-semibold text-lg text-balance">Video file not found</h1>
               <p className="text-sm text-muted-foreground">
                 {error === 'permission-denied'
                   ? 'Permission was denied. Grant access to play this video.'
@@ -124,11 +131,11 @@ export function ImportedLessonPlayer() {
               </p>
             </div>
             <div className="flex flex-col sm:flex-row gap-3">
-              <Button onClick={handleLocateFile} className="gap-2">
+              <Button onClick={handleLocateFile} size="lg" className="gap-2">
                 <FolderSearch className="size-4" aria-hidden="true" />
                 Locate File
               </Button>
-              <Button variant="outline" asChild>
+              <Button variant="outline" size="lg" asChild>
                 <Link to={`/imported-courses/${courseId}`}>Back to Course</Link>
               </Button>
             </div>

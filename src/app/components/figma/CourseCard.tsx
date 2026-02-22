@@ -17,6 +17,7 @@ import {
 } from '@/app/components/ui/dialog'
 import { ProgressRing } from './ProgressRing'
 import { VideoPlayer } from './VideoPlayer'
+import { formatRelativeTime } from '@/lib/format'
 import { getProgress } from '@/lib/progress'
 import { getResourceUrl } from '@/lib/media'
 import { cn } from '@/app/components/ui/utils'
@@ -42,33 +43,13 @@ const categoryColors: Record<CourseCategory, string> = {
   'research-library': 'bg-purple-100 text-purple-700 dark:bg-purple-900/30 dark:text-purple-300',
 }
 
-// ── Helper functions ────────────────────────────────────────────────
-
-function formatRelativeTime(isoDate: string): string {
-  const now = new Date()
-  const date = new Date(isoDate)
-  const diffInSeconds = Math.floor((now.getTime() - date.getTime()) / 1000)
-
-  if (diffInSeconds < 60) return 'just now'
-  if (diffInSeconds < 3600) {
-    const minutes = Math.floor(diffInSeconds / 60)
-    return `${minutes} ${minutes === 1 ? 'minute' : 'minutes'} ago`
-  }
-  if (diffInSeconds < 86400) {
-    const hours = Math.floor(diffInSeconds / 3600)
-    return `${hours} ${hours === 1 ? 'hour' : 'hours'} ago`
-  }
-  if (diffInSeconds < 604800) {
-    const days = Math.floor(diffInSeconds / 86400)
-    return `${days} ${days === 1 ? 'day' : 'days'} ago`
-  }
-  if (diffInSeconds < 2592000) {
-    const weeks = Math.floor(diffInSeconds / 604800)
-    return `${weeks} ${weeks === 1 ? 'week' : 'weeks'} ago`
-  }
-  const months = Math.floor(diffInSeconds / 2592000)
-  return `${months} ${months === 1 ? 'month' : 'months'} ago`
+const difficultyColors: Record<string, string> = {
+  Beginner: 'bg-emerald-100 text-emerald-700 dark:bg-emerald-900/30 dark:text-emerald-300',
+  Intermediate: 'bg-amber-100 text-amber-700 dark:bg-amber-900/30 dark:text-amber-300',
+  Advanced: 'bg-red-100 text-red-700 dark:bg-red-900/30 dark:text-red-300',
 }
+
+// ── Helper functions ────────────────────────────────────────────────
 
 function getDifficultyBadgeVariant(
   difficulty: string
@@ -170,7 +151,7 @@ export function CourseCard({
     <div className="space-y-3">
       <div>
         {variant === 'library' ? (
-          <Badge className={`border-0 text-xs ${categoryColors[course.category]}`}>
+          <Badge className={cn('border-0 text-xs', categoryColors[course.category])}>
             {categoryLabels[course.category]}
           </Badge>
         ) : variant === 'overview' ? (
@@ -245,10 +226,9 @@ export function CourseCard({
 
       <Button
         size="sm"
-        className="w-full gap-2 hover:brightness-110 active:scale-95 transition-all"
+        className="w-full gap-2 hover:brightness-110 active:scale-95 transition-[filter,transform]"
         disabled={!previewSrc}
         onClick={e => {
-          e.preventDefault()
           e.stopPropagation()
           setInfoOpen(false)
           setPreviewOpen(true)
@@ -292,7 +272,7 @@ export function CourseCard({
               </div>
             )}
             <Badge
-              className={`absolute top-3 left-3 border-0 text-xs ${categoryColors[course.category]}`}
+              className={cn('absolute top-3 left-3 border-0 text-xs', categoryColors[course.category])}
             >
               {categoryLabels[course.category]}
             </Badge>
@@ -308,7 +288,7 @@ export function CourseCard({
             )}
             {isCompleted && (
               <div className="absolute top-2 right-2 bg-success text-success-foreground rounded-full px-3 py-1 text-xs font-bold shadow-lg flex items-center gap-1">
-                <CheckCircle className="w-3 h-3" />
+                <CheckCircle className="w-3 h-3" aria-hidden="true" />
                 Completed
               </div>
             )}
@@ -335,43 +315,24 @@ export function CourseCard({
   // ── Info button (shared, with variant-specific click handling) ─────
 
   function renderInfoButton() {
-    // library/overview: inside a <Link>, needs wrapper div with preventDefault
-    // progress: inside a Card onClick, only needs stopPropagation
-    if (variant === 'progress') {
-      return (
-        <Popover open={infoOpen} onOpenChange={setInfoOpen}>
-          <PopoverTrigger asChild>
-            <button
-              onClick={e => { e.stopPropagation() }}
-              aria-label="Course details"
-              className="absolute bottom-2 right-2 z-20 rounded-full bg-black/50 backdrop-blur-sm p-1.5 text-white opacity-0 group-hover:opacity-100 transition-all duration-300 hover:bg-black/70 hover:scale-110 cursor-pointer focus-visible:opacity-100 focus-visible:ring-2 focus-visible:ring-white outline-none"
-            >
-              <Info className="size-4" />
-            </button>
-          </PopoverTrigger>
-          <PopoverContent side="top" className="w-72 p-4">
-            {infoPopoverContent}
-          </PopoverContent>
-        </Popover>
-      )
-    }
-
     return (
-      <div className="absolute bottom-3 right-3 z-20" onClick={e => { e.preventDefault(); e.stopPropagation() }}>
-        <Popover open={infoOpen} onOpenChange={setInfoOpen}>
-          <PopoverTrigger asChild>
-            <button
-              aria-label="Course details"
-              className="rounded-full bg-black/50 backdrop-blur-sm p-1.5 text-white opacity-0 group-hover:opacity-100 transition-all duration-300 hover:bg-black/70 hover:scale-110 cursor-pointer focus-visible:opacity-100 focus-visible:ring-2 focus-visible:ring-white outline-none"
-            >
-              <Info className="size-4" />
-            </button>
-          </PopoverTrigger>
-          <PopoverContent side="top" className="w-72 p-4">
-            {infoPopoverContent}
-          </PopoverContent>
-        </Popover>
-      </div>
+      <Popover open={infoOpen} onOpenChange={setInfoOpen}>
+        <PopoverTrigger asChild>
+          <button
+            onClick={e => e.stopPropagation()}
+            aria-label="Course details"
+            className={cn(
+              'absolute z-20 rounded-full bg-black/50 backdrop-blur-sm p-1.5 text-white opacity-0 group-hover:opacity-100 transition-[opacity,background-color,transform] duration-300 hover:bg-black/70 hover:scale-110 cursor-pointer focus-visible:opacity-100 focus-visible:ring-2 focus-visible:ring-white outline-none',
+              variant === 'progress' ? 'bottom-2 right-2' : 'bottom-3 right-3',
+            )}
+          >
+            <Info className="size-4" />
+          </button>
+        </PopoverTrigger>
+        <PopoverContent side="top" className="w-72 p-4">
+          {infoPopoverContent}
+        </PopoverContent>
+      </Popover>
     )
   }
 
@@ -393,7 +354,9 @@ export function CourseCard({
             <img
               src={`${course.coverImage}-640w.webp`}
               alt={course.title}
-              className={`w-full ${thumbnailHeight} object-cover transition-transform duration-200 group-hover:scale-105`}
+              width={400}
+              height={225}
+              className={cn('w-full object-cover transition-transform duration-200 group-hover:scale-105', thumbnailHeight)}
               loading="lazy"
             />
           </picture>
@@ -406,7 +369,7 @@ export function CourseCard({
 
     // library + overview: gradient fallback + full responsive srcSet
     return (
-      <div className={`relative ${thumbnailHeight} bg-gradient-to-br from-blue-50 to-indigo-100 dark:from-blue-950/50 dark:to-indigo-950/50 flex items-center justify-center overflow-hidden`}>
+      <div className={cn('relative bg-gradient-to-br from-blue-50 to-indigo-100 dark:from-blue-950/50 dark:to-indigo-950/50 flex items-center justify-center overflow-hidden', thumbnailHeight)}>
         {course.coverImage ? (
           variant === 'library' ? (
             <picture className="absolute inset-0">
@@ -430,6 +393,9 @@ export function CourseCard({
                 `}
                 sizes="(max-width: 640px) 320px, (max-width: 1024px) 640px, 768px"
                 alt={course.title}
+                width={400}
+                height={225}
+                loading="lazy"
                 className="w-full h-full object-cover transition-transform duration-200 group-hover:scale-105"
               />
             </picture>
@@ -437,12 +403,14 @@ export function CourseCard({
             <img
               src={`${course.coverImage}-640w.webp`}
               alt={course.title}
+              width={400}
+              height={225}
               className="w-full h-full object-cover transition-transform duration-200 group-hover:scale-105 absolute inset-0"
               loading="lazy"
             />
           )
         ) : (
-          <BookOpen className="h-16 w-16 text-blue-300 dark:text-blue-600" />
+          <BookOpen className="h-16 w-16 text-blue-300 dark:text-blue-600" aria-hidden="true" />
         )}
         {inlineVideoPreview}
         {renderThumbnailOverlays()}
@@ -458,7 +426,7 @@ export function CourseCard({
       case 'library':
         return (
           <div className="p-5 flex flex-col flex-1">
-            <h3 className="font-semibold text-base mb-3 group-hover:text-brand transition-colors line-clamp-2">
+            <h3 className="font-semibold text-base mb-3 group-hover:text-brand transition-colors line-clamp-2 text-balance">
               {course.title}
             </h3>
             <div className="flex flex-wrap items-center gap-3 text-xs text-muted-foreground mt-auto">
@@ -487,7 +455,7 @@ export function CourseCard({
             >
               {formatCategory(course.category)}
             </Badge>
-            <h3 className="font-semibold text-base line-clamp-2 mb-2 group-hover:text-brand transition-colors">
+            <h3 className="font-semibold text-base line-clamp-2 mb-2 group-hover:text-brand transition-colors text-balance">
               {course.title}
             </h3>
             <div className="flex items-center justify-between text-xs text-muted-foreground mt-auto">
@@ -497,7 +465,7 @@ export function CourseCard({
               </span>
               {isInProgress && (
                 <span className="flex items-center gap-1 text-brand font-medium">
-                  <Clock className="w-3 h-3" />
+                  <Clock className="w-3 h-3" aria-hidden="true" />
                   In Progress
                 </span>
               )}
@@ -522,19 +490,13 @@ export function CourseCard({
               </Badge>
               <Badge
                 variant={getDifficultyBadgeVariant(course.difficulty)}
-                className={`badge-entrance ${
-                  course.difficulty.toLowerCase() === 'beginner'
-                    ? 'bg-green-100 text-green-800 dark:bg-green-900 dark:text-green-100 hover:bg-green-100 dark:hover:bg-green-900'
-                    : course.difficulty.toLowerCase() === 'intermediate'
-                      ? 'bg-amber-100 text-amber-800 dark:bg-amber-900 dark:text-amber-100 hover:bg-amber-100 dark:hover:bg-amber-900'
-                      : ''
-                }`}
+                className={cn('badge-entrance', difficultyColors[course.difficulty])}
               >
                 {course.difficulty}
               </Badge>
             </div>
 
-            <h3 className="font-semibold text-base line-clamp-2 group-hover:text-brand transition-colors" title={course.title}>
+            <h3 className="font-semibold text-base line-clamp-2 group-hover:text-brand transition-colors text-balance" title={course.title}>
               {course.title}
             </h3>
 
@@ -595,12 +557,13 @@ export function CourseCard({
 
   // ── Card shell ────────────────────────────────────────────────────
 
+  // cursor-default is intentional: the outer <article> wrapper handles navigation,
+  // so we avoid a pointer cursor on the card itself to prevent double-clickable appearance.
   const cardShell = (
     <Card
       data-preview={showPreview && videoReady ? "" : undefined}
       className={cn(
-        "group bg-card border-0 shadow-sm overflow-hidden hover:shadow-xl hover:scale-[1.02] transition-all duration-300 motion-reduce:hover:scale-100 cursor-default h-full flex flex-col",
-        showPreview && videoReady && "!scale-[1.05] z-10",
+        "group bg-card border-0 shadow-sm overflow-hidden hover:shadow-xl hover:scale-[1.02] transition-[shadow,transform] duration-300 motion-reduce:hover:scale-100 cursor-default h-full flex flex-col data-[preview]:scale-[1.05] data-[preview]:z-10",
         variant === 'progress' && status === 'completed' && 'border-green-200 dark:border-green-800',
         variant === 'progress' && status === 'not-started' && 'opacity-80 hover:opacity-100',
       )}
@@ -625,28 +588,34 @@ export function CourseCard({
     // progress: Card onClick (inner Link buttons for Resume/Review)
     return (
       <>
-        <div
+        <article
+          tabIndex={0}
           onClick={() => navigate(lessonLink)}
+          onKeyDown={(e) => { if ((e.key === 'Enter' || e.key === ' ') && e.target === e.currentTarget) { e.preventDefault(); navigate(lessonLink) } }}
+          aria-label={`${course.title} — ${completionPercent}% complete`}
           {...previewHandlers}
-          className="h-full"
+          className="rounded-[24px] focus-visible:ring-2 focus-visible:ring-brand focus-visible:ring-offset-2 outline-none block h-full cursor-default"
         >
           {cardShell}
-        </div>
+        </article>
         {previewDialog}
       </>
     )
   }
 
-  // library + overview: <Link> wraps entire card
+  // library + overview: <article> with onClick navigation (no <button> inside <a>)
   return (
     <>
-      <Link
-        to={lessonLink}
+      <article
+        tabIndex={0}
+        onClick={() => navigate(lessonLink)}
+        onKeyDown={e => { if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); navigate(lessonLink) } }}
+        aria-label={course.title}
         {...previewHandlers}
         className="rounded-[24px] focus-visible:ring-2 focus-visible:ring-brand focus-visible:ring-offset-2 outline-none block h-full cursor-default"
       >
         {cardShell}
-      </Link>
+      </article>
       {previewDialog}
     </>
   )
