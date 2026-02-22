@@ -116,7 +116,6 @@ export async function migrateBookmarksFromLocalStorage(): Promise<void> {
 
     const legacy: VideoBookmark[] = JSON.parse(raw)
     if (legacy.length === 0) {
-      localStorage.removeItem(LEGACY_STORAGE_KEY)
       return
     }
 
@@ -127,7 +126,7 @@ export async function migrateBookmarksFromLocalStorage(): Promise<void> {
     }))
 
     await db.bookmarks.bulkPut(withLabels)
-    localStorage.removeItem(LEGACY_STORAGE_KEY)
+    // Retain localStorage as backup for one version cycle (per AC)
   } catch (error) {
     console.error('[Bookmarks] Migration from localStorage failed:', error)
   }

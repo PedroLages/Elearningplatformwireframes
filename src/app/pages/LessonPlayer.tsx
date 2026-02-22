@@ -52,9 +52,8 @@ export function LessonPlayer() {
   const [completed, setCompleted] = useState(() =>
     courseId && lessonId ? isLessonComplete(courseId, lessonId) : false
   )
-  const [noteText, setNoteText] = useState(() =>
-    courseId && lessonId ? getNote(courseId, lessonId) : ''
-  )
+  const [noteText, setNoteText] = useState('')
+
   const [seekToTime, setSeekToTime] = useState<number | undefined>(undefined)
   const [bookmarks, setBookmarks] = useState<import('@/data/types').VideoBookmark[]>([])
 
@@ -106,7 +105,7 @@ export function LessonPlayer() {
     setShowAutoAdvance(false)
     if (courseId && lessonId) {
       setCompleted(isLessonComplete(courseId, lessonId))
-      setNoteText(getNote(courseId, lessonId))
+      getNote(courseId, lessonId).then(setNoteText)
     }
   }, [courseId, lessonId])
 
