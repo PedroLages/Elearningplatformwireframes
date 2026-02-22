@@ -1,4 +1,4 @@
-import { FileText, ExternalLink } from 'lucide-react'
+import { FileText, ExternalLink, ChevronLeft, ChevronRight } from 'lucide-react'
 import { Button } from '@/app/components/ui/button'
 import { cn } from '@/app/components/ui/utils'
 import { useIsMobile } from '@/app/components/ui/use-mobile'
@@ -156,20 +156,54 @@ export function PdfViewer({
 
         {/* Single page or continuous scroll */}
         {state.scrollMode === 'single' ? (
-          <PdfPageRenderer
-            src={src}
-            currentPage={state.currentPage}
-            scale={state.scale}
-            rotation={state.rotation}
-            darkMode={state.darkMode}
-            isFullscreen={state.isFullscreen}
-            isLoading={state.isLoading}
-            contentRef={state.contentRef}
-            onDocumentLoadSuccess={state.handleDocumentLoadSuccess}
-            onDocumentLoadError={state.handleDocumentLoadError}
-            onPageLoadSuccess={state.handlePageLoadSuccess}
-            customTextRenderer={search.makeTextRenderer(state.currentPage)}
-          />
+          <div className="group/nav relative flex min-w-0 flex-1 flex-col">
+            <PdfPageRenderer
+              src={src}
+              currentPage={state.currentPage}
+              scale={state.scale}
+              rotation={state.rotation}
+              darkMode={state.darkMode}
+              isFullscreen={state.isFullscreen}
+              isLoading={state.isLoading}
+              contentRef={state.contentRef}
+              onDocumentLoadSuccess={state.handleDocumentLoadSuccess}
+              onDocumentLoadError={state.handleDocumentLoadError}
+              onPageLoadSuccess={state.handlePageLoadSuccess}
+              customTextRenderer={search.makeTextRenderer(state.currentPage)}
+            />
+
+            {/* Hover page navigation overlay */}
+            {state.totalPages > 1 && !state.isLoading && (
+              <>
+                {/* Previous page */}
+                {state.currentPage > 1 && (
+                  <button
+                    onClick={() => state.goToPage(state.currentPage - 1)}
+                    aria-label="Previous page"
+                    className="absolute left-2 top-1/2 -translate-y-1/2 rounded-full bg-black/50 p-2 text-white opacity-0 backdrop-blur-sm transition-opacity hover:bg-black/70 group-hover/nav:opacity-100"
+                  >
+                    <ChevronLeft className="h-5 w-5" />
+                  </button>
+                )}
+
+                {/* Next page */}
+                {state.currentPage < state.totalPages && (
+                  <button
+                    onClick={() => state.goToPage(state.currentPage + 1)}
+                    aria-label="Next page"
+                    className="absolute right-2 top-1/2 -translate-y-1/2 rounded-full bg-black/50 p-2 text-white opacity-0 backdrop-blur-sm transition-opacity hover:bg-black/70 group-hover/nav:opacity-100"
+                  >
+                    <ChevronRight className="h-5 w-5" />
+                  </button>
+                )}
+
+                {/* Page indicator */}
+                <div className="absolute bottom-3 left-1/2 -translate-x-1/2 rounded-full bg-black/50 px-3 py-1 text-xs font-medium text-white opacity-0 backdrop-blur-sm transition-opacity group-hover/nav:opacity-100">
+                  {state.currentPage} / {state.totalPages}
+                </div>
+              </>
+            )}
+          </div>
         ) : (
           <PdfScrollView
             src={src}

@@ -9,7 +9,7 @@ export function usePdfViewerState(
   const [totalPages, setTotalPages] = useState(0)
   const [currentPage, setCurrentPage] = useState(initialPage)
   const [scale, setScale] = useState(1)
-  const [zoomMode, setZoomMode] = useState<ZoomMode>('fit-width')
+  const [zoomMode, setZoomMode] = useState<ZoomMode>('custom')
   const [isLoading, setIsLoading] = useState(true)
   const [loadError, setLoadError] = useState(false)
   const [announcement, setAnnouncement] = useState('')
@@ -216,11 +216,17 @@ export function usePdfViewerState(
 
   const [isFullscreen, setIsFullscreen] = useState(false)
 
-  // Sync fullscreen state with browser events
+  // Sync fullscreen state with browser events and adjust zoom mode
   useEffect(() => {
     const handleChange = () => {
       const active = !!document.fullscreenElement
       setIsFullscreen(active)
+      if (active) {
+        setZoomMode('fit-width')
+      } else {
+        setZoomMode('custom')
+        setScale(1)
+      }
       setAnnouncement(active ? 'Entered fullscreen' : 'Exited fullscreen')
     }
     document.addEventListener('fullscreenchange', handleChange)
