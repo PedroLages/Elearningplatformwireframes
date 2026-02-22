@@ -1,3 +1,4 @@
+import { useState, useEffect } from 'react'
 import { useTheme } from 'next-themes'
 import { BookOpen, CheckCircle, FileText, TrendingUp } from 'lucide-react'
 import { Card, CardContent, CardHeader, CardTitle } from '@/app/components/ui/card'
@@ -44,6 +45,11 @@ export default function Reports() {
   const COLORS = [colors.primary, colors.purple, colors.green, colors.amber, colors.red]
   const { tickColor, tooltipBg, tooltipBorder } = colors
 
+  const [studyNotes, setStudyNotes] = useState(0)
+  useEffect(() => {
+    getTotalStudyNotes().then(setStudyNotes)
+  }, [])
+
   const stats = [
     {
       label: 'Lessons Completed',
@@ -62,7 +68,7 @@ export default function Reports() {
     },
     {
       label: 'Study Notes',
-      value: getTotalStudyNotes(),
+      value: studyNotes,
       icon: FileText,
     },
   ]

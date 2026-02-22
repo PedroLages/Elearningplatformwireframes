@@ -1,4 +1,5 @@
 import { Course, Note } from '@/data/types'
+import { db } from '@/db'
 import { logStudyAction, getStudyLog } from './studyLog'
 
 const STORAGE_KEY = 'course-progress'
@@ -208,68 +209,62 @@ export function getPdfPage(courseId: string, resourceId: string): number | undef
 }
 
 /**
- * Save or update a note for a lesson
- * Creates a new note if no existing notes, or updates the latest note
+ * Save or update a note for a lesson (persists to IndexedDB via Dexie)
  */
-export function saveNote(
+export async function saveNote(
   courseId: string,
   lessonId: string,
   content: string,
   tags: string[] = [],
   videoTimestamp?: number
-) {
-  const all = getAllProgress()
-  const progress = ensureProgress(courseId)
+): Promise<void> {
+  try {
+    const existing = await db.notes.where({ videoId: lessonId }).first()
 
-  if (!progress.notes[lessonId]) {
-    progress.notes[lessonId] = []
-  }
-
-  const existingNotes = progress.notes[lessonId]
-
-  if (existingNotes.length === 0) {
-    // Create new note
-    const newNote: Note = {
-      id: crypto.randomUUID(),
-      courseId,
-      videoId: lessonId,
-      content,
-      timestamp: videoTimestamp,
-      createdAt: new Date().toISOString(),
-      updatedAt: new Date().toISOString(),
-      tags,
+    if (existing) {
+      await db.notes.update(existing.id, {
+        content,
+        tags,
+        updatedAt: new Date().toISOString(),
+        ...(videoTimestamp !== undefined ? { timestamp: videoTimestamp } : {}),
+      })
+    } else {
+      const newNote: Note = {
+        id: crypto.randomUUID(),
+        courseId,
+        videoId: lessonId,
+        content,
+        timestamp: videoTimestamp,
+        createdAt: new Date().toISOString(),
+        updatedAt: new Date().toISOString(),
+        tags,
+      }
+      await db.notes.add(newNote)
     }
-    existingNotes.push(newNote)
-  } else {
-    // Update the most recent note
-    const latestNote = existingNotes[existingNotes.length - 1]
-    latestNote.content = content
-    latestNote.updatedAt = new Date().toISOString()
-    latestNote.tags = tags
-    if (videoTimestamp !== undefined) {
-      latestNote.timestamp = videoTimestamp
-    }
-  }
 
-  progress.lastAccessedAt = new Date().toISOString()
-  all[courseId] = progress
-  saveAllProgress(all)
-  logStudyAction({ type: 'note_saved', courseId, lessonId, timestamp: new Date().toISOString() })
+    logStudyAction({ type: 'note_saved', courseId, lessonId, timestamp: new Date().toISOString() })
+  } catch (error) {
+    console.error('[Progress] Failed to save note to Dexie:', error)
+  }
 }
 
 /**
- * Get all notes for a lesson
+ * Get all notes for a lesson (reads from IndexedDB)
  */
-export function getNotes(courseId: string, lessonId: string): Note[] {
-  const progress = getProgress(courseId)
-  return progress.notes[lessonId] || []
+export async function getNotes(courseId: string, lessonId: string): Promise<Note[]> {
+  try {
+    return await db.notes.where({ courseId, videoId: lessonId }).toArray()
+  } catch (error) {
+    console.error('[Progress] Failed to load notes from Dexie:', error)
+    return []
+  }
 }
 
 /**
  * Get the latest note content as a string (for backward compatibility)
  */
-export function getNote(courseId: string, lessonId: string): string {
-  const notes = getNotes(courseId, lessonId)
+export async function getNote(courseId: string, lessonId: string): Promise<string> {
+  const notes = await getNotes(courseId, lessonId)
   if (notes.length === 0) return ''
   return notes[notes.length - 1].content
 }
@@ -277,20 +272,13 @@ export function getNote(courseId: string, lessonId: string): string {
 /**
  * Add a new note to a lesson (for multiple notes per lesson)
  */
-export function addNote(
+export async function addNote(
   courseId: string,
   lessonId: string,
   content: string,
   tags: string[] = [],
   videoTimestamp?: number
-): string {
-  const all = getAllProgress()
-  const progress = ensureProgress(courseId)
-
-  if (!progress.notes[lessonId]) {
-    progress.notes[lessonId] = []
-  }
-
+): Promise<string> {
   const newNote: Note = {
     id: crypto.randomUUID(),
     courseId,
@@ -302,11 +290,12 @@ export function addNote(
     tags,
   }
 
-  progress.notes[lessonId].push(newNote)
-  progress.lastAccessedAt = new Date().toISOString()
-  all[courseId] = progress
-  saveAllProgress(all)
-  logStudyAction({ type: 'note_saved', courseId, lessonId, timestamp: new Date().toISOString() })
+  try {
+    await db.notes.add(newNote)
+    logStudyAction({ type: 'note_saved', courseId, lessonId, timestamp: new Date().toISOString() })
+  } catch (error) {
+    console.error('[Progress] Failed to add note to Dexie:', error)
+  }
 
   return newNote.id
 }
@@ -314,15 +303,11 @@ export function addNote(
 /**
  * Delete a specific note by ID
  */
-export function deleteNote(courseId: string, lessonId: string, noteId: string) {
-  const all = getAllProgress()
-  const progress = ensureProgress(courseId)
-
-  if (progress.notes[lessonId]) {
-    progress.notes[lessonId] = progress.notes[lessonId].filter(n => n.id !== noteId)
-    progress.lastAccessedAt = new Date().toISOString()
-    all[courseId] = progress
-    saveAllProgress(all)
+export async function deleteNote(_courseId: string, _lessonId: string, noteId: string): Promise<void> {
+  try {
+    await db.notes.delete(noteId)
+  } catch (error) {
+    console.error('[Progress] Failed to delete note from Dexie:', error)
   }
 }
 
@@ -388,16 +373,13 @@ export function getTotalCompletedLessons(): number {
   return Object.values(all).reduce((sum, p) => sum + p.completedLessons.length, 0)
 }
 
-export function getTotalStudyNotes(): number {
-  const all = getAllProgress()
-  return Object.values(all).reduce((sum, p) => {
-    return (
-      sum +
-      Object.values(p.notes).reduce((noteSum, notes) => {
-        return noteSum + notes.filter(n => n.content.trim().length > 0).length
-      }, 0)
-    )
-  }, 0)
+export async function getTotalStudyNotes(): Promise<number> {
+  try {
+    return await db.notes.count()
+  } catch (error) {
+    console.error('[Progress] Failed to count notes from Dexie:', error)
+    return 0
+  }
 }
 
 export function getRecentActivity(

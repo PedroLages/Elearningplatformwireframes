@@ -44,7 +44,11 @@ export function Overview() {
   const inProgress = getCoursesInProgress(allCourses)
   const completed = getCompletedCourses(allCourses)
   const completedLessons = getTotalCompletedLessons()
-  const studyNotes = getTotalStudyNotes()
+  const [studyNotes, setStudyNotes] = useState(0)
+
+  useEffect(() => {
+    getTotalStudyNotes().then(setStudyNotes)
+  }, [])
   const recentActivity = getRecentActivity(allCourses, 5)
   const lessonSparkline = getLast7DaysLessonCompletions()
   const lessonsChange = getWeeklyChange('lessons')
