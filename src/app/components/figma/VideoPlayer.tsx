@@ -24,7 +24,6 @@ import { Button } from '@/app/components/ui/button'
 import { Slider } from '@/app/components/ui/slider'
 // Radix Popover Portal miscalculates position inside scroll containers — using plain CSS dropdown
 import { cn } from '@/app/components/ui/utils'
-import { Tooltip, TooltipTrigger, TooltipContent } from '@/app/components/ui/tooltip'
 import { VideoShortcutsOverlay } from '@/app/components/figma/VideoShortcutsOverlay'
 
 interface VideoPlayerProps {
@@ -745,8 +744,7 @@ export function VideoPlayer({
       ref={containerRef}
       data-testid="video-player-container"
       className={cn(
-        'relative w-full overflow-hidden rounded-2xl bg-black group focus:outline-none',
-        theaterMode && 'h-full',
+        'relative w-full h-full overflow-hidden rounded-2xl bg-black group focus:outline-none',
         // Hide cursor when playing and controls auto-hide (YouTube-style)
         isPlaying && !showControls && 'cursor-none'
       )}
@@ -758,7 +756,7 @@ export function VideoPlayer({
       role="region"
       aria-label={title || 'Video player'}
     >
-      <div className={cn('relative', theaterMode ? 'h-full' : 'aspect-video')}>
+      <div className="relative h-full">
         <video
           ref={videoRef}
           src={src}
@@ -896,20 +894,15 @@ export function VideoPlayer({
             <div data-testid="player-bottom-controls" className="flex items-center justify-between">
               <div className="flex items-center gap-2">
                 {/* Play/Pause */}
-                <Tooltip>
-                  <TooltipTrigger asChild>
-                    <Button
-                      variant="ghost"
-                      size="icon"
-                      className="size-11 text-white hover:bg-white/20"
-                      onClick={togglePlayPause}
-                      aria-label={isPlaying ? 'Pause' : 'Play'}
-                    >
-                      {isPlaying ? <Pause className="size-5" /> : <Play className="size-5" />}
-                    </Button>
-                  </TooltipTrigger>
-                  {!isFullscreen && <TooltipContent side="top">{isPlaying ? 'Pause (K)' : 'Play (K)'}</TooltipContent>}
-                </Tooltip>
+                <Button
+                  variant="ghost"
+                  size="icon"
+                  className="size-11 text-white hover:bg-white/20"
+                  onClick={togglePlayPause}
+                  aria-label={isPlaying ? 'Pause' : 'Play'}
+                >
+                  {isPlaying ? <Pause className="size-5" /> : <Play className="size-5" />}
+                </Button>
 
                 {/* Skip Back */}
                 <Button
@@ -942,32 +935,27 @@ export function VideoPlayer({
                     changeVolume(e.deltaY < 0 ? 0.05 : -0.05)
                   }}
                 >
-                  <Tooltip>
-                    <TooltipTrigger asChild>
-                      <Button
-                        variant="ghost"
-                        size="icon"
-                        data-testid="volume-button"
-                        className="size-11 text-white hover:bg-white/20"
-                        onClick={() => {
-                          const isMobile = !window.matchMedia('(min-width: 640px)').matches
-                          if (isMobile) {
-                            setMobileVolumeOpen(prev => !prev)
-                          } else {
-                            toggleMute()
-                          }
-                        }}
-                        aria-label={isMuted ? 'Unmute' : 'Mute'}
-                      >
-                        {isMuted || volume === 0 ? (
-                          <VolumeX className="size-5" />
-                        ) : (
-                          <Volume2 className="size-5" />
-                        )}
-                      </Button>
-                    </TooltipTrigger>
-                    {!isFullscreen && <TooltipContent side="top">{isMuted ? 'Unmute (M)' : 'Mute (M)'}</TooltipContent>}
-                  </Tooltip>
+                  <Button
+                    variant="ghost"
+                    size="icon"
+                    data-testid="volume-button"
+                    className="size-11 text-white hover:bg-white/20"
+                    onClick={() => {
+                      const isMobile = !window.matchMedia('(min-width: 640px)').matches
+                      if (isMobile) {
+                        setMobileVolumeOpen(prev => !prev)
+                      } else {
+                        toggleMute()
+                      }
+                    }}
+                    aria-label={isMuted ? 'Unmute' : 'Mute'}
+                  >
+                    {isMuted || volume === 0 ? (
+                      <VolumeX className="size-5" />
+                    ) : (
+                      <Volume2 className="size-5" />
+                    )}
+                  </Button>
 
                   {/* Desktop: inline volume slider */}
                   <div className="group/volume w-20 hidden sm:block">
@@ -1011,25 +999,20 @@ export function VideoPlayer({
               <div className="flex items-center gap-2">
                 {/* Playback Speed */}
                 <div ref={speedMenuWrapperRef} className="relative">
-                  <Tooltip>
-                    <TooltipTrigger asChild>
-                      <Button
-                        ref={speedTriggerRef}
-                        variant="ghost"
-                        size="sm"
-                        data-testid="speed-menu-trigger"
-                        className="h-11 px-3 text-white hover:bg-white/20 text-xs font-medium"
-                        aria-label="Playback speed"
-                        aria-expanded={speedMenuOpen}
-                        aria-haspopup="menu"
-                        onClick={() => setSpeedMenuOpen(prev => !prev)}
-                      >
-                        <Settings className="size-5 mr-1" />
-                        {playbackSpeed}x
-                      </Button>
-                    </TooltipTrigger>
-                    {!isFullscreen && <TooltipContent side="top">Playback speed</TooltipContent>}
-                  </Tooltip>
+                  <Button
+                    ref={speedTriggerRef}
+                    variant="ghost"
+                    size="sm"
+                    data-testid="speed-menu-trigger"
+                    className="h-11 px-3 text-white hover:bg-white/20 text-xs font-medium"
+                    aria-label="Playback speed"
+                    aria-expanded={speedMenuOpen}
+                    aria-haspopup="menu"
+                    onClick={() => setSpeedMenuOpen(prev => !prev)}
+                  >
+                    <Settings className="size-5 mr-1" />
+                    {playbackSpeed}x
+                  </Button>
                   {speedMenuOpen && (
                     <div
                       role="menu"
@@ -1063,113 +1046,84 @@ export function VideoPlayer({
 
                 {/* Bookmark Button */}
                 {onBookmarkAdd && (
-                  <Tooltip>
-                    <TooltipTrigger asChild>
-                      <Button
-                        variant="ghost"
-                        size="icon"
-                        className={cn(
-                          'size-11 text-white hover:bg-white/20 transition-colors duration-150',
-                          justBookmarked && 'bg-yellow-500/30 text-yellow-300 hover:bg-yellow-500/40'
-                        )}
-                        onClick={handleAddBookmark}
-                        aria-label="Add bookmark at current time"
-                      >
-                        {justBookmarked
-                          ? <BookmarkCheck className="size-5" />
-                          : <Bookmark className="size-5" />
-                        }
-                      </Button>
-                    </TooltipTrigger>
-                    {!isFullscreen && <TooltipContent side="top">Add bookmark (B)</TooltipContent>}
-                  </Tooltip>
+                  <Button
+                    variant="ghost"
+                    size="icon"
+                    className={cn(
+                      'size-11 text-white hover:bg-white/20 transition-colors duration-150',
+                      justBookmarked && 'bg-yellow-500/30 text-yellow-300 hover:bg-yellow-500/40'
+                    )}
+                    onClick={handleAddBookmark}
+                    aria-label="Add bookmark at current time"
+                  >
+                    {justBookmarked
+                      ? <BookmarkCheck className="size-5" />
+                      : <Bookmark className="size-5" />
+                    }
+                  </Button>
                 )}
 
                 {/* Captions Toggle - always visible; grayed out when no captions available */}
-                <Tooltip>
-                  <TooltipTrigger asChild>
-                    <Button
-                      variant="ghost"
-                      size="icon"
-                      className={cn(
-                        'size-11 text-white hover:bg-white/20',
-                        captionsEnabled && 'bg-white/20',
-                        (!captions || captions.length === 0) && 'opacity-40 cursor-not-allowed'
-                      )}
-                      onClick={toggleCaptions}
-                      disabled={!captions || captions.length === 0}
-                      aria-label={captionsEnabled ? 'Disable captions' : 'Enable captions'}
-                      aria-pressed={captionsEnabled}
-                    >
-                      <Subtitles className="size-5" />
-                    </Button>
-                  </TooltipTrigger>
-                  {!isFullscreen && (
-                    <TooltipContent side="top">
-                      {captions && captions.length > 0 ? 'Captions (C)' : 'No captions available'}
-                    </TooltipContent>
+                <Button
+                  variant="ghost"
+                  size="icon"
+                  className={cn(
+                    'size-11 text-white hover:bg-white/20',
+                    captionsEnabled && 'bg-white/20',
+                    (!captions || captions.length === 0) && 'opacity-40 cursor-not-allowed'
                   )}
-                </Tooltip>
+                  onClick={toggleCaptions}
+                  disabled={!captions || captions.length === 0}
+                  aria-label={captionsEnabled ? 'Disable captions' : 'Enable captions'}
+                  aria-pressed={captionsEnabled}
+                >
+                  <Subtitles className="size-5" />
+                </Button>
 
                 {/* Theater Mode - desktop only (sidebar already hidden on mobile) */}
                 {onTheaterModeToggle && (
-                  <Tooltip>
-                    <TooltipTrigger asChild>
-                      <Button
-                        variant="ghost"
-                        size="icon"
-                        className={cn(
-                          'hidden xl:flex size-11 text-white hover:bg-white/20',
-                          theaterMode && 'bg-white/20'
-                        )}
-                        onClick={onTheaterModeToggle}
-                        aria-label="Toggle theater mode"
-                      >
-                        <RectangleHorizontal className="size-5" />
-                      </Button>
-                    </TooltipTrigger>
-                    {!isFullscreen && <TooltipContent side="top">Theater mode (T)</TooltipContent>}
-                  </Tooltip>
+                  <Button
+                    variant="ghost"
+                    size="icon"
+                    className={cn(
+                      'hidden xl:flex size-11 text-white hover:bg-white/20',
+                      theaterMode && 'bg-white/20'
+                    )}
+                    onClick={onTheaterModeToggle}
+                    aria-label="Toggle theater mode"
+                  >
+                    <RectangleHorizontal className="size-5" />
+                  </Button>
                 )}
 
                 {/* Picture-in-Picture */}
                 {typeof document !== 'undefined' && 'pictureInPictureEnabled' in document && document.pictureInPictureEnabled && (
-                  <Tooltip>
-                    <TooltipTrigger asChild>
-                      <Button
-                        variant="ghost"
-                        size="icon"
-                        className={cn('size-11 text-white hover:bg-white/20', isPiP && 'bg-white/20')}
-                        onClick={togglePiP}
-                        aria-label={isPiP ? 'Exit Picture-in-Picture' : 'Enter Picture-in-Picture'}
-                        aria-pressed={isPiP}
-                      >
-                        <PictureInPicture2 className="size-5" />
-                      </Button>
-                    </TooltipTrigger>
-                    {!isFullscreen && <TooltipContent side="top">Picture in picture</TooltipContent>}
-                  </Tooltip>
+                  <Button
+                    variant="ghost"
+                    size="icon"
+                    className={cn('size-11 text-white hover:bg-white/20', isPiP && 'bg-white/20')}
+                    onClick={togglePiP}
+                    aria-label={isPiP ? 'Exit Picture-in-Picture' : 'Enter Picture-in-Picture'}
+                    aria-pressed={isPiP}
+                  >
+                    <PictureInPicture2 className="size-5" />
+                  </Button>
                 )}
 
                 {/* Fullscreen */}
-                <Tooltip>
-                  <TooltipTrigger asChild>
-                    <Button
-                      variant="ghost"
-                      size="icon"
-                      className="size-11 text-white hover:bg-white/20"
-                      onClick={toggleFullscreen}
-                      aria-label={isFullscreen ? 'Exit fullscreen' : 'Enter fullscreen'}
-                    >
-                      {isFullscreen ? (
-                        <Minimize className="size-5" />
-                      ) : (
-                        <Maximize className="size-5" />
-                      )}
-                    </Button>
-                  </TooltipTrigger>
-                  {!isFullscreen && <TooltipContent side="top">Fullscreen (F)</TooltipContent>}
-                </Tooltip>
+                <Button
+                  variant="ghost"
+                  size="icon"
+                  className="size-11 text-white hover:bg-white/20"
+                  onClick={toggleFullscreen}
+                  aria-label={isFullscreen ? 'Exit fullscreen' : 'Enter fullscreen'}
+                >
+                  {isFullscreen ? (
+                    <Minimize className="size-5" />
+                  ) : (
+                    <Maximize className="size-5" />
+                  )}
+                </Button>
               </div>
             </div>
           </div>

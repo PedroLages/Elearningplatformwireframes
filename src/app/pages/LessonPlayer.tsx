@@ -299,7 +299,7 @@ export function LessonPlayer() {
               className={cn(
                 'absolute inset-0',
                 isMiniPlayer &&
-                  'fixed bottom-4 right-4 top-auto left-auto w-80 z-50 rounded-2xl overflow-hidden shadow-2xl cursor-pointer'
+                  'fixed bottom-4 right-4 top-auto left-auto w-80 h-[180px] z-50 rounded-2xl overflow-hidden shadow-2xl cursor-pointer'
               )}
               onKeyDown={(e) => {
                 // Enter/Space: scroll back to main video (mini-player mode only)

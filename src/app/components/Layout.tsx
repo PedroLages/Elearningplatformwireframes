@@ -57,7 +57,15 @@ function SidebarContent({
             const Icon = item.icon
 
             return (
-              <li key={item.path}>
+              <li key={item.path} className="relative">
+                {!iconOnly && (
+                  <span
+                    aria-hidden="true"
+                    className={`absolute left-0 top-1/2 -translate-y-1/2 h-5 w-[3px] rounded-r-full transition-all duration-200 ${
+                      isActive ? 'bg-blue-600 dark:bg-blue-400' : 'bg-transparent'
+                    }`}
+                  />
+                )}
                 <Link
                   to={item.path}
                   onClick={onNavigate}
@@ -66,11 +74,13 @@ function SidebarContent({
                   className={`flex items-center rounded-xl transition-colors duration-150 ${
                     iconOnly ? 'justify-center py-3 mx-2' : 'gap-3 px-4 py-3'
                   } ${
-                    isActive ? 'bg-brand text-brand-foreground' : 'text-muted-foreground hover:bg-accent'
+                    isActive
+                      ? 'bg-blue-50 dark:bg-blue-900/20 text-blue-600 dark:text-blue-400 font-medium'
+                      : 'text-muted-foreground hover:bg-accent hover:text-foreground'
                   }`}
                 >
-                  <Icon className="w-5 h-5" aria-hidden="true" />
-                  {!iconOnly && <span className="text-sm font-medium">{item.name}</span>}
+                  <Icon className={`w-5 h-5 ${isActive ? 'stroke-[2.5px]' : ''}`} aria-hidden="true" />
+                  {!iconOnly && <span className="text-sm">{item.name}</span>}
                 </Link>
               </li>
             )
@@ -186,7 +196,7 @@ export function Layout() {
         >
           <SidebarContent
             iconOnly={sidebarCollapsed}
-            onToggleCollapse={() => setSidebarCollapsed(prev => !prev)}
+            onToggleCollapse={() => setSidebarCollapsed((prev: boolean) => !prev)}
           />
         </aside>
       )}

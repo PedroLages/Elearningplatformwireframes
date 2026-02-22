@@ -1,6 +1,5 @@
 import { useCallback } from 'react'
 import type { Chapter } from '@/data/types'
-import { Tooltip, TooltipTrigger, TooltipContent } from '@/app/components/ui/tooltip'
 
 function formatTime(seconds: number): string {
   const hrs = Math.floor(seconds / 3600)
@@ -56,22 +55,16 @@ export function ChapterProgressBar({
           const pct = (chapter.time / duration) * 100
           if (pct <= 0 || pct >= 100) return null
           return (
-            <Tooltip key={idx}>
-              <TooltipTrigger asChild>
-                <button
-                  data-testid="chapter-marker"
-                  className="absolute top-1/2 -translate-y-1/2 -translate-x-1/2 min-w-[44px] min-h-[44px] flex items-center justify-center z-20 cursor-pointer"
-                  style={{ left: `${pct}%` }}
-                  onClick={(e) => handleChapterClick(e, chapter.time)}
-                  aria-label={`Go to chapter: ${chapter.title} at ${formatTime(chapter.time)}`}
-                >
-                  <span className="w-0.5 h-3 bg-white/80" />
-                </button>
-              </TooltipTrigger>
-              <TooltipContent side="top">
-                {formatTime(chapter.time)} — {chapter.title}
-              </TooltipContent>
-            </Tooltip>
+            <button
+              key={idx}
+              data-testid="chapter-marker"
+              className="absolute top-1/2 -translate-y-1/2 -translate-x-1/2 min-w-[44px] min-h-[44px] flex items-center justify-center z-20 cursor-pointer"
+              style={{ left: `${pct}%` }}
+              onClick={(e) => handleChapterClick(e, chapter.time)}
+              aria-label={`Go to chapter: ${chapter.title} at ${formatTime(chapter.time)}`}
+            >
+              <span className="w-0.5 h-3 bg-white/80" />
+            </button>
           )
         })}
 
@@ -79,23 +72,19 @@ export function ChapterProgressBar({
       {bookmarks &&
         duration > 0 &&
         bookmarks.map((bm) => (
-          <Tooltip key={bm.id}>
-            <TooltipTrigger asChild>
-              <button
-                data-testid="bookmark-marker"
-                className="absolute top-1/2 -translate-y-1/2 -translate-x-1/2 min-w-[44px] min-h-[44px] flex items-center justify-center z-20 cursor-pointer group/marker"
-                style={{ left: `${(bm.timestamp / duration) * 100}%` }}
-                onClick={(e) => {
-                  e.stopPropagation()
-                  onBookmarkSeek?.(bm.timestamp)
-                }}
-                aria-label={`Bookmark at ${formatTime(bm.timestamp)}`}
-              >
-                <span className="w-2 h-2 rounded-full bg-yellow-400 border border-yellow-600 group-hover/marker:scale-150 transition-transform" />
-              </button>
-            </TooltipTrigger>
-            <TooltipContent side="top">{formatTime(bm.timestamp)}</TooltipContent>
-          </Tooltip>
+          <button
+            key={bm.id}
+            data-testid="bookmark-marker"
+            className="absolute top-1/2 -translate-y-1/2 -translate-x-1/2 min-w-[44px] min-h-[44px] flex items-center justify-center z-20 cursor-pointer group/marker"
+            style={{ left: `${(bm.timestamp / duration) * 100}%` }}
+            onClick={(e) => {
+              e.stopPropagation()
+              onBookmarkSeek?.(bm.timestamp)
+            }}
+            aria-label={`Bookmark at ${formatTime(bm.timestamp)}`}
+          >
+            <span className="w-2 h-2 rounded-full bg-yellow-400 border border-yellow-600 group-hover/marker:scale-150 transition-transform" />
+          </button>
         ))}
 
       {/* Hidden range input — z-10, covers full hit area for keyboard a11y and click-to-seek */}
