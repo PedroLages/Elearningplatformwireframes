@@ -50,6 +50,8 @@ function migrateNotesFormat(
         migratedNotes[lessonId] = [
           {
             id: crypto.randomUUID(),
+            courseId,
+            videoId: lessonId,
             content: noteText,
             createdAt: progress.startedAt || new Date().toISOString(),
             updatedAt: progress.lastAccessedAt || new Date().toISOString(),
@@ -57,8 +59,12 @@ function migrateNotesFormat(
           },
         ]
       } else if (Array.isArray(noteText)) {
-        // Already migrated
-        migratedNotes[lessonId] = noteText as Note[]
+        // Already migrated — ensure courseId/videoId are set
+        migratedNotes[lessonId] = (noteText as Note[]).map(n => ({
+          ...n,
+          courseId: n.courseId || courseId,
+          videoId: n.videoId || lessonId,
+        }))
       }
     }
 
@@ -225,6 +231,8 @@ export function saveNote(
     // Create new note
     const newNote: Note = {
       id: crypto.randomUUID(),
+      courseId,
+      videoId: lessonId,
       content,
       timestamp: videoTimestamp,
       createdAt: new Date().toISOString(),
@@ -285,6 +293,8 @@ export function addNote(
 
   const newNote: Note = {
     id: crypto.randomUUID(),
+    courseId,
+    videoId: lessonId,
     content,
     timestamp: videoTimestamp,
     createdAt: new Date().toISOString(),

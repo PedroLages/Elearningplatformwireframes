@@ -78,6 +78,8 @@ export interface Course {
 
 export interface Note {
   id: string
+  courseId: string // Parent course ID (for Dexie indexing)
+  videoId: string // Lesson/video ID (unique index — one note doc per video)
   content: string // Markdown text
   timestamp?: number // Video position when created (in seconds)
   createdAt: string // ISO 8601 timestamp
