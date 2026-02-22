@@ -1,4 +1,4 @@
-import { FolderOpen, Video, FileText, Circle, CheckCircle2, PauseCircle } from 'lucide-react'
+import { FolderOpen, Video, FileText, Circle, CheckCircle2, PauseCircle, Play } from 'lucide-react'
 import { Card } from '@/app/components/ui/card'
 import { Badge } from '@/app/components/ui/badge'
 import { cn } from '@/app/components/ui/utils'
@@ -77,6 +77,16 @@ export function ImportedCourseCard({ course, allTags }: ImportedCourseCardProps)
             className="relative h-44 bg-gradient-to-br from-emerald-50 to-teal-100 dark:from-emerald-950/50 dark:to-teal-950/50 flex items-center justify-center"
           >
             <FolderOpen className="size-16 text-emerald-300 dark:text-emerald-600" />
+            {/* Hover play overlay */}
+            <div className="absolute inset-0 bg-black/0 group-hover:bg-black/35 transition-colors duration-300 flex items-center justify-center pointer-events-none">
+              <div className="relative opacity-0 group-hover:opacity-100 scale-75 group-hover:scale-100 transition-all duration-300 ease-out">
+                <div className="absolute -inset-3 rounded-full bg-brand/50 blur-lg" />
+                <span className="play-pulse-ring absolute inset-0 rounded-full bg-white/60" />
+                <div className="relative rounded-full bg-white p-4 shadow-2xl">
+                  <Play className="h-7 w-7 text-brand fill-brand translate-x-0.5" aria-hidden="true" />
+                </div>
+              </div>
+            </div>
             <div className="absolute top-3 right-3">
               <DropdownMenu>
                 <DropdownMenuTrigger asChild>

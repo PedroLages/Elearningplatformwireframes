@@ -179,8 +179,14 @@ export function Overview() {
         <h2 className="text-lg font-semibold mb-4">Continue Studying</h2>
         {inProgress.length > 0 ? (
           <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-            {inProgress.map(course => (
-              <Link key={course.id} to={`/courses/${course.id}`}>
+            {inProgress.map(course => {
+              const firstLesson = course.modules[0]?.lessons[0]?.id
+              const resumeLesson = course.progress.lastWatchedLesson ?? firstLesson
+              const lessonLink = resumeLesson
+                ? `/courses/${course.id}/${resumeLesson}`
+                : `/courses/${course.id}`
+              return (
+              <Link key={course.id} to={lessonLink}>
                 <Card className="group hover:shadow-xl hover:scale-[1.01] transition-all duration-200 cursor-pointer rounded-2xl">
                   <CardContent className="p-4 flex items-center gap-4">
                     {course.coverImage ? (
@@ -208,7 +214,8 @@ export function Overview() {
                   </CardContent>
                 </Card>
               </Link>
-            ))}
+              )
+            })}
           </div>
         ) : (
           <EmptyState

@@ -1,8 +1,9 @@
 import { Link } from 'react-router'
-import { Clock, Video, FileText, BookOpen } from 'lucide-react'
+import { Clock, Video, FileText, BookOpen, Play } from 'lucide-react'
 import { Card } from '@/app/components/ui/card'
 import { Badge } from '@/app/components/ui/badge'
 import { ProgressRing } from './ProgressRing'
+import { getProgress } from '@/lib/progress'
 import type { Course, CourseCategory } from '@/data/types'
 
 const categoryLabels: Record<CourseCategory, string> = {
@@ -28,9 +29,15 @@ interface CourseCardProps {
 }
 
 export function CourseCard({ course, completionPercent }: CourseCardProps) {
+  const firstLesson = course.modules[0]?.lessons[0]?.id
+  const resumeLesson = getProgress(course.id).lastWatchedLesson ?? firstLesson
+  const lessonLink = resumeLesson
+    ? `/courses/${course.id}/${resumeLesson}`
+    : `/courses/${course.id}`
+
   return (
     <Link
-      to={`/courses/${course.id}`}
+      to={lessonLink}
       className="rounded-[24px] focus-visible:ring-2 focus-visible:ring-brand focus-visible:ring-offset-2 outline-none block"
     >
       <Card className="group bg-card border-0 shadow-sm overflow-hidden hover:shadow-xl hover:scale-[1.02] transition-all duration-300 motion-reduce:hover:scale-100 cursor-pointer">
@@ -63,6 +70,20 @@ export function CourseCard({ course, completionPercent }: CourseCardProps) {
           ) : (
             <BookOpen className="h-16 w-16 text-blue-300 dark:text-blue-600" />
           )}
+          {/* Hover play overlay */}
+          <div className="absolute inset-0 bg-black/0 group-hover:bg-black/35 transition-colors duration-300 flex items-center justify-center pointer-events-none">
+            <div className="relative opacity-0 group-hover:opacity-100 scale-75 group-hover:scale-100 transition-all duration-300 ease-out">
+              {/* Blue glow depth layer */}
+              <div className="absolute -inset-3 rounded-full bg-brand/50 blur-lg" />
+              {/* Expanding pulse ring */}
+              <span className="play-pulse-ring absolute inset-0 rounded-full bg-white/60" />
+              {/* White play button */}
+              <div className="relative rounded-full bg-white p-4 shadow-2xl">
+                <Play className="h-7 w-7 text-brand fill-brand translate-x-0.5" aria-hidden="true" />
+              </div>
+            </div>
+          </div>
+
           {completionPercent > 0 && (
             <div className="absolute top-3 right-3">
               <ProgressRing percent={completionPercent} size={40} strokeWidth={3} />

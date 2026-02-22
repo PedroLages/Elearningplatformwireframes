@@ -1,11 +1,11 @@
 import { Link } from 'react-router'
-import { CheckCircle, Clock } from 'lucide-react'
+import { CheckCircle, Clock, Play } from 'lucide-react'
 import { Card, CardContent } from '@/app/components/ui/card'
 import { Progress } from '@/app/components/ui/progress'
 import { Badge } from '@/app/components/ui/badge'
 import { Button } from '@/app/components/ui/button'
 import { Course } from '@/data/types'
-import { getTimeRemaining } from '@/lib/progress'
+import { getTimeRemaining, getProgress } from '@/lib/progress'
 
 interface ProgressCourseCardProps {
   course: Course
@@ -63,6 +63,11 @@ export function ProgressCourseCard({
 }: ProgressCourseCardProps) {
   const timeRemaining = status === 'in-progress' ? getTimeRemaining(course.id, course) : 0
   const totalLessons = course.modules.reduce((sum, m) => sum + m.lessons.length, 0)
+  const firstLesson = course.modules[0]?.lessons[0]?.id
+  const resumeLesson = getProgress(course.id).lastWatchedLesson ?? firstLesson
+  const lessonLink = resumeLesson
+    ? `/courses/${course.id}/${resumeLesson}`
+    : `/courses/${course.id}`
 
   return (
     <Card
@@ -75,7 +80,7 @@ export function ProgressCourseCard({
       }`}
     >
       <CardContent className="p-0 flex flex-col h-full">
-        <div className="relative">
+        <Link to={lessonLink} className="group/img block relative" tabIndex={-1} aria-hidden="true">
           <img
             src={`${course.coverImage}-640w.webp`}
             alt={course.title}
@@ -92,7 +97,17 @@ export function ProgressCourseCard({
               <CheckCircle className="w-4 h-4" aria-hidden="true" />
             </div>
           )}
-        </div>
+          {/* Hover play overlay */}
+          <div className="absolute inset-0 rounded-t-[24px] bg-black/0 group-hover/img:bg-black/35 transition-colors duration-300 flex items-center justify-center pointer-events-none">
+            <div className="relative opacity-0 group-hover/img:opacity-100 scale-75 group-hover/img:scale-100 transition-all duration-300 ease-out">
+              <div className="absolute -inset-3 rounded-full bg-brand/50 blur-lg" />
+              <span className="play-pulse-ring absolute inset-0 rounded-full bg-white/60" />
+              <div className="relative rounded-full bg-white p-4 shadow-2xl">
+                <Play className="h-7 w-7 text-brand fill-brand translate-x-0.5" aria-hidden="true" />
+              </div>
+            </div>
+          </div>
+        </Link>
         <div className="p-5 flex flex-col gap-3 flex-1">
           <div className="flex items-center gap-2 flex-wrap">
             <Badge variant="secondary" className="badge-entrance">
@@ -135,7 +150,7 @@ export function ProgressCourseCard({
                 )}
               </div>
               <Button asChild className="button-press w-full bg-blue-600 hover:bg-blue-700 mt-auto">
-                <Link to={`/courses/${course.id}`}>
+                <Link to={lessonLink}>
                   Resume Learning
                 </Link>
               </Button>
@@ -148,7 +163,7 @@ export function ProgressCourseCard({
                 Completed · {totalLessons} lessons · ~{course.estimatedHours}h
               </p>
               <Button asChild variant="outline" className="button-press w-full mt-auto">
-                <Link to={`/courses/${course.id}`}>
+                <Link to={lessonLink}>
                   Review Course
                 </Link>
               </Button>
@@ -156,16 +171,9 @@ export function ProgressCourseCard({
           )}
 
           {status === 'not-started' && (
-            <>
-              <p className="text-xs text-muted-foreground">
-                {course.modules.length} modules · {totalLessons} lessons · ~{course.estimatedHours}h
-              </p>
-              <Button asChild className="button-press w-full bg-blue-600 hover:bg-blue-700 mt-auto">
-                <Link to={`/courses/${course.id}`}>
-                  Start Course
-                </Link>
-              </Button>
-            </>
+            <p className="text-xs text-muted-foreground mt-auto">
+              {course.modules.length} modules · {totalLessons} lessons · ~{course.estimatedHours}h
+            </p>
           )}
         </div>
       </CardContent>

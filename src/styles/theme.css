@@ -13,7 +13,7 @@
   --secondary: oklch(0.95 0.0058 264.53);
   --secondary-foreground: #030213;
   --muted: #ececf0;
-  --muted-foreground: #696975;
+  --muted-foreground: #64748b;
   --accent: #e9ebef;
   --accent-foreground: #030213;
   --destructive: #d4183d;
@@ -24,6 +24,8 @@
   --switch-background: #cbced4;
   --font-weight-medium: 500;
   --font-weight-normal: 400;
+  --font-body: 'Inter', system-ui, -apple-system, sans-serif;
+  --font-heading: 'Plus Jakarta Sans', system-ui, -apple-system, sans-serif;
   --ring: oklch(0.708 0 0);
   --chart-1: oklch(0.646 0.222 41.116);
   --chart-2: oklch(0.6 0.118 184.704);
@@ -51,6 +53,12 @@
   --warning-foreground: #ffffff;
   --info: #3b82f6;
   --info-foreground: #ffffff;
+  --gold: #f59e0b;
+  --gold-foreground: #ffffff;
+  --gold-muted: #fef3c7;
+  --accent-violet: #7c3aed;
+  --accent-violet-foreground: #ffffff;
+  --accent-violet-muted: #ede9fe;
 }
 
 .dark {
@@ -102,6 +110,12 @@
   --warning-foreground: #ffffff;
   --info: #60a5fa;
   --info-foreground: #000000;
+  --gold: #fbbf24;
+  --gold-foreground: #000000;
+  --gold-muted: #451a03;
+  --accent-violet: #a78bfa;
+  --accent-violet-foreground: #000000;
+  --accent-violet-muted: #2e1065;
 }
 
 @theme inline {
@@ -152,6 +166,14 @@
   --color-warning-foreground: var(--warning-foreground);
   --color-info: var(--info);
   --color-info-foreground: var(--info-foreground);
+  --color-gold: var(--gold);
+  --color-gold-foreground: var(--gold-foreground);
+  --color-gold-muted: var(--gold-muted);
+  --color-accent-violet: var(--accent-violet);
+  --color-accent-violet-foreground: var(--accent-violet-foreground);
+  --color-accent-violet-muted: var(--accent-violet-muted);
+  --font-sans: var(--font-body);
+  --font-display: var(--font-heading);
 }
 
 @layer base {
@@ -161,6 +183,11 @@
 
   body {
     @apply bg-background text-foreground;
+    font-family: var(--font-body);
+  }
+
+  h1, h2, h3, h4, h5, h6 {
+    font-family: var(--font-heading);
   }
 
   /**

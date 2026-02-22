@@ -2,7 +2,8 @@ import { Card, CardContent } from '@/app/components/ui/card'
 import { Badge } from '@/app/components/ui/badge'
 import { Progress } from '@/app/components/ui/progress'
 import { Link } from 'react-router'
-import { BookOpen, PlayCircle, CheckCircle, Clock } from 'lucide-react'
+import { BookOpen, Play, CheckCircle, Clock } from 'lucide-react'
+import { getProgress } from '@/lib/progress'
 import type { Course } from '@/data/types'
 
 interface EnhancedCourseCardProps {
@@ -20,9 +21,14 @@ export function EnhancedCourseCard({ course }: EnhancedCourseCardProps) {
   const totalLessons = course.modules.reduce((sum, m) => sum + m.lessons.length, 0)
   const isInProgress = course.completionPercent && course.completionPercent > 0
   const isCompleted = course.completionPercent === 100
+  const firstLesson = course.modules[0]?.lessons[0]?.id
+  const resumeLesson = getProgress(course.id).lastWatchedLesson ?? firstLesson
+  const lessonLink = resumeLesson
+    ? `/courses/${course.id}/${resumeLesson}`
+    : `/courses/${course.id}`
 
   return (
-    <Link to={`/courses/${course.id}`}>
+    <Link to={lessonLink}>
       <Card className="group hover:shadow-xl hover:scale-[1.02] transition-all duration-300 cursor-pointer overflow-hidden border-2 border-transparent hover:border-blue-200">
         <CardContent className="p-0">
           {/* Cover Image */}
@@ -54,6 +60,17 @@ export function EnhancedCourseCard({ course }: EnhancedCourseCardProps) {
                 Completed
               </div>
             )}
+
+            {/* Hover play overlay */}
+            <div className="absolute inset-0 bg-black/0 group-hover:bg-black/35 transition-colors duration-300 flex items-center justify-center pointer-events-none">
+              <div className="relative opacity-0 group-hover:opacity-100 scale-75 group-hover:scale-100 transition-all duration-300 ease-out">
+                <div className="absolute -inset-3 rounded-full bg-brand/50 blur-lg" />
+                <span className="play-pulse-ring absolute inset-0 rounded-full bg-white/60" />
+                <div className="relative rounded-full bg-white p-4 shadow-2xl">
+                  <Play className="h-7 w-7 text-brand fill-brand translate-x-0.5" aria-hidden="true" />
+                </div>
+              </div>
+            </div>
           </div>
 
           {/* Card Content */}
@@ -67,14 +84,14 @@ export function EnhancedCourseCard({ course }: EnhancedCourseCardProps) {
             </Badge>
 
             {/* Title */}
-            <h3 className="font-semibold text-sm line-clamp-2 mb-2 group-hover:text-brand transition-colors">
+            <h3 className="font-semibold text-base line-clamp-2 mb-2 group-hover:text-brand transition-colors">
               {course.title}
             </h3>
 
             {/* Metadata */}
             <div className="flex items-center justify-between text-xs text-muted-foreground">
               <span className="flex items-center gap-1">
-                <PlayCircle className="w-3 h-3" />
+                <Play className="h-3.5 w-3.5" aria-hidden="true" />
                 {totalLessons} {totalLessons === 1 ? 'lesson' : 'lessons'}
               </span>
 

@@ -827,18 +827,35 @@ export function VideoPlayer({
           )}
 
           {/* Play/Pause Button Center */}
-          {!isBuffering && (
-            <div className="absolute inset-0 flex items-center justify-center">
-              <Button
-                variant="ghost"
-                size="icon"
-                className="size-16 rounded-full bg-black/50 hover:bg-black/70 text-white"
+          {!isBuffering && !isPlaying && (
+            <div className="absolute inset-0 flex items-center justify-center pointer-events-none">
+              <button
+                className="relative pointer-events-auto focus-visible:ring-2 focus-visible:ring-white focus-visible:ring-offset-2 rounded-full outline-none"
                 onClick={togglePlayPause}
                 tabIndex={-1}
                 aria-hidden="true"
               >
-                {isPlaying ? <Pause className="size-8" /> : <Play className="size-8 ml-1" />}
-              </Button>
+                <div className="absolute -inset-3 rounded-full bg-brand/50 blur-lg" />
+                <span className="play-pulse-ring absolute inset-0 rounded-full bg-white/60" />
+                <div className="relative rounded-full bg-white p-5 shadow-2xl">
+                  <Play className="size-9 text-brand fill-brand translate-x-0.5" aria-hidden="true" />
+                </div>
+              </button>
+            </div>
+          )}
+          {!isBuffering && isPlaying && (
+            <div className="absolute inset-0 flex items-center justify-center pointer-events-none">
+              <button
+                className="relative pointer-events-auto focus-visible:ring-2 focus-visible:ring-white focus-visible:ring-offset-2 rounded-full outline-none"
+                onClick={togglePlayPause}
+                tabIndex={-1}
+                aria-hidden="true"
+              >
+                <div className="absolute -inset-3 rounded-full bg-brand/50 blur-lg" />
+                <div className="relative rounded-full bg-white p-5 shadow-2xl">
+                  <Pause className="size-9 text-brand fill-brand" aria-hidden="true" />
+                </div>
+              </button>
             </div>
           )}
 
