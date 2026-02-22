@@ -125,7 +125,7 @@ export function Layout() {
   // Tablet sidebar sheet state with localStorage persistence
   const [sidebarOpen, setSidebarOpen] = useState(() => {
     const saved = localStorage.getItem('eduvi-sidebar-v1')
-    return saved !== null ? JSON.parse(saved) : true
+    return saved !== null ? JSON.parse(saved) : false
   })
 
   // Desktop sidebar collapsed state with localStorage persistence
