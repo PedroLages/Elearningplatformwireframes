@@ -240,12 +240,12 @@ export function LessonPlayer() {
     }
   }
 
-  const handleNoteChange = (value: string) => {
+  const handleNoteChange = useCallback((value: string) => {
     setNoteText(value)
     if (courseId && lessonId) {
       saveNote(courseId, lessonId, value)
     }
-  }
+  }, [courseId, lessonId])
 
   if (!course || !lesson) {
     return (
@@ -263,6 +263,7 @@ export function LessonPlayer() {
       {/* Main Content */}
       <div className="flex-1 min-w-0" data-testid="lesson-content-scroll">
         <Link
+          data-theater-hide
           to={`/courses/${courseId}`}
           className="inline-flex items-center gap-1 text-sm text-muted-foreground hover:text-foreground mb-4 transition-colors"
         >
@@ -283,10 +284,9 @@ export function LessonPlayer() {
             data-testid="video-anchor"
             className={cn(
               'relative mb-5',
-              // Theater mode: video fills viewport from its top offset (~160px / 10.25rem)
-              // to the viewport bottom. Calculated as: 100svh - (header ~6.25rem + main-padding
-              // 1.5rem + back-link ~1.25rem + back-link-mb 1rem) ≈ 10.25rem.
-              isTheaterMode ? 'w-full h-[calc(100svh-10.25rem)]' : 'w-full aspect-video'
+              // Theater mode: back link is hidden via data-theater-hide, so video starts at
+              // header-bottom + main-padding = ~7.75rem from viewport top. Using 8rem for a 4px buffer.
+              isTheaterMode ? 'w-full h-[calc(100svh-8rem)]' : 'w-full aspect-video'
             )}
           >
             {/* Inner: becomes fixed mini-player when scrolled past while playing */}
@@ -384,7 +384,7 @@ export function LessonPlayer() {
               {/* Mobile lesson list button */}
               <Sheet>
                 <SheetTrigger asChild>
-                  <Button variant="outline" size="icon" className="xl:hidden shrink-0">
+                  <Button variant="outline" size="icon" className="lg:hidden shrink-0">
                     <Menu className="h-4 w-4" />
                     <span className="sr-only">Open course content</span>
                   </Button>
@@ -399,6 +399,7 @@ export function LessonPlayer() {
                       courseId={course.id}
                       activeLessonId={lessonId}
                       completedLessons={progress?.completedLessons ?? []}
+                      compact
                     />
                   </div>
                 </SheetContent>
@@ -544,16 +545,17 @@ export function LessonPlayer() {
       </div>
 
       {/* Sidebar Course Structure — hidden in theater mode */}
-      <div data-testid="desktop-sidebar" className={cn('sticky top-0 self-start flex-shrink-0 w-72 bg-card rounded-2xl shadow-sm overflow-hidden flex flex-col max-h-[calc(100svh-3rem)]', isTheaterMode ? 'hidden' : 'hidden xl:flex')}>
+      <div data-testid="desktop-sidebar" className={cn('sticky top-0 self-start flex-shrink-0 w-72 bg-card rounded-2xl shadow-sm overflow-hidden flex flex-col max-h-[calc(100svh-3rem)]', isTheaterMode ? 'hidden' : 'hidden lg:flex')}>
         <div className="px-4 py-3 border-b border-border flex-shrink-0">
           <h3 className="text-sm font-semibold">Course Content</h3>
         </div>
-        <div className="p-3 flex-1 overflow-y-auto [scrollbar-gutter:stable]" data-testid="course-sidebar-accordion">
+        <div className="p-3 flex-1 overflow-y-auto [scrollbar-width:none] [&::-webkit-scrollbar]:hidden" data-testid="course-sidebar-accordion">
           <ModuleAccordion
             modules={course.modules}
             courseId={course.id}
             activeLessonId={lessonId}
             completedLessons={progress?.completedLessons ?? []}
+            compact
           />
         </div>
       </div>

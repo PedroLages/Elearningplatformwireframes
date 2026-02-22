@@ -106,7 +106,7 @@ export function TranscriptPanel({ src, currentTime, onSeek }: TranscriptPanelPro
   }
 
   return (
-    <div className="overflow-y-auto space-y-1 p-2">
+    <div className="overflow-y-auto space-y-1 p-2 [scrollbar-width:none] [&::-webkit-scrollbar]:hidden">
       {cues.map((cue, idx) => {
         const isActive = cue === activeCue
         return (
