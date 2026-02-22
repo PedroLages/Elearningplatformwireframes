@@ -26,3 +26,6 @@ coverage/
 # External tools
 .autoforge/
 supabase/
+
+# Git worktrees
+.worktrees/
