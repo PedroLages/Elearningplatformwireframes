@@ -16,24 +16,26 @@ export function useCourseCardPreview() {
     if (!showPreview) setVideoReady(false)
   }, [showPreview])
 
-  // Track popover dismissal so the click that closes the popover
-  // doesn't also trigger navigation on the underlying card/link.
-  const dismissingRef = useRef(false)
+  // Radix Popover calls onOpenChange(false) on pointerdown (before click).
+  // We register a one-shot capture-phase click listener on document so the
+  // subsequent click is swallowed globally — regardless of which element
+  // the user clicked (same card, different card, sidebar link, etc.).
+  const infoOpenRef = useRef(false)
+  infoOpenRef.current = infoOpen
 
   const handleInfoOpenChange = useCallback((open: boolean) => {
-    if (!open) {
-      dismissingRef.current = true
-      setTimeout(() => { dismissingRef.current = false }, 200)
+    if (!open && infoOpenRef.current) {
+      const swallow = (e: MouseEvent) => {
+        e.stopPropagation()
+        e.preventDefault()
+      }
+      document.addEventListener('click', swallow, { capture: true, once: true })
+      // Safety: remove listener if no click arrives (e.g. Escape key dismiss)
+      setTimeout(() => {
+        document.removeEventListener('click', swallow, { capture: true })
+      }, 300)
     }
     setInfoOpen(open)
-  }, [])
-
-  /** Attach to the navigation wrapper's onClick to swallow dismiss-clicks. */
-  const guardNavigation = useCallback((e: React.MouseEvent) => {
-    if (dismissingRef.current) {
-      e.preventDefault()
-      e.stopPropagation()
-    }
   }, [])
 
   return {
@@ -45,6 +47,5 @@ export function useCourseCardPreview() {
     setPreviewOpen,
     infoOpen,
     setInfoOpen: handleInfoOpenChange,
-    guardNavigation,
   } as const
 }

@@ -66,7 +66,6 @@ export function ImportedCourseCard({ course, allTags }: ImportedCourseCardProps)
   const {
     showPreview, videoReady, setVideoReady, previewHandlers,
     previewOpen, setPreviewOpen, infoOpen, setInfoOpen,
-    guardNavigation,
   } = useCourseCardPreview()
   const [firstVideo, setFirstVideo] = useState<ImportedVideo | null>(null)
   const [searching, setSearching] = useState(false)
@@ -99,9 +98,8 @@ export function ImportedCourseCard({ course, allTags }: ImportedCourseCardProps)
   const config = statusConfig[status]
   const StatusIcon = config.icon
 
-  function handleCardClick(e: React.MouseEvent) {
-    guardNavigation(e)
-    if (!e.defaultPrevented) navigate(`/imported-courses/${course.id}`)
+  function handleCardClick() {
+    navigate(`/imported-courses/${course.id}`)
   }
 
   function handleCardKeyDown(e: React.KeyboardEvent) {

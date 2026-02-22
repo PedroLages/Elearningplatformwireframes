@@ -123,7 +123,6 @@ export function CourseCard({
     setPreviewOpen,
     infoOpen,
     setInfoOpen,
-    guardNavigation,
   } = useCourseCardPreview()
 
   // ── Shared derived state ──────────────────────────────────────────
@@ -627,7 +626,7 @@ export function CourseCard({
     return (
       <>
         <div
-          onClick={(e) => { guardNavigation(e); if (!e.defaultPrevented) navigate(lessonLink) }}
+          onClick={() => navigate(lessonLink)}
           {...previewHandlers}
           className="h-full"
         >
@@ -643,7 +642,6 @@ export function CourseCard({
     <>
       <Link
         to={lessonLink}
-        onClick={guardNavigation}
         {...previewHandlers}
         className="rounded-[24px] focus-visible:ring-2 focus-visible:ring-brand focus-visible:ring-offset-2 outline-none block h-full cursor-default"
       >
