@@ -7,20 +7,24 @@ import {
   VolumeX,
   Maximize,
   Minimize,
+  RectangleHorizontal,
   Settings,
   Subtitles,
   Bookmark,
   SkipBack,
   SkipForward,
   PictureInPicture2,
+  BookmarkCheck,
+  ChevronLeft,
+  ChevronRight,
 } from 'lucide-react'
 import type { CaptionTrack, Chapter } from '@/data/types'
 import { ChapterProgressBar } from './ChapterProgressBar'
-import { AspectRatio } from '@/app/components/ui/aspect-ratio'
 import { Button } from '@/app/components/ui/button'
 import { Slider } from '@/app/components/ui/slider'
 // Radix Popover Portal miscalculates position inside scroll containers — using plain CSS dropdown
 import { cn } from '@/app/components/ui/utils'
+import { Tooltip, TooltipTrigger, TooltipContent } from '@/app/components/ui/tooltip'
 import { VideoShortcutsOverlay } from '@/app/components/figma/VideoShortcutsOverlay'
 
 interface VideoPlayerProps {
@@ -39,6 +43,9 @@ interface VideoPlayerProps {
   onBookmarkAdd?: (timestamp: number) => void
   bookmarks?: Array<{ id: string; timestamp: number; label: string }>
   onBookmarkSeek?: (timestamp: number) => void
+  onPlayStateChange?: (isPlaying: boolean) => void
+  theaterMode?: boolean
+  onTheaterModeToggle?: () => void
 }
 
 const PLAYBACK_SPEEDS = [0.5, 0.75, 1, 1.25, 1.5, 2]
@@ -72,14 +79,31 @@ export function VideoPlayer({
   bookmarks,
   onBookmarkSeek,
   poster,
+  onPlayStateChange,
+  theaterMode,
+  onTheaterModeToggle,
 }: VideoPlayerProps) {
   const videoRef = useRef<HTMLVideoElement>(null)
   const containerRef = useRef<HTMLDivElement>(null)
   const hasRestoredPosition = useRef(false)
   const controlsTimeoutRef = useRef<ReturnType<typeof setTimeout> | undefined>(undefined)
   const announceTimeoutRef = useRef<ReturnType<typeof setTimeout> | undefined>(undefined)
+  const bookmarkFlashRef = useRef<ReturnType<typeof setTimeout> | undefined>(undefined)
+  const bufferingTimeoutRef = useRef<ReturnType<typeof setTimeout> | undefined>(undefined)
+  const seekOverlayTimeoutRef = useRef<ReturnType<typeof setTimeout> | undefined>(undefined)
+  const lastTapRef = useRef<{ time: number; x: number } | null>(null)
   const touchActiveRef = useRef(false)
-  const bookmarkTimeoutRef = useRef<ReturnType<typeof setTimeout> | undefined>(undefined)
+
+  const [justBookmarked, setJustBookmarked] = useState(false)
+  const [isBuffering, setIsBuffering] = useState(false)
+  const [hasError, setHasError] = useState(false)
+  const [bufferedRanges, setBufferedRanges] = useState<Array<{ start: number; end: number }>>([])
+
+  type SeekOverlayState = { direction: 'left' | 'right'; amount: number; id: number } | null
+  const [seekOverlay, setSeekOverlay] = useState<SeekOverlayState>(null)
+
+  const [showRemainingTime, setShowRemainingTime] = useState(false)
+  const [isPiP, setIsPiP] = useState(false)
 
   // Video state
   const [isPlaying, setIsPlaying] = useState(false)
@@ -103,14 +127,8 @@ export function VideoPlayer({
   // Mobile volume popover state
   const [mobileVolumeOpen, setMobileVolumeOpen] = useState(false)
 
-  // Picture-in-Picture state
-  const [isPiP, setIsPiP] = useState(false)
-
   // Video shortcuts overlay state
   const [shortcutsOpen, setShortcutsOpen] = useState(false)
-
-  // Bookmark confirmation flash state
-  const [justBookmarked, setJustBookmarked] = useState(false)
 
   // Refs for speed menu focus trap
   const speedTriggerRef = useRef<HTMLButtonElement>(null)
@@ -124,10 +142,25 @@ export function VideoPlayer({
     return saved === 'true'
   })
 
-  // Reset position flag when source changes
+  // Reset position flag and error state when source changes
   useEffect(() => {
     hasRestoredPosition.current = false
+    setHasError(false)
   }, [src])
+
+  // PiP enter/leave listeners
+  useEffect(() => {
+    const video = videoRef.current
+    if (!video) return
+    const onEnter = () => setIsPiP(true)
+    const onLeave = () => setIsPiP(false)
+    video.addEventListener('enterpictureinpicture', onEnter)
+    video.addEventListener('leavepictureinpicture', onLeave)
+    return () => {
+      video.removeEventListener('enterpictureinpicture', onEnter)
+      video.removeEventListener('leavepictureinpicture', onLeave)
+    }
+  }, [])
 
   // Apply playback speed to video
   useEffect(() => {
@@ -178,10 +211,11 @@ export function VideoPlayer({
   // Handle video ended
   const handleEnded = useCallback(() => {
     setIsPlaying(false)
+    onPlayStateChange?.(false)
     setShowControls(true)
     onEnded?.()
     announce('Video ended')
-  }, [onEnded])
+  }, [onEnded, onPlayStateChange])
 
   // Play/Pause toggle
   const togglePlayPause = useCallback(() => {
@@ -189,14 +223,16 @@ export function VideoPlayer({
       if (isPlaying) {
         videoRef.current.pause()
         setIsPlaying(false)
+        onPlayStateChange?.(false)
         announce('Paused')
       } else {
         videoRef.current.play()
         setIsPlaying(true)
+        onPlayStateChange?.(true)
         announce('Playing')
       }
     }
-  }, [isPlaying])
+  }, [isPlaying, onPlayStateChange])
 
   // Seek forward/backward
   const seek = useCallback((seconds: number) => {
@@ -302,14 +338,46 @@ export function VideoPlayer({
     announceTimeoutRef.current = setTimeout(() => setAnnouncement(''), 3000)
   }, [])
 
+  // Buffering handlers (200ms debounce to avoid flicker on fast seeks)
+  const handleWaiting = useCallback(() => {
+    bufferingTimeoutRef.current = setTimeout(() => setIsBuffering(true), 200)
+  }, [])
+  const handleCanPlay = useCallback(() => {
+    clearTimeout(bufferingTimeoutRef.current)
+    setIsBuffering(false)
+  }, [])
+
+  // Buffered ranges (progress event)
+  const handleProgress = useCallback(() => {
+    if (!videoRef.current) return
+    const ranges: Array<{ start: number; end: number }> = []
+    for (let i = 0; i < videoRef.current.buffered.length; i++) {
+      ranges.push({ start: videoRef.current.buffered.start(i), end: videoRef.current.buffered.end(i) })
+    }
+    setBufferedRanges(ranges)
+  }, [])
+
+  // Error handler
+  const handleVideoError = useCallback(() => setHasError(true), [])
+
+  // Seek with overlay animation
+  const seekWithOverlay = useCallback((seconds: number) => {
+    seek(seconds)
+    const direction = seconds > 0 ? 'right' : 'left'
+    clearTimeout(seekOverlayTimeoutRef.current)
+    setSeekOverlay({ direction, amount: Math.abs(seconds), id: Date.now() })
+    seekOverlayTimeoutRef.current = setTimeout(() => setSeekOverlay(null), 650)
+  }, [seek])
+
   // Add bookmark at current timestamp
   const handleAddBookmark = useCallback(() => {
     if (onBookmarkAdd) {
       onBookmarkAdd(currentTime)
       announce(`Bookmark added at ${formatTime(currentTime)}`)
+      // Brief visual feedback: flash the button yellow for 600ms
+      clearTimeout(bookmarkFlashRef.current)
       setJustBookmarked(true)
-      clearTimeout(bookmarkTimeoutRef.current)
-      bookmarkTimeoutRef.current = setTimeout(() => setJustBookmarked(false), 1500)
+      bookmarkFlashRef.current = setTimeout(() => setJustBookmarked(false), 600)
     }
   }, [onBookmarkAdd, currentTime, announce])
 
@@ -447,15 +515,26 @@ export function VideoPlayer({
     }
   }, [showControls])
 
-  // Keyboard shortcuts
+  // Keyboard shortcuts — YouTube-style: all shortcuts fire globally, regardless of player focus.
+  // Only blocked when: user is typing in an input/textarea/contenteditable, modifier keys held
+  // (Cmd/Ctrl/Alt — reserved for browser shortcuts), or a speed menu is open.
+  // Exception: ArrowUp/Down (volume) still requires player focus to avoid hijacking page scroll.
   useEffect(() => {
     const handleKeyDown = (e: KeyboardEvent) => {
-      // Only handle if video player is in focus or controls are visible
-      if (!containerRef.current?.contains(document.activeElement)) return
-      // Speed menu handles its own keyboard events
+      // Skip all shortcuts when browser modifier keys are held (e.g. Cmd+F, Ctrl+C)
+      if (e.ctrlKey || e.metaKey || e.altKey) return
+
+      // Skip when the user is actively typing
+      const active = document.activeElement as HTMLElement | null
+      const isInputFocused =
+        active !== null &&
+        (['INPUT', 'TEXTAREA', 'SELECT'].includes(active.tagName) || active.isContentEditable)
+      if (isInputFocused) return
+
+      // Speed menu handles its own keyboard events via a separate capture-phase handler
       if (speedMenuOpen) return
 
-      // When shortcuts overlay is open, only Escape works
+      // When shortcuts overlay is open, only Escape closes it
       if (shortcutsOpen) {
         if (e.key === 'Escape') {
           e.preventDefault()
@@ -464,46 +543,62 @@ export function VideoPlayer({
         return
       }
 
+      // ArrowUp/Down: volume control — only when player has focus, to avoid hijacking page scroll
+      const isPlayerFocused = containerRef.current?.contains(document.activeElement)
+
       switch (e.key) {
+        case 't':
+          e.preventDefault()
+          onTheaterModeToggle?.()
+          break
         case ' ':
-          // Don't toggle play/pause if a Slider thumb has focus — let Slider handle Space natively
+          // Don't intercept if a Slider thumb is focused — Slider handles Space natively
           if (document.activeElement?.getAttribute('role') === 'slider') return
           e.preventDefault()
           togglePlayPause()
+          containerRef.current?.focus({ preventScroll: true })
           break
         case 'k':
           e.preventDefault()
           togglePlayPause()
+          containerRef.current?.focus({ preventScroll: true })
           break
         case 'j':
           e.preventDefault()
-          seek(-10)
+          seekWithOverlay(-10)
           announce('Skipped back 10 seconds')
+          containerRef.current?.focus({ preventScroll: true })
           break
         case 'l':
           e.preventDefault()
-          seek(10)
+          seekWithOverlay(10)
           announce('Skipped forward 10 seconds')
+          containerRef.current?.focus({ preventScroll: true })
           break
         case 'ArrowLeft':
           e.preventDefault()
-          seek(-5)
+          seekWithOverlay(-5)
+          containerRef.current?.focus({ preventScroll: true })
           break
         case 'ArrowRight':
           e.preventDefault()
-          seek(5)
+          seekWithOverlay(5)
+          containerRef.current?.focus({ preventScroll: true })
           break
         case 'ArrowUp':
+          if (!isPlayerFocused) break
           e.preventDefault()
           changeVolume(0.05)
           break
         case 'ArrowDown':
+          if (!isPlayerFocused) break
           e.preventDefault()
           changeVolume(-0.05)
           break
         case 'm':
           e.preventDefault()
           toggleMute()
+          containerRef.current?.focus({ preventScroll: true })
           break
         case 'c':
           e.preventDefault()
@@ -533,6 +628,7 @@ export function VideoPlayer({
         case '9':
           e.preventDefault()
           jumpToPercentage(parseInt(e.key) * 10)
+          containerRef.current?.focus({ preventScroll: true })
           break
       }
     }
@@ -541,8 +637,8 @@ export function VideoPlayer({
     return () => window.removeEventListener('keydown', handleKeyDown)
   }, [
     togglePlayPause,
-    seek,
     announce,
+    seekWithOverlay,
     changeVolume,
     toggleMute,
     toggleCaptions,
@@ -552,6 +648,7 @@ export function VideoPlayer({
     speedMenuOpen,
     shortcutsOpen,
     handleAddBookmark,
+    onTheaterModeToggle,
   ])
 
   // Auto-hide controls (mouse interaction — only hides when playing)
@@ -569,8 +666,24 @@ export function VideoPlayer({
     }
   }, [isPlaying, speedMenuOpen, shortcutsOpen])
 
-  // Touch-specific handler: always starts hide timeout (mobile UX — tap to show, auto-hide)
-  const handleTouchShow = useCallback(() => {
+  // Touch-specific handler: always starts hide timeout + double-tap seek detection
+  const handleTouchShow = useCallback((e: React.TouchEvent) => {
+    const touch = e.touches[0]
+    const now = Date.now()
+    const lastTap = lastTapRef.current
+    if (lastTap && (now - lastTap.time) < 300 && containerRef.current) {
+      const rect = containerRef.current.getBoundingClientRect()
+      const relX = (touch.clientX - rect.left) / rect.width
+      if (relX < 0.4) {
+        seekWithOverlay(-10)
+      } else if (relX > 0.6) {
+        seekWithOverlay(10)
+      }
+      lastTapRef.current = null
+      return
+    }
+    lastTapRef.current = { time: now, x: touch.clientX }
+
     // Block synthesized mouse events that follow touchstart (~300ms on mobile)
     touchActiveRef.current = true
     setTimeout(() => { touchActiveRef.current = false }, 500)
@@ -584,13 +697,15 @@ export function VideoPlayer({
         setShowControls(false)
       }, 3000)
     }
-  }, [speedMenuOpen, shortcutsOpen])
+  }, [speedMenuOpen, shortcutsOpen, seekWithOverlay])
 
   useEffect(() => {
     return () => {
-      if (controlsTimeoutRef.current) clearTimeout(controlsTimeoutRef.current)
-      if (announceTimeoutRef.current) clearTimeout(announceTimeoutRef.current)
-      if (bookmarkTimeoutRef.current) clearTimeout(bookmarkTimeoutRef.current)
+      clearTimeout(controlsTimeoutRef.current)
+      clearTimeout(announceTimeoutRef.current)
+      clearTimeout(bookmarkFlashRef.current)
+      clearTimeout(bufferingTimeoutRef.current)
+      clearTimeout(seekOverlayTimeoutRef.current)
     }
   }, [])
 
@@ -629,16 +744,21 @@ export function VideoPlayer({
     <div
       ref={containerRef}
       data-testid="video-player-container"
-      className="relative w-full overflow-hidden rounded-2xl bg-black group focus-visible:outline focus-visible:outline-2 focus-visible:outline-blue-600 focus-visible:outline-offset-2"
+      className={cn(
+        'relative w-full overflow-hidden rounded-2xl bg-black group focus:outline-none',
+        theaterMode && 'h-full',
+        // Hide cursor when playing and controls auto-hide (YouTube-style)
+        isPlaying && !showControls && 'cursor-none'
+      )}
       onMouseDown={() => containerRef.current?.focus()}
       onMouseMove={resetControlsTimeout}
       onMouseLeave={() => isPlaying && !speedMenuOpen && !shortcutsOpen && setShowControls(false)}
-      onTouchStart={handleTouchShow}
+      onTouchStart={(e) => handleTouchShow(e)}
       tabIndex={0}
       role="region"
       aria-label={title || 'Video player'}
     >
-      <AspectRatio ratio={16 / 9}>
+      <div className={cn('relative', theaterMode ? 'h-full' : 'aspect-video')}>
         <video
           ref={videoRef}
           src={src}
@@ -650,6 +770,11 @@ export function VideoPlayer({
           onLoadedMetadata={handleLoadedMetadata}
           onTimeUpdate={handleTimeUpdate}
           onEnded={handleEnded}
+          onWaiting={handleWaiting}
+          onCanPlay={handleCanPlay}
+          onPlaying={handleCanPlay}
+          onProgress={handleProgress}
+          onError={handleVideoError}
           onClick={togglePlayPause}
           crossOrigin="anonymous"
         >
@@ -666,6 +791,21 @@ export function VideoPlayer({
           Your browser does not support the video element.
         </video>
 
+        {/* Error Overlay */}
+        {hasError && (
+          <div className="absolute inset-0 flex flex-col items-center justify-center bg-black/80 text-white gap-3 z-10">
+            <p className="text-sm">An error occurred. Please try again.</p>
+            <Button
+              variant="outline"
+              size="sm"
+              className="text-white border-white/40 hover:bg-white/10"
+              onClick={() => { setHasError(false); videoRef.current?.load() }}
+            >
+              Retry
+            </Button>
+          </div>
+        )}
+
         {/* Custom Controls Overlay */}
         <div
           data-testid="player-controls-overlay"
@@ -673,24 +813,61 @@ export function VideoPlayer({
             'absolute inset-0 bg-gradient-to-t from-black/70 via-transparent to-transparent transition-[opacity,visibility] duration-300 motion-reduce:transition-none',
             showControls ? 'opacity-100' : 'opacity-0 invisible pointer-events-none'
           )}
-          onTouchStart={handleTouchShow}
+          onTouchStart={(e) => handleTouchShow(e)}
+          onClick={(e) => {
+            // Toggle play/pause when clicking the canvas (not buttons, sliders, or controls bar)
+            const target = e.target as HTMLElement
+            if (target.closest('button') || target.closest('input') || target.closest('[data-controls]')) return
+            togglePlayPause()
+          }}
         >
+          {/* Buffering Spinner */}
+          {isBuffering && !hasError && (
+            <div className="absolute inset-0 flex items-center justify-center pointer-events-none">
+              <div className="size-12 rounded-full border-4 border-white/30 border-t-white animate-spin" />
+            </div>
+          )}
+
           {/* Play/Pause Button Center */}
-          <div className="absolute inset-0 flex items-center justify-center">
-            <Button
-              variant="ghost"
-              size="icon"
-              className="size-16 rounded-full bg-black/50 hover:bg-black/70 text-white"
-              onClick={togglePlayPause}
-              tabIndex={-1}
-              aria-hidden="true"
-            >
-              {isPlaying ? <Pause className="size-8" /> : <Play className="size-8 ml-1" />}
-            </Button>
-          </div>
+          {!isBuffering && (
+            <div className="absolute inset-0 flex items-center justify-center">
+              <Button
+                variant="ghost"
+                size="icon"
+                className="size-16 rounded-full bg-black/50 hover:bg-black/70 text-white"
+                onClick={togglePlayPause}
+                tabIndex={-1}
+                aria-hidden="true"
+              >
+                {isPlaying ? <Pause className="size-8" /> : <Play className="size-8 ml-1" />}
+              </Button>
+            </div>
+          )}
+
+          {/* Seek Overlay */}
+          {seekOverlay && (
+            <>
+              {seekOverlay.direction === 'left' && (
+                <div key={seekOverlay.id} className="absolute left-0 inset-y-0 w-1/3 flex flex-col items-center justify-center pointer-events-none animate-seek-flash">
+                  <div className="rounded-full bg-white/20 p-4 flex flex-col items-center gap-1">
+                    <ChevronLeft className="size-6 text-white" />
+                    <span className="text-white text-xs font-medium">-{seekOverlay.amount}s</span>
+                  </div>
+                </div>
+              )}
+              {seekOverlay.direction === 'right' && (
+                <div key={seekOverlay.id} className="absolute right-0 inset-y-0 w-1/3 flex flex-col items-center justify-center pointer-events-none animate-seek-flash">
+                  <div className="rounded-full bg-white/20 p-4 flex flex-col items-center gap-1">
+                    <ChevronRight className="size-6 text-white" />
+                    <span className="text-white text-xs font-medium">+{seekOverlay.amount}s</span>
+                  </div>
+                </div>
+              )}
+            </>
+          )}
 
           {/* Bottom Controls */}
-          <div className="absolute bottom-0 left-0 right-0 p-4 space-y-2">
+          <div data-controls className="absolute bottom-0 left-0 right-0 p-4 space-y-2">
             {/* Progress Bar */}
             <div className="flex items-center gap-2">
               <span data-testid="current-time" className="text-white text-xs font-medium min-w-[45px]">
@@ -704,24 +881,35 @@ export function VideoPlayer({
                 onSeek={handleProgressChange}
                 onBookmarkSeek={onBookmarkSeek}
               />
-              <span className="text-white text-xs font-medium min-w-[45px] text-right">
-                {formatTime(duration)}
-              </span>
+              <button
+                className="text-white text-xs font-medium min-w-[45px] text-right hover:text-white/80 transition-colors cursor-pointer"
+                onClick={() => setShowRemainingTime(prev => !prev)}
+                aria-label="Toggle remaining time display"
+              >
+                {showRemainingTime
+                  ? `-${formatTime(Math.max(0, duration - currentTime))}`
+                  : formatTime(duration)}
+              </button>
             </div>
 
             {/* Control Buttons */}
             <div data-testid="player-bottom-controls" className="flex items-center justify-between">
               <div className="flex items-center gap-2">
                 {/* Play/Pause */}
-                <Button
-                  variant="ghost"
-                  size="icon"
-                  className="size-11 text-white hover:bg-white/20"
-                  onClick={togglePlayPause}
-                  aria-label={isPlaying ? 'Pause' : 'Play'}
-                >
-                  {isPlaying ? <Pause className="size-5" /> : <Play className="size-5" />}
-                </Button>
+                <Tooltip>
+                  <TooltipTrigger asChild>
+                    <Button
+                      variant="ghost"
+                      size="icon"
+                      className="size-11 text-white hover:bg-white/20"
+                      onClick={togglePlayPause}
+                      aria-label={isPlaying ? 'Pause' : 'Play'}
+                    >
+                      {isPlaying ? <Pause className="size-5" /> : <Play className="size-5" />}
+                    </Button>
+                  </TooltipTrigger>
+                  <TooltipContent side="top">{isPlaying ? 'Pause (K)' : 'Play (K)'}</TooltipContent>
+                </Tooltip>
 
                 {/* Skip Back */}
                 <Button
@@ -746,41 +934,58 @@ export function VideoPlayer({
                 </Button>
 
                 {/* Volume */}
-                <div ref={mobileVolumeWrapperRef} className="relative flex items-center gap-2">
-                  <Button
-                    variant="ghost"
-                    size="icon"
-                    data-testid="volume-button"
-                    className="size-11 text-white hover:bg-white/20"
-                    onClick={() => {
-                      const isMobile = !window.matchMedia('(min-width: 640px)').matches
-                      if (isMobile) {
-                        setMobileVolumeOpen(prev => !prev)
-                      } else {
-                        toggleMute()
-                      }
-                    }}
-                    aria-label={isMuted ? 'Unmute' : 'Mute'}
-                  >
-                    {isMuted || volume === 0 ? (
-                      <VolumeX className="size-5" />
-                    ) : (
-                      <Volume2 className="size-5" />
-                    )}
-                  </Button>
+                <div
+                  ref={mobileVolumeWrapperRef}
+                  className="relative flex items-center gap-2"
+                  onWheel={(e) => {
+                    e.preventDefault()
+                    changeVolume(e.deltaY < 0 ? 0.05 : -0.05)
+                  }}
+                >
+                  <Tooltip>
+                    <TooltipTrigger asChild>
+                      <Button
+                        variant="ghost"
+                        size="icon"
+                        data-testid="volume-button"
+                        className="size-11 text-white hover:bg-white/20"
+                        onClick={() => {
+                          const isMobile = !window.matchMedia('(min-width: 640px)').matches
+                          if (isMobile) {
+                            setMobileVolumeOpen(prev => !prev)
+                          } else {
+                            toggleMute()
+                          }
+                        }}
+                        aria-label={isMuted ? 'Unmute' : 'Mute'}
+                      >
+                        {isMuted || volume === 0 ? (
+                          <VolumeX className="size-5" />
+                        ) : (
+                          <Volume2 className="size-5" />
+                        )}
+                      </Button>
+                    </TooltipTrigger>
+                    <TooltipContent side="top">{isMuted ? 'Unmute (M)' : 'Mute (M)'}</TooltipContent>
+                  </Tooltip>
 
                   {/* Desktop: inline volume slider */}
-                  <Slider
-                    value={[isMuted ? 0 : volume * 100]}
-                    onValueChange={handleVolumeChange}
-                    max={100}
-                    step={1}
-                    className="w-20 hidden sm:block"
-                    aria-label="Volume"
-                    trackClassName="bg-white/30"
-                    rangeClassName="bg-white"
-                    thumbClassName="bg-white border-white"
-                  />
+                  <div className="group/volume w-20 hidden sm:block">
+                    <Slider
+                      value={[isMuted ? 0 : volume * 100]}
+                      onValueChange={handleVolumeChange}
+                      max={100}
+                      step={1}
+                      aria-label="Volume"
+                      className={cn(
+                        '[&_[data-slot=slider-track]]:!h-1 [&_[data-slot=slider-track]]:bg-white/30 [&_[data-slot=slider-track]]:transition-[height] [&_[data-slot=slider-track]]:duration-150',
+                        'group-hover/volume:[&_[data-slot=slider-track]]:!h-3',
+                        '[&_[data-slot=slider-range]]:bg-white',
+                        '[&_[data-slot=slider-thumb]]:bg-white [&_[data-slot=slider-thumb]]:border-white/50 [&_[data-slot=slider-thumb]]:opacity-0 [&_[data-slot=slider-thumb]]:scale-0 [&_[data-slot=slider-thumb]]:transition-[opacity,transform] [&_[data-slot=slider-thumb]]:duration-150',
+                        'group-hover/volume:[&_[data-slot=slider-thumb]]:opacity-100 group-hover/volume:[&_[data-slot=slider-thumb]]:scale-100',
+                      )}
+                    />
+                  </div>
 
                   {/* Mobile: volume popover */}
                   {mobileVolumeOpen && (
@@ -806,20 +1011,25 @@ export function VideoPlayer({
               <div className="flex items-center gap-2">
                 {/* Playback Speed */}
                 <div ref={speedMenuWrapperRef} className="relative">
-                  <Button
-                    ref={speedTriggerRef}
-                    variant="ghost"
-                    size="sm"
-                    data-testid="speed-menu-trigger"
-                    className="h-11 px-3 text-white hover:bg-white/20 text-xs font-medium"
-                    aria-label="Playback speed"
-                    aria-expanded={speedMenuOpen}
-                    aria-haspopup="menu"
-                    onClick={() => setSpeedMenuOpen(prev => !prev)}
-                  >
-                    <Settings className="size-5 mr-1" />
-                    {playbackSpeed}x
-                  </Button>
+                  <Tooltip>
+                    <TooltipTrigger asChild>
+                      <Button
+                        ref={speedTriggerRef}
+                        variant="ghost"
+                        size="sm"
+                        data-testid="speed-menu-trigger"
+                        className="h-11 px-3 text-white hover:bg-white/20 text-xs font-medium"
+                        aria-label="Playback speed"
+                        aria-expanded={speedMenuOpen}
+                        aria-haspopup="menu"
+                        onClick={() => setSpeedMenuOpen(prev => !prev)}
+                      >
+                        <Settings className="size-5 mr-1" />
+                        {playbackSpeed}x
+                      </Button>
+                    </TooltipTrigger>
+                    <TooltipContent side="top">Playback speed</TooltipContent>
+                  </Tooltip>
                   {speedMenuOpen && (
                     <div
                       role="menu"
@@ -851,81 +1061,120 @@ export function VideoPlayer({
                   )}
                 </div>
 
-                {/* Picture-in-Picture — only if browser supports it */}
-                {typeof document !== 'undefined' && document.pictureInPictureEnabled && (
-                  <Button
-                    variant="ghost"
-                    size="icon"
-                    className={cn(
-                      'size-11 text-white hover:bg-white/20',
-                      isPiP && 'bg-white/20'
-                    )}
-                    onClick={togglePiP}
-                    aria-label={isPiP ? 'Exit Picture-in-Picture' : 'Enter Picture-in-Picture'}
-                    aria-pressed={isPiP}
-                  >
-                    <PictureInPicture2 className="size-5" />
-                  </Button>
-                )}
-
                 {/* Bookmark Button */}
                 {onBookmarkAdd && (
-                  <Button
-                    variant="ghost"
-                    size="icon"
-                    className={cn(
-                      'size-11 hover:bg-white/20 transition-colors duration-200',
-                      justBookmarked ? 'text-yellow-400' : 'text-white'
-                    )}
-                    onClick={handleAddBookmark}
-                    aria-label="Add bookmark at current time"
-                  >
-                    <Bookmark
-                      className={cn(
-                        'size-5 transition-all duration-300 motion-reduce:transition-none',
-                        justBookmarked && 'fill-yellow-400 scale-125'
-                      )}
-                    />
-                  </Button>
+                  <Tooltip>
+                    <TooltipTrigger asChild>
+                      <Button
+                        variant="ghost"
+                        size="icon"
+                        className={cn(
+                          'size-11 text-white hover:bg-white/20 transition-colors duration-150',
+                          justBookmarked && 'bg-yellow-500/30 text-yellow-300 hover:bg-yellow-500/40'
+                        )}
+                        onClick={handleAddBookmark}
+                        aria-label="Add bookmark at current time"
+                      >
+                        {justBookmarked
+                          ? <BookmarkCheck className="size-5" />
+                          : <Bookmark className="size-5" />
+                        }
+                      </Button>
+                    </TooltipTrigger>
+                    <TooltipContent side="top">Add bookmark (B)</TooltipContent>
+                  </Tooltip>
                 )}
 
-                {/* Captions Toggle - Only show if captions are available */}
-                {captions && captions.length > 0 && (
-                  <Button
-                    variant="ghost"
-                    size="icon"
-                    className={cn(
-                      'size-11 text-white hover:bg-white/20',
-                      captionsEnabled && 'bg-white/20'
-                    )}
-                    onClick={toggleCaptions}
-                    aria-label={captionsEnabled ? 'Disable captions' : 'Enable captions'}
-                  >
-                    <Subtitles className="size-5" />
-                  </Button>
+                {/* Captions Toggle - always visible; grayed out when no captions available */}
+                <Tooltip>
+                  <TooltipTrigger asChild>
+                    <Button
+                      variant="ghost"
+                      size="icon"
+                      className={cn(
+                        'size-11 text-white hover:bg-white/20',
+                        captionsEnabled && 'bg-white/20',
+                        (!captions || captions.length === 0) && 'opacity-40 cursor-not-allowed'
+                      )}
+                      onClick={toggleCaptions}
+                      disabled={!captions || captions.length === 0}
+                      aria-label={captionsEnabled ? 'Disable captions' : 'Enable captions'}
+                      aria-pressed={captionsEnabled}
+                    >
+                      <Subtitles className="size-5" />
+                    </Button>
+                  </TooltipTrigger>
+                  <TooltipContent side="top">
+                    {captions && captions.length > 0 ? 'Captions (C)' : 'No captions available'}
+                  </TooltipContent>
+                </Tooltip>
+
+                {/* Theater Mode - desktop only (sidebar already hidden on mobile) */}
+                {onTheaterModeToggle && (
+                  <Tooltip>
+                    <TooltipTrigger asChild>
+                      <Button
+                        variant="ghost"
+                        size="icon"
+                        className={cn(
+                          'hidden xl:flex size-11 text-white hover:bg-white/20',
+                          theaterMode && 'bg-white/20'
+                        )}
+                        onClick={onTheaterModeToggle}
+                        aria-label="Toggle theater mode"
+                      >
+                        <RectangleHorizontal className="size-5" />
+                      </Button>
+                    </TooltipTrigger>
+                    <TooltipContent side="top">Theater mode (T)</TooltipContent>
+                  </Tooltip>
+                )}
+
+                {/* Picture-in-Picture */}
+                {typeof document !== 'undefined' && 'pictureInPictureEnabled' in document && document.pictureInPictureEnabled && (
+                  <Tooltip>
+                    <TooltipTrigger asChild>
+                      <Button
+                        variant="ghost"
+                        size="icon"
+                        className={cn('size-11 text-white hover:bg-white/20', isPiP && 'bg-white/20')}
+                        onClick={togglePiP}
+                        aria-label={isPiP ? 'Exit Picture-in-Picture' : 'Enter Picture-in-Picture'}
+                        aria-pressed={isPiP}
+                      >
+                        <PictureInPicture2 className="size-5" />
+                      </Button>
+                    </TooltipTrigger>
+                    <TooltipContent side="top">Picture in picture</TooltipContent>
+                  </Tooltip>
                 )}
 
                 {/* Fullscreen */}
-                <Button
-                  variant="ghost"
-                  size="icon"
-                  className="size-11 text-white hover:bg-white/20"
-                  onClick={toggleFullscreen}
-                  aria-label={isFullscreen ? 'Exit fullscreen' : 'Enter fullscreen'}
-                >
-                  {isFullscreen ? (
-                    <Minimize className="size-5" />
-                  ) : (
-                    <Maximize className="size-5" />
-                  )}
-                </Button>
+                <Tooltip>
+                  <TooltipTrigger asChild>
+                    <Button
+                      variant="ghost"
+                      size="icon"
+                      className="size-11 text-white hover:bg-white/20"
+                      onClick={toggleFullscreen}
+                      aria-label={isFullscreen ? 'Exit fullscreen' : 'Enter fullscreen'}
+                    >
+                      {isFullscreen ? (
+                        <Minimize className="size-5" />
+                      ) : (
+                        <Maximize className="size-5" />
+                      )}
+                    </Button>
+                  </TooltipTrigger>
+                  <TooltipContent side="top">{isFullscreen ? 'Exit fullscreen (F)' : 'Fullscreen (F)'}</TooltipContent>
+                </Tooltip>
               </div>
             </div>
           </div>
         </div>
         {/* Video Shortcuts Overlay */}
         <VideoShortcutsOverlay open={shortcutsOpen} onClose={() => setShortcutsOpen(false)} />
-      </AspectRatio>
+      </div>
 
       {/* ARIA Live Region for Announcements */}
       <div role="status" aria-live="polite" aria-atomic="true" className="sr-only">

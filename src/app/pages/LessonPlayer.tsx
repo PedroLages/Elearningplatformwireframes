@@ -5,6 +5,8 @@ import { Button } from '../components/ui/button'
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '../components/ui/tabs'
 import { Sheet, SheetContent, SheetHeader, SheetTitle, SheetTrigger } from '../components/ui/sheet'
 import { VideoPlayer } from '../components/figma/VideoPlayer'
+import { cn } from '../components/ui/utils'
+import { useIntersectionObserver } from '@/app/hooks/useIntersectionObserver'
 import { TranscriptPanel } from '../components/figma/TranscriptPanel'
 import { PdfViewer } from '../components/figma/PdfViewer'
 import { ModuleAccordion } from '../components/figma/ModuleAccordion'
@@ -66,6 +68,41 @@ export function LessonPlayer() {
   // Auto-advance countdown state
   const [showAutoAdvance, setShowAutoAdvance] = useState(false)
 
+  // Mini-player + theater mode state
+  const [isTheaterMode, setIsTheaterMode] = useState(false)
+  const [isVideoPlaying, setIsVideoPlaying] = useState(false)
+  const videoWrapperRef = useRef<HTMLDivElement>(null)
+  const intersectionOptions = useMemo(() => ({ threshold: 0.3 }), [])
+  const isVideoIntersecting = useIntersectionObserver(videoWrapperRef, intersectionOptions)
+  const isMiniPlayer = !isVideoIntersecting && isVideoPlaying
+
+  const handleTheaterModeToggle = useCallback(() => setIsTheaterMode((prev) => !prev), [])
+
+  // Sync theater mode to <html> data attribute so Layout can hide the left sidebar via CSS
+  useEffect(() => {
+    if (isTheaterMode) {
+      document.documentElement.setAttribute('data-theater-mode', 'true')
+    } else {
+      document.documentElement.removeAttribute('data-theater-mode')
+    }
+    return () => document.documentElement.removeAttribute('data-theater-mode')
+  }, [isTheaterMode])
+
+  // Scroll to top when entering theater mode so the full video is visible without scrolling
+  useEffect(() => {
+    if (isTheaterMode) {
+      document.getElementById('main-content')?.scrollTo({ top: 0, behavior: 'instant' })
+    }
+  }, [isTheaterMode])
+
+  const handleMiniPlayerClick = useCallback(() => {
+    const reduceMotion = window.matchMedia('(prefers-reduced-motion: reduce)').matches
+    videoWrapperRef.current?.scrollIntoView({
+      behavior: reduceMotion ? 'instant' : 'smooth',
+      block: 'start',
+    })
+  }, [])
+
   // Reset auto-advance and completion state when lesson changes
   useEffect(() => {
     setShowAutoAdvance(false)
@@ -82,9 +119,15 @@ export function LessonPlayer() {
     }
   }, [courseId, lessonId])
 
-  // Focus management for accessibility
+  // Scroll to top when navigating to a new lesson
   useEffect(() => {
-    titleRef.current?.focus()
+    document.getElementById('main-content')?.scrollTo({ top: 0, behavior: 'instant' })
+  }, [lessonId])
+
+  // Focus management for accessibility
+  // preventScroll: true so focus doesn't undo the scroll-to-top effect above
+  useEffect(() => {
+    titleRef.current?.focus({ preventScroll: true })
   }, [lessonId])
 
   // Resume toast — show "Resuming from MM:SS" when restoring a saved position
@@ -198,12 +241,12 @@ export function LessonPlayer() {
     }
   }
 
-  const handleNoteChange = (value: string) => {
+  const handleNoteChange = useCallback((value: string) => {
     setNoteText(value)
     if (courseId && lessonId) {
       saveNote(courseId, lessonId, value)
     }
-  }
+  }, [courseId, lessonId])
 
   if (!course || !lesson) {
     return (
@@ -217,10 +260,11 @@ export function LessonPlayer() {
   }
 
   return (
-    <div className="flex gap-6 h-full">
+    <div className="flex gap-6">
       {/* Main Content */}
-      <div className="flex-1 min-h-0 overflow-y-auto">
+      <div className="flex-1 min-w-0" data-testid="lesson-content-scroll">
         <Link
+          data-theater-hide
           to={`/courses/${courseId}`}
           className="inline-flex items-center gap-1 text-sm text-muted-foreground hover:text-foreground mb-4 transition-colors"
         >
@@ -228,27 +272,77 @@ export function LessonPlayer() {
           {course.shortTitle}
         </Link>
 
-        {/* Video Player — poster prop deferred until Resource type supports it */}
+        {/* Video Player */}
         {videoResource && (
-          <div className="mb-5">
-            <VideoPlayer
-              src={getResourceUrl(videoResource)}
-              title={lesson.title}
-              initialPosition={
-                progress?.lastWatchedLesson === lessonId ? progress?.lastVideoPosition : undefined
-              }
-              seekToTime={seekToTime}
-              courseId={courseId}
-              lessonId={lessonId}
-              chapters={videoChapters}
-              onTimeUpdate={handleTimeUpdate}
-              onEnded={handleVideoEnded}
-              onSeekComplete={handleSeekComplete}
-              onBookmarkAdd={handleBookmarkAdd}
-              bookmarks={bookmarks}
-              onBookmarkSeek={handleVideoSeek}
-              captions={videoResource.metadata?.captions}
-            />
+          /*
+           * Outer anchor: always in normal flow at original position.
+           * videoWrapperRef points here — watched by IntersectionObserver.
+           * Preserves layout space (prevents layout shift) when inner div
+           * becomes position:fixed in mini-player mode.
+           */
+          <div
+            ref={videoWrapperRef}
+            data-testid="video-anchor"
+            className={cn(
+              'relative mb-5',
+              // Theater mode: back link is hidden via data-theater-hide, so video starts at
+              // header-bottom + main-padding = ~7.75rem from viewport top. Using 8rem for a 4px buffer.
+              isTheaterMode ? 'w-full h-[calc(100svh-8rem)]' : 'w-full aspect-video'
+            )}
+          >
+            {/* Inner: becomes fixed mini-player when scrolled past while playing */}
+            <div
+              data-testid="mini-player"
+              tabIndex={isMiniPlayer ? 0 : -1}
+              role={isMiniPlayer ? 'button' : undefined}
+              aria-label={isMiniPlayer ? 'Mini player — click to return to main video' : undefined}
+              className={cn(
+                'absolute inset-0',
+                isMiniPlayer &&
+                  'fixed bottom-4 right-4 top-auto left-auto w-80 z-50 rounded-2xl overflow-hidden shadow-2xl cursor-pointer'
+              )}
+              onKeyDown={(e) => {
+                // Enter/Space: scroll back to main video (mini-player mode only)
+                if (isMiniPlayer && (e.key === 'Enter' || e.key === ' ')) {
+                  e.preventDefault()
+                  handleMiniPlayerClick()
+                }
+              }}
+            >
+              {/* Transparent overlay intercepts pointer events in mini-player mode,
+                  preventing clicks from reaching the <video> element (which would toggle play/pause). */}
+              {isMiniPlayer && (
+                <div
+                  className="absolute inset-0 z-10 cursor-pointer"
+                  aria-hidden="true"
+                  onClick={(e) => {
+                    e.stopPropagation()
+                    handleMiniPlayerClick()
+                  }}
+                />
+              )}
+              <VideoPlayer
+                src={getResourceUrl(videoResource)}
+                title={lesson.title}
+                initialPosition={
+                  progress?.lastWatchedLesson === lessonId ? progress?.lastVideoPosition : undefined
+                }
+                seekToTime={seekToTime}
+                courseId={courseId}
+                lessonId={lessonId}
+                chapters={videoChapters}
+                onTimeUpdate={handleTimeUpdate}
+                onEnded={handleVideoEnded}
+                onSeekComplete={handleSeekComplete}
+                onBookmarkAdd={handleBookmarkAdd}
+                bookmarks={bookmarks}
+                onBookmarkSeek={handleVideoSeek}
+                captions={videoResource.metadata?.captions}
+                onPlayStateChange={setIsVideoPlaying}
+                theaterMode={isTheaterMode}
+                onTheaterModeToggle={handleTheaterModeToggle}
+              />
+            </div>
           </div>
         )}
 
@@ -291,7 +385,7 @@ export function LessonPlayer() {
               {/* Mobile lesson list button */}
               <Sheet>
                 <SheetTrigger asChild>
-                  <Button variant="outline" size="icon" className="xl:hidden shrink-0">
+                  <Button variant="outline" size="icon" className="lg:hidden shrink-0">
                     <Menu className="h-4 w-4" />
                     <span className="sr-only">Open course content</span>
                   </Button>
@@ -306,6 +400,7 @@ export function LessonPlayer() {
                       courseId={course.id}
                       activeLessonId={lessonId}
                       completedLessons={progress?.completedLessons ?? []}
+                      compact
                     />
                   </div>
                 </SheetContent>
@@ -450,17 +545,18 @@ export function LessonPlayer() {
         </div>
       </div>
 
-      {/* Sidebar Course Structure */}
-      <div className="hidden xl:block w-72 bg-card rounded-2xl shadow-sm overflow-hidden">
-        <div className="px-4 py-3 border-b border-border">
+      {/* Sidebar Course Structure — hidden in theater mode */}
+      <div data-testid="desktop-sidebar" className={cn('sticky top-0 self-start flex-shrink-0 w-72 bg-card rounded-2xl shadow-sm overflow-hidden flex flex-col max-h-[calc(100svh-3rem)]', isTheaterMode ? 'hidden' : 'hidden lg:flex')}>
+        <div className="px-4 py-3 border-b border-border flex-shrink-0">
           <h3 className="text-sm font-semibold">Course Content</h3>
         </div>
-        <div className="p-3 overflow-y-auto h-[calc(100%-49px)] [scrollbar-gutter:stable]" data-testid="course-sidebar-accordion">
+        <div className="p-3 flex-1 overflow-y-auto [scrollbar-width:none] [&::-webkit-scrollbar]:hidden" data-testid="course-sidebar-accordion">
           <ModuleAccordion
             modules={course.modules}
             courseId={course.id}
             activeLessonId={lessonId}
             completedLessons={progress?.completedLessons ?? []}
+            compact
           />
         </div>
       </div>

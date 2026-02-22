@@ -42,7 +42,7 @@ export function ChapterProgressBar({
   return (
     <div className="relative flex-1 py-3 -my-3 group/progress">
       {/* Visual track — pointer-events-none so range input below handles seeking */}
-      <div className="relative w-full h-1 group-hover/progress:h-1.5 transition-[height] duration-150 bg-white/30 rounded-full pointer-events-none">
+      <div className="relative w-full h-1 group-hover/progress:h-3 transition-[height] duration-150 bg-white/30 rounded-full pointer-events-none">
         {/* Fill bar */}
         <div
           className="absolute inset-y-0 left-0 bg-white rounded-full"
