@@ -2,17 +2,51 @@ import { useEffect, useCallback, useRef, useState } from 'react'
 import { useEditor, EditorContent } from '@tiptap/react'
 import StarterKit from '@tiptap/starter-kit'
 import Placeholder from '@tiptap/extension-placeholder'
+import Underline from '@tiptap/extension-underline'
+import Highlight from '@tiptap/extension-highlight'
+import TaskList from '@tiptap/extension-task-list'
+import TaskItem from '@tiptap/extension-task-item'
+import Typography from '@tiptap/extension-typography'
+import CharacterCount from '@tiptap/extension-character-count'
+import TextAlign from '@tiptap/extension-text-align'
+import { TextStyle, Color } from '@tiptap/extension-text-style'
 import {
   Bold,
   Italic,
+  Underline as UnderlineIcon,
+  Highlighter,
   List,
   ListOrdered,
+  ListTodo,
   Code,
   Heading2,
   Link2,
+  AlignLeft,
+  AlignCenter,
+  AlignRight,
+  ChevronDown,
   Clock,
 } from 'lucide-react'
 import { Button } from '@/app/components/ui/button'
+import { Separator } from '@/app/components/ui/separator'
+import {
+  Dialog,
+  DialogContent,
+  DialogDescription,
+  DialogFooter,
+  DialogHeader,
+  DialogTitle,
+} from '@/app/components/ui/dialog'
+import { Input } from '@/app/components/ui/input'
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuSub,
+  DropdownMenuSubContent,
+  DropdownMenuSubTrigger,
+  DropdownMenuTrigger,
+} from '@/app/components/ui/dropdown-menu'
 import { cn } from '@/app/components/ui/utils'
 
 interface NoteEditorProps {
@@ -65,6 +99,8 @@ export function NoteEditor({
   className,
 }: NoteEditorProps) {
   const [saveStatus, setSaveStatus] = useState<'idle' | 'saved'>('idle')
+  const [linkDialogOpen, setLinkDialogOpen] = useState(false)
+  const [linkUrl, setLinkUrl] = useState('')
   const saveTimeoutRef = useRef<ReturnType<typeof setTimeout>>(undefined)
   const maxWaitRef = useRef<ReturnType<typeof setTimeout>>(undefined)
   const fadeTimeoutRef = useRef<ReturnType<typeof setTimeout>>(undefined)
@@ -109,8 +145,17 @@ export function NoteEditor({
       }),
       Placeholder.configure({
         placeholder:
-          'Write your notes for this lesson… Use the toolbar to format, or click Add Timestamp to link to a video moment.',
+          'Write your notes for this lesson\u2026 Use the toolbar to format, or click Add Timestamp to link to a video moment.',
       }),
+      Underline,
+      Highlight.configure({ multicolor: true }),
+      TaskList,
+      TaskItem.configure({ nested: true }),
+      Typography,
+      CharacterCount,
+      TextAlign.configure({ types: ['heading', 'paragraph'] }),
+      TextStyle,
+      Color,
     ],
     content: initialContent,
     editorProps: {
@@ -210,16 +255,46 @@ export function NoteEditor({
       .run()
   }, [editor, currentVideoTime])
 
-  const insertLink = useCallback(() => {
+  const openLinkDialog = useCallback(() => {
     if (!editor) return
 
-    const url = window.prompt('Enter URL:')
-    if (url) {
-      editor.chain().focus().setLink({ href: url }).run()
+    // Pre-fill with existing link URL or selected text if it looks like a URL
+    const existingHref = editor.getAttributes('link').href
+    if (existingHref) {
+      setLinkUrl(existingHref)
+    } else {
+      const { from, to } = editor.state.selection
+      const selectedText = editor.state.doc.textBetween(from, to)
+      if (/^https?:\/\//.test(selectedText)) {
+        setLinkUrl(selectedText)
+      } else {
+        setLinkUrl('')
+      }
     }
+    setLinkDialogOpen(true)
+  }, [editor])
+
+  const handleInsertLink = useCallback(() => {
+    if (!editor || !linkUrl.trim()) return
+
+    const url = linkUrl.trim()
+    if (!/^(https?:\/\/|\/|video:\/\/)/.test(url)) return
+
+    editor.chain().focus().setLink({ href: url }).run()
+    setLinkDialogOpen(false)
+    setLinkUrl('')
+  }, [editor, linkUrl])
+
+  const handleRemoveLink = useCallback(() => {
+    if (!editor) return
+    editor.chain().focus().unsetLink().run()
+    setLinkDialogOpen(false)
+    setLinkUrl('')
   }, [editor])
 
   if (!editor) return null
+
+  const wordCount = editor.storage.characterCount.words()
 
   return (
     <div
@@ -231,12 +306,13 @@ export function NoteEditor({
         data-testid="note-editor-toolbar"
         className="flex items-center gap-1 px-4 py-2 border-b border-border bg-muted/30 flex-wrap"
       >
+        {/* Inline formatting group */}
         <ToolbarButton
           onClick={() => editor.chain().focus().toggleBold().run()}
           active={editor.isActive('bold')}
           aria-label="Bold"
         >
-          <Bold className="h-4 w-4" />
+          <Bold className="size-4" />
         </ToolbarButton>
 
         <ToolbarButton
@@ -244,25 +320,71 @@ export function NoteEditor({
           active={editor.isActive('italic')}
           aria-label="Italic"
         >
-          <Italic className="h-4 w-4" />
+          <Italic className="size-4" />
         </ToolbarButton>
-
-        <div className="w-px h-5 bg-border mx-1" />
 
         <ToolbarButton
-          onClick={() => editor.chain().focus().toggleHeading({ level: 2 }).run()}
-          active={editor.isActive('heading', { level: 2 })}
-          aria-label="Heading"
+          onClick={() => editor.chain().focus().toggleUnderline().run()}
+          active={editor.isActive('underline')}
+          aria-label="Underline"
         >
-          <Heading2 className="h-4 w-4" />
+          <UnderlineIcon className="size-4" />
         </ToolbarButton>
 
+        <ToolbarButton
+          onClick={() => editor.chain().focus().toggleHighlight().run()}
+          active={editor.isActive('highlight')}
+          aria-label="Highlight"
+        >
+          <Highlighter className="size-4" />
+        </ToolbarButton>
+
+        <Separator orientation="vertical" className="h-6 mx-1" />
+
+        {/* Block formatting group — hidden on mobile, in overflow menu */}
+        <div className="hidden sm:flex items-center gap-1">
+          <ToolbarButton
+            onClick={() => editor.chain().focus().toggleHeading({ level: 2 }).run()}
+            active={editor.isActive('heading', { level: 2 })}
+            aria-label="Heading"
+          >
+            <Heading2 className="size-4" />
+          </ToolbarButton>
+
+          <ToolbarButton
+            onClick={() => editor.chain().focus().setTextAlign('left').run()}
+            active={editor.isActive({ textAlign: 'left' })}
+            aria-label="Align left"
+          >
+            <AlignLeft className="size-4" />
+          </ToolbarButton>
+
+          <ToolbarButton
+            onClick={() => editor.chain().focus().setTextAlign('center').run()}
+            active={editor.isActive({ textAlign: 'center' })}
+            aria-label="Align center"
+          >
+            <AlignCenter className="size-4" />
+          </ToolbarButton>
+
+          <ToolbarButton
+            onClick={() => editor.chain().focus().setTextAlign('right').run()}
+            active={editor.isActive({ textAlign: 'right' })}
+            aria-label="Align right"
+          >
+            <AlignRight className="size-4" />
+          </ToolbarButton>
+
+          <Separator orientation="vertical" className="h-6 mx-1" />
+        </div>
+
+        {/* List group */}
         <ToolbarButton
           onClick={() => editor.chain().focus().toggleBulletList().run()}
           active={editor.isActive('bulletList')}
           aria-label="Bullet list"
         >
-          <List className="h-4 w-4" />
+          <List className="size-4" />
         </ToolbarButton>
 
         <ToolbarButton
@@ -270,31 +392,101 @@ export function NoteEditor({
           active={editor.isActive('orderedList')}
           aria-label="Ordered list"
         >
-          <ListOrdered className="h-4 w-4" />
+          <ListOrdered className="size-4" />
         </ToolbarButton>
 
+        <ToolbarButton
+          onClick={() => editor.chain().focus().toggleTaskList().run()}
+          active={editor.isActive('taskList')}
+          aria-label="Task list"
+        >
+          <ListTodo className="size-4" />
+        </ToolbarButton>
+
+        <Separator orientation="vertical" className="h-6 mx-1" />
+
+        {/* Code group */}
         <ToolbarButton
           onClick={() => editor.chain().focus().toggleCodeBlock().run()}
           active={editor.isActive('codeBlock')}
           aria-label="Code block"
         >
-          <Code className="h-4 w-4" />
+          <Code className="size-4" />
         </ToolbarButton>
 
-        <div className="w-px h-5 bg-border mx-1" />
+        <Separator orientation="vertical" className="h-6 mx-1" />
 
-        <ToolbarButton onClick={insertLink} aria-label="Insert link">
-          <Link2 className="h-4 w-4" />
+        {/* Link */}
+        <ToolbarButton
+          onClick={openLinkDialog}
+          active={editor.isActive('link')}
+          aria-label="Insert link"
+        >
+          <Link2 className="size-4" />
         </ToolbarButton>
 
+        {/* Mobile overflow menu */}
+        <div className="sm:hidden">
+          <DropdownMenu>
+            <DropdownMenuTrigger asChild>
+              <button
+                type="button"
+                className={cn(
+                  'inline-flex items-center justify-center size-11 rounded-md text-sm transition-colors cursor-pointer',
+                  'hover:bg-accent hover:text-accent-foreground',
+                  'focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-1',
+                )}
+                aria-label="More formatting options"
+              >
+                <ChevronDown className="size-4" />
+              </button>
+            </DropdownMenuTrigger>
+            <DropdownMenuContent align="start">
+              <DropdownMenuItem
+                onClick={() => editor.chain().focus().toggleHeading({ level: 2 }).run()}
+              >
+                <Heading2 className="size-4 mr-2" />
+                Heading
+              </DropdownMenuItem>
+              <DropdownMenuSub>
+                <DropdownMenuSubTrigger>
+                  <AlignLeft className="size-4 mr-2" />
+                  Alignment
+                </DropdownMenuSubTrigger>
+                <DropdownMenuSubContent>
+                  <DropdownMenuItem
+                    onClick={() => editor.chain().focus().setTextAlign('left').run()}
+                  >
+                    <AlignLeft className="size-4 mr-2" />
+                    Left
+                  </DropdownMenuItem>
+                  <DropdownMenuItem
+                    onClick={() => editor.chain().focus().setTextAlign('center').run()}
+                  >
+                    <AlignCenter className="size-4 mr-2" />
+                    Center
+                  </DropdownMenuItem>
+                  <DropdownMenuItem
+                    onClick={() => editor.chain().focus().setTextAlign('right').run()}
+                  >
+                    <AlignRight className="size-4 mr-2" />
+                    Right
+                  </DropdownMenuItem>
+                </DropdownMenuSubContent>
+              </DropdownMenuSub>
+            </DropdownMenuContent>
+          </DropdownMenu>
+        </div>
+
+        {/* Timestamp button */}
         <Button
           variant="ghost"
           size="sm"
           onClick={insertTimestamp}
-          className="h-8 px-3 text-xs ml-auto"
+          className="h-11 px-3 text-xs ml-auto"
           aria-label="Add Timestamp"
         >
-          <Clock className="h-3.5 w-3.5 mr-1.5" />
+          <Clock className="size-3.5 mr-1.5" />
           Add Timestamp
         </Button>
       </div>
@@ -303,7 +495,10 @@ export function NoteEditor({
       <EditorContent editor={editor} />
 
       {/* Status bar */}
-      <div className="flex items-center justify-end px-5 py-2 border-t border-border text-xs text-muted-foreground">
+      <div className="flex items-center justify-between px-5 py-2 border-t border-border text-xs text-muted-foreground">
+        <span data-testid="note-word-count">
+          {wordCount} {wordCount === 1 ? 'word' : 'words'}
+        </span>
         <div
           data-testid="note-autosave-indicator"
           hidden={saveStatus !== 'saved'}
@@ -312,6 +507,46 @@ export function NoteEditor({
           {saveStatus === 'saved' ? 'Saved' : ''}
         </div>
       </div>
+
+      {/* Link dialog */}
+      <Dialog open={linkDialogOpen} onOpenChange={setLinkDialogOpen}>
+        <DialogContent>
+          <DialogHeader>
+            <DialogTitle>Insert Link</DialogTitle>
+            <DialogDescription>
+              Enter the URL for this link.
+            </DialogDescription>
+          </DialogHeader>
+          <Input
+            value={linkUrl}
+            onChange={e => setLinkUrl(e.target.value)}
+            placeholder="https://example.com"
+            onKeyDown={e => {
+              if (e.key === 'Enter') {
+                e.preventDefault()
+                handleInsertLink()
+              }
+            }}
+          />
+          <DialogFooter>
+            {editor.isActive('link') && (
+              <Button variant="destructive" size="sm" onClick={handleRemoveLink}>
+                Remove Link
+              </Button>
+            )}
+            <Button variant="outline" size="sm" onClick={() => setLinkDialogOpen(false)}>
+              Cancel
+            </Button>
+            <Button
+              size="sm"
+              onClick={handleInsertLink}
+              disabled={!linkUrl.trim() || !/^(https?:\/\/|\/|video:\/\/)/.test(linkUrl.trim())}
+            >
+              Insert
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
     </div>
   )
 }
@@ -330,8 +565,9 @@ function ToolbarButton({
     <button
       type="button"
       onClick={onClick}
+      aria-pressed={active}
       className={cn(
-        'inline-flex items-center justify-center h-8 w-8 rounded-md text-sm transition-colors cursor-pointer',
+        'inline-flex items-center justify-center size-11 rounded-md text-sm transition-colors cursor-pointer',
         'hover:bg-accent hover:text-accent-foreground',
         'focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-1',
         active && 'bg-accent text-accent-foreground'

@@ -43,6 +43,37 @@
   outline: none;
 }
 
+/* Task list checkboxes */
+.tiptap ul[data-type="taskList"] {
+  list-style: none;
+  padding-left: 0;
+}
+.tiptap ul[data-type="taskList"] li {
+  display: flex;
+  align-items: flex-start;
+  gap: 0.5rem;
+}
+.tiptap ul[data-type="taskList"] li[data-checked="true"] > div > p {
+  text-decoration: line-through;
+  opacity: 0.6;
+}
+.tiptap ul[data-type="taskList"] input[type="checkbox"] {
+  cursor: pointer;
+  margin-top: 0.25rem;
+}
+
+/* Highlight */
+.tiptap mark {
+  background-color: #fef08a;
+  border-radius: 2px;
+  padding: 0 2px;
+}
+
+/* Text alignment */
+.tiptap .has-text-align-center { text-align: center; }
+.tiptap .has-text-align-right { text-align: right; }
+.tiptap .has-text-align-justify { text-align: justify; }
+
 @media (prefers-reduced-motion: reduce) {
   *,
   *::before,
