@@ -71,6 +71,17 @@
 - E2E tests + course data + VTT file were left uncommitted -- branch was broken without them
 - `cn()` correctly used in TranscriptPanel (improvement over previous stories)
 
+### E03-S00: Data Layer Migration (Notes & Bookmarks)
+- Previous review: 2 blockers fixed (compound index, MiniSearch wiring), 3 high fixed (re-throw migration error, saveNote query by courseId, removed duplicate useEffect)
+- `fake-indexeddb/auto` in progress.test.ts overrides jsdom localStorage -- `localStorage.clear()` throws TypeError, all 45 tests fail
+- `migrateBookmarksFromLocalStorage()` runs fire-and-forget BEFORE `db.open()` -- race condition: Dexie tables may not exist yet
+- `progress.ts` note functions (`saveNote`, `addNote`, `deleteNote`) still do NOT use `persistWithRetry` (no retry on transient failure)
+- `useNoteStore` and `useBookmarkStore` are NOT imported by any component -- stores are dead code in production
+- Bookmark migration (`migrateBookmarksFromLocalStorage`) has ZERO unit tests
+- `handleNoteChange` in LessonPlayer calls `saveNote` from `progress.ts` (no retry) instead of `useNoteStore.saveNote` (with retry + optimistic update)
+- AC1 says "version 2 to version 3" but implementation uses version 4 (version 3 was already taken for progress table)
+- No input validation/sanitization on note content before storing to Dexie (XSS concern if content is rendered as HTML)
+
 ### E03-S01: Markdown Note Editor with Autosave
 - `video://` protocol NOT registered in Tiptap Link extension -- `parseHTML` strips `video://` links on `setContent` (persistence broken)
 - `onVideoSeek` captured in `useEditor` closure (stale closure risk), while `onSave` correctly uses latest-ref pattern
