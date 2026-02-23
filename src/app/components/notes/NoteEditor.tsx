@@ -99,6 +99,7 @@ export function NoteEditor({
   className,
 }: NoteEditorProps) {
   const [saveStatus, setSaveStatus] = useState<'idle' | 'saved'>('idle')
+  const [wordCount, setWordCount] = useState(0)
   const [linkDialogOpen, setLinkDialogOpen] = useState(false)
   const [linkUrl, setLinkUrl] = useState('')
   const saveTimeoutRef = useRef<ReturnType<typeof setTimeout>>(undefined)
@@ -180,7 +181,11 @@ export function NoteEditor({
         return false
       },
     },
+    onCreate: ({ editor: ed }) => {
+      setWordCount(ed.storage.characterCount.words())
+    },
     onUpdate: ({ editor: ed }) => {
+      setWordCount(ed.storage.characterCount.words())
       const html = ed.getHTML()
 
       // Debounced save: 3 seconds after last keystroke
@@ -294,8 +299,6 @@ export function NoteEditor({
 
   if (!editor) return null
 
-  const wordCount = editor.storage.characterCount.words()
-
   return (
     <div
       data-testid="note-editor"
@@ -339,7 +342,7 @@ export function NoteEditor({
           <Highlighter className="size-4" />
         </ToolbarButton>
 
-        <Separator orientation="vertical" className="h-6 mx-1" />
+        <Separator orientation="vertical" decorative={false} className="h-6 mx-1" />
 
         {/* Block formatting group — hidden on mobile, in overflow menu */}
         <div className="hidden sm:flex items-center gap-1">
@@ -375,7 +378,7 @@ export function NoteEditor({
             <AlignRight className="size-4" />
           </ToolbarButton>
 
-          <Separator orientation="vertical" className="h-6 mx-1" />
+          <Separator orientation="vertical" decorative={false} className="h-6 mx-1" />
         </div>
 
         {/* List group */}
@@ -403,7 +406,7 @@ export function NoteEditor({
           <ListTodo className="size-4" />
         </ToolbarButton>
 
-        <Separator orientation="vertical" className="h-6 mx-1" />
+        <Separator orientation="vertical" decorative={false} className="h-6 mx-1" />
 
         {/* Code group */}
         <ToolbarButton
@@ -414,7 +417,7 @@ export function NoteEditor({
           <Code className="size-4" />
         </ToolbarButton>
 
-        <Separator orientation="vertical" className="h-6 mx-1" />
+        <Separator orientation="vertical" decorative={false} className="h-6 mx-1" />
 
         {/* Link */}
         <ToolbarButton
