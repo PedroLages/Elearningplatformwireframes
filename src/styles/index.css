@@ -154,23 +154,31 @@
 }
 
 /* ── Collapsible details blocks ── */
-.tiptap details {
+/* The Tiptap Details extension renders div[data-type="details"] with a
+   NodeView: toggle button + contentDOM containing summary + hidden content. */
+.tiptap div[data-type="details"] {
   border: 1px solid var(--color-border);
   border-radius: 0.5rem;
   padding: 0.75rem 1rem;
   margin: 0.75rem 0;
 }
 
-.tiptap details summary {
+.tiptap div[data-type="details"] > button {
   cursor: pointer;
-  font-weight: 600;
-  list-style: none;
   display: flex;
   align-items: center;
-  gap: 0.375rem;
+  background: none;
+  border: none;
+  padding: 0;
+  width: 1.25rem;
+  height: 1.25rem;
+  flex-shrink: 0;
+  float: left;
+  margin-right: 0.375rem;
+  margin-top: 0.125rem;
 }
 
-.tiptap details summary::before {
+.tiptap div[data-type="details"] > button::before {
   content: '';
   display: inline-block;
   width: 0;
@@ -179,15 +187,20 @@
   border-bottom: 5px solid transparent;
   border-left: 6px solid currentColor;
   transition: transform 200ms ease;
-  flex-shrink: 0;
 }
 
-.tiptap details[open] > summary::before {
+.tiptap div[data-type="details"].is-open > button::before {
   transform: rotate(90deg);
 }
 
-.tiptap details > div {
+.tiptap div[data-type="details"] summary {
+  font-weight: 600;
+  display: block;
+}
+
+.tiptap div[data-type="detailsContent"] {
   margin-top: 0.5rem;
+  clear: both;
 }
 
 @media (prefers-reduced-motion: reduce) {
