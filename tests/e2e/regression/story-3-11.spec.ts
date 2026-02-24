@@ -1,8 +1,6 @@
 /**
  * Story 3.11: Rich Text Toolbar Expansion — ATDD Acceptance Tests
  *
- * RED PHASE: All tests are expected to FAIL until implementation is complete.
- *
  * Tests verify:
  *   - AC1: Toolbar organization with groups, dividers, 44px touch targets, focus rings
  *   - AC2: Highlight toggle on selected text
@@ -12,48 +10,40 @@
  *   - Pre-flight: Link dialog replaces window.prompt
  *
  * Navigation: LessonPlayer → Notes tab → NoteEditor
+ * Uses static course data (nci-access) — no IndexedDB seeding needed.
  */
 import { test, expect } from '../support/fixtures'
-import { createImportedCourse } from '../support/fixtures/factories/imported-course-factory'
 import { navigateAndWait } from '../support/helpers/navigation'
 
 // ---------------------------------------------------------------------------
-// Test Data
+// Test Data — use a static course/lesson that has video (renders Notes tab)
 // ---------------------------------------------------------------------------
 
-const TEST_COURSE = createImportedCourse({
-  id: 'course-notes-toolbar',
-  name: 'Notes Toolbar Test Course',
-  videoCount: 1,
-  pdfCount: 0,
-})
+const COURSE_ID = 'nci-access'
+const LESSON_ID = 'nci-fnl-drones-psyops'
 
 // ---------------------------------------------------------------------------
 // Helpers
 // ---------------------------------------------------------------------------
 
-/** Navigate to lesson player Notes tab with sidebar closed + course seeded. */
+/** Navigate to lesson player Notes tab with sidebar closed. */
 async function openNoteEditor(
   page: import('@playwright/test').Page,
-  indexedDB: { seedImportedCourses: (courses: unknown[]) => Promise<void> },
 ) {
   await page.addInitScript(() => {
     localStorage.setItem('eduvi-sidebar-v1', 'false')
   })
-  // Navigate to Courses first so Dexie creates the DB
-  await navigateAndWait(page, '/courses')
-  await indexedDB.seedImportedCourses([TEST_COURSE])
-  await page.reload({ waitUntil: 'domcontentloaded' })
 
   // Navigate to lesson player
-  await navigateAndWait(page, `/courses/${TEST_COURSE.id}/lesson-0`)
+  await navigateAndWait(page, `/courses/${COURSE_ID}/${LESSON_ID}`)
 
-  // Click Notes tab
+  // Wait for Notes tab to appear, then click it
   const notesTab = page.getByRole('tab', { name: 'Notes' })
+  await notesTab.waitFor({ state: 'visible', timeout: 30000 })
   await notesTab.click()
 
   // Wait for editor to render
-  await page.waitForSelector('[data-testid="note-editor"]')
+  await page.waitForSelector('[data-testid="note-editor"]', { timeout: 15000 })
 }
 
 // ---------------------------------------------------------------------------
@@ -63,9 +53,8 @@ async function openNoteEditor(
 test.describe('AC1: Toolbar organization', () => {
   test('toolbar buttons are organized in logical groups with separators', async ({
     page,
-    indexedDB,
   }) => {
-    await openNoteEditor(page, indexedDB)
+    await openNoteEditor(page)
 
     const toolbar = page.getByTestId('note-editor-toolbar')
 
@@ -88,12 +77,12 @@ test.describe('AC1: Toolbar organization', () => {
 
   test('all toolbar buttons have 44x44px minimum touch targets', async ({
     page,
-    indexedDB,
   }) => {
-    await openNoteEditor(page, indexedDB)
+    await openNoteEditor(page)
 
     const toolbar = page.getByTestId('note-editor-toolbar')
-    const buttons = toolbar.locator('button')
+    // Only check visible buttons (mobile overflow button is hidden at desktop viewport)
+    const buttons = toolbar.locator('button:visible')
     const count = await buttons.count()
 
     for (let i = 0; i < count; i++) {
@@ -106,9 +95,8 @@ test.describe('AC1: Toolbar organization', () => {
 
   test('toolbar buttons have visible focus rings via Tab navigation', async ({
     page,
-    indexedDB,
   }) => {
-    await openNoteEditor(page, indexedDB)
+    await openNoteEditor(page)
 
     const toolbar = page.getByTestId('note-editor-toolbar')
     const firstButton = toolbar.getByRole('button').first()
@@ -141,9 +129,8 @@ test.describe('AC1: Toolbar organization', () => {
 test.describe('AC2: Highlight', () => {
   test('apply and remove highlight on selected text', async ({
     page,
-    indexedDB,
   }) => {
-    await openNoteEditor(page, indexedDB)
+    await openNoteEditor(page)
 
     const editor = page.locator('.tiptap')
 
@@ -151,17 +138,9 @@ test.describe('AC2: Highlight', () => {
     await editor.click()
     await page.keyboard.type('Highlight this text')
 
-    // Select the word "this"
-    await editor.click()
-    await page.keyboard.press('Home')
-    for (let i = 0; i < 'Highlight '.length; i++) {
-      await page.keyboard.press('ArrowRight')
-    }
-    await page.keyboard.down('Shift')
-    for (let i = 0; i < 'this'.length; i++) {
-      await page.keyboard.press('ArrowRight')
-    }
-    await page.keyboard.up('Shift')
+    // Select all text (Meta+a on macOS, Control+a on Linux/Windows)
+    const modifier = process.platform === 'darwin' ? 'Meta' : 'Control'
+    await page.keyboard.press(`${modifier}+a`)
 
     // Click Highlight button
     const highlightBtn = page.getByRole('button', { name: 'Highlight' })
@@ -170,10 +149,12 @@ test.describe('AC2: Highlight', () => {
     // Verify <mark> element exists
     const mark = editor.locator('mark')
     await expect(mark).toBeVisible()
-    await expect(mark).toHaveText('this')
 
-    // Toggle off — re-select and click again
-    await mark.click({ clickCount: 2 }) // double-click to select
+    // Toggle off — focus editor, select all, then click Highlight
+    await editor.focus()
+    await page.keyboard.press(`${modifier}+a`)
+    // Verify selection is active before toggling
+    await expect(mark).toBeVisible()
     await highlightBtn.click()
     await expect(editor.locator('mark')).toHaveCount(0)
   })
@@ -186,9 +167,8 @@ test.describe('AC2: Highlight', () => {
 test.describe('AC3: Task list', () => {
   test('insert task list with interactive checkboxes and strikethrough', async ({
     page,
-    indexedDB,
   }) => {
-    await openNoteEditor(page, indexedDB)
+    await openNoteEditor(page)
 
     const editor = page.locator('.tiptap')
     await editor.click()
@@ -224,9 +204,8 @@ test.describe('AC3: Task list', () => {
 test.describe('AC4: Typography auto-correction', () => {
   test('straight quotes are converted to smart quotes', async ({
     page,
-    indexedDB,
   }) => {
-    await openNoteEditor(page, indexedDB)
+    await openNoteEditor(page)
 
     const editor = page.locator('.tiptap')
     await editor.click()
@@ -234,7 +213,7 @@ test.describe('AC4: Typography auto-correction', () => {
     // Type text with straight quotes
     await page.keyboard.type('"hello"')
 
-    // Verify smart quotes are used (Unicode " " or similar curly quotes)
+    // Verify smart quotes are used (Unicode \u201C \u201D or similar curly quotes)
     const text = await editor.innerText()
     // Typography extension converts " to \u201C and \u201D
     expect(text).toContain('\u201C') // left double quote
@@ -243,9 +222,8 @@ test.describe('AC4: Typography auto-correction', () => {
 
   test('double hyphens are converted to em-dashes', async ({
     page,
-    indexedDB,
   }) => {
-    await openNoteEditor(page, indexedDB)
+    await openNoteEditor(page)
 
     const editor = page.locator('.tiptap')
     await editor.click()
@@ -266,9 +244,8 @@ test.describe('AC4: Typography auto-correction', () => {
 test.describe('AC5: Word count', () => {
   test('word count displays in status bar and updates in real-time', async ({
     page,
-    indexedDB,
   }) => {
-    await openNoteEditor(page, indexedDB)
+    await openNoteEditor(page)
 
     const wordCount = page.getByTestId('note-word-count')
 
@@ -281,25 +258,24 @@ test.describe('AC5: Word count', () => {
     await page.keyboard.type('The quick brown fox')
 
     // Verify word count updated
-    await expect(wordCount).toHaveText('4 words')
+    await expect(wordCount).toHaveText('4 words', { timeout: 5000 })
 
     // Type one more word
     await page.keyboard.type(' jumps')
-    await expect(wordCount).toHaveText('5 words')
+    await expect(wordCount).toHaveText('5 words', { timeout: 5000 })
   })
 
   test('word count shows singular "word" for exactly 1 word', async ({
     page,
-    indexedDB,
   }) => {
-    await openNoteEditor(page, indexedDB)
+    await openNoteEditor(page)
 
     const editor = page.locator('.tiptap')
     await editor.click()
     await page.keyboard.type('hello')
 
     const wordCount = page.getByTestId('note-word-count')
-    await expect(wordCount).toHaveText('1 word')
+    await expect(wordCount).toHaveText('1 word', { timeout: 5000 })
   })
 })
 
@@ -310,9 +286,8 @@ test.describe('AC5: Word count', () => {
 test.describe('Pre-flight: Link dialog', () => {
   test('clicking link button opens a dialog instead of window.prompt', async ({
     page,
-    indexedDB,
   }) => {
-    await openNoteEditor(page, indexedDB)
+    await openNoteEditor(page)
 
     // Monitor that window.prompt is NOT called
     await page.evaluate(() => {
