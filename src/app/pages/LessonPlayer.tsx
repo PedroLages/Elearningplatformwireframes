@@ -240,6 +240,7 @@ export function LessonPlayer() {
   }
 
   const handleNoteChange = (value: string, tags: string[] = []) => {
+    setNoteText(value)
     if (courseId && lessonId) {
       saveNote(courseId, lessonId, value, tags)
     }

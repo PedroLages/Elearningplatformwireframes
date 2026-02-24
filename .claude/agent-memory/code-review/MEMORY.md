@@ -94,6 +94,17 @@
 - E2E tests missing: keyboard shortcuts (AC1), max-wait 10s forced save (AC2), MiniSearch index update (AC2), timestamp link click-to-seek (AC4)
 - `cn()` correctly used throughout (improvement over earlier stories)
 
+### E03-S11: Rich Text Toolbar Expansion
+- `@tiptap/extension-link` still in package.json despite pre-flight AC requiring removal (StarterKit bundles it)
+- `Highlight.configure({ multicolor: true })` enables CSS injection via pasted `<mark data-color="...">` -- toolbar never uses color arg, so multicolor is unnecessary
+- `TextStyle` and `Color` imported from `@tiptap/extension-text-style` but NEVER used in toolbar -- dead extensions that expand paste-parsing attack surface
+- `#fef08a` hardcoded in `index.css` for `.tiptap mark` -- violates design token convention (should use CSS variable)
+- `handleNoteChange` in LessonPlayer no longer calls `setNoteText(value)` -- stale note content on tab switch or lesson navigation
+- `formatTimestamp` duplicated for 6th time across codebase (tech debt from S01/S08 reviews still unresolved)
+- Duplicate E2E specs: `tests/e2e/story-3-11.spec.ts` (active, 315 lines) vs `tests/e2e/regression/story-3-11.spec.ts` (original ATDD, 340 lines) with divergent test approaches
+- S01 review items FIXED in S11: `video://` protocol now registered via StarterKit link config `protocols: ['video']`; ToolbarButton now `size-11` (44px); `window.prompt()` replaced with shadcn Dialog; `onVideoSeek` uses latest-ref pattern
+- `cn()` and `size-*` Tailwind v4 shorthand consistently used (improvement over all previous stories)
+
 ## Project Conventions
 - Import alias: `@/` resolves to `./src`
 - Card border radius: `rounded-[24px]`

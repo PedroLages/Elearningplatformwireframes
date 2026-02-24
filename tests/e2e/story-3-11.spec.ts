@@ -150,9 +150,11 @@ test.describe('AC2: Highlight', () => {
     const mark = editor.locator('mark')
     await expect(mark).toBeVisible()
 
-    // Toggle off — select all again and click Highlight
-    await editor.click()
+    // Toggle off — focus editor, select all, then click Highlight
+    await editor.focus()
     await page.keyboard.press(`${modifier}+a`)
+    // Verify selection is active before toggling
+    await expect(mark).toBeVisible()
     await highlightBtn.click()
     await expect(editor.locator('mark')).toHaveCount(0)
   })

@@ -1,12 +1,12 @@
 ---
 story_id: E03-S11
 story_name: "Rich Text Toolbar Expansion"
-status: in-progress
+status: done
 started: 2026-02-23
-completed:
-reviewed: false
-review_started:
-review_gates_passed: []
+completed: 2026-02-24
+reviewed: true
+review_started: 2026-02-24
+review_gates_passed: [build, lint, e2e, design-review, code-review]
 ---
 
 # Story 3.11: Rich Text Toolbar Expansion

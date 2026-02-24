@@ -2,14 +2,12 @@ import { useEffect, useCallback, useRef, useState } from 'react'
 import { useEditor, EditorContent } from '@tiptap/react'
 import StarterKit from '@tiptap/starter-kit'
 import Placeholder from '@tiptap/extension-placeholder'
-import Underline from '@tiptap/extension-underline'
 import Highlight from '@tiptap/extension-highlight'
 import TaskList from '@tiptap/extension-task-list'
 import TaskItem from '@tiptap/extension-task-item'
 import Typography from '@tiptap/extension-typography'
 import CharacterCount from '@tiptap/extension-character-count'
 import TextAlign from '@tiptap/extension-text-align'
-import { TextStyle, Color } from '@tiptap/extension-text-style'
 import {
   Bold,
   Italic,
@@ -148,20 +146,19 @@ export function NoteEditor({
         placeholder:
           'Write your notes for this lesson\u2026 Use the toolbar to format, or click Add Timestamp to link to a video moment.',
       }),
-      Underline,
-      Highlight.configure({ multicolor: true }),
+      Highlight,
       TaskList,
       TaskItem.configure({ nested: true }),
       Typography,
       CharacterCount,
       TextAlign.configure({ types: ['heading', 'paragraph'] }),
-      TextStyle,
-      Color,
     ],
     content: initialContent,
     editorProps: {
       attributes: {
         class: 'prose prose-sm dark:prose-invert max-w-none min-h-[250px] outline-none px-5 py-4',
+        'aria-label': 'Lesson notes',
+        'aria-multiline': 'true',
       },
       handleClick: (_view, _pos, event) => {
         // Handle video:// link clicks
@@ -306,6 +303,8 @@ export function NoteEditor({
     >
       {/* Toolbar */}
       <div
+        role="toolbar"
+        aria-label="Text formatting"
         data-testid="note-editor-toolbar"
         className="flex items-center gap-1 px-4 py-2 border-b border-border bg-muted/30 flex-wrap"
       >
