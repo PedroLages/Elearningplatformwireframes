@@ -65,8 +65,7 @@ export function TableGridPicker({ editor, onClose }: TableGridPickerProps) {
         role="grid"
         aria-label="Select table size"
         tabIndex={0}
-        className="grid gap-0.5 outline-none focus:outline-none"
-        style={{ gridTemplateColumns: "repeat(6, 28px)", gap: "2px" }}
+        className="grid grid-cols-[repeat(6,36px)] gap-[3px] outline-none focus:outline-none"
         onMouseLeave={() => {
           setHoveredRow(0);
           setHoveredCol(0);
@@ -79,11 +78,10 @@ export function TableGridPicker({ editor, onClose }: TableGridPickerProps) {
             return (
               <button
                 key={`${row}-${col}`}
-                role="gridcell"
                 data-row={row}
                 data-col={col}
                 className={cn(
-                  "w-7 h-7 border rounded-sm transition-colors",
+                  "size-9 border rounded-sm transition-colors",
                   isHighlighted
                     ? "bg-blue-500/20 border-blue-400"
                     : "border-border"
@@ -93,15 +91,15 @@ export function TableGridPicker({ editor, onClose }: TableGridPickerProps) {
                   setHoveredCol(col);
                 }}
                 onClick={() => insertTable(row, col)}
-                aria-label={`${col} x ${row} table`}
+                aria-label={`${row} x ${col} table`}
               />
             );
           })
         )}
       </div>
-      <p className="mt-2 text-center text-xs text-muted-foreground">
+      <p className="mt-2 text-center text-xs text-muted-foreground" aria-live="polite" aria-atomic="true">
         {hoveredRow > 0 && hoveredCol > 0
-          ? `${hoveredCol} x ${hoveredRow}`
+          ? `${hoveredRow} x ${hoveredCol}`
           : "Select size"}
       </p>
     </div>
