@@ -1,4 +1,4 @@
-import { useEffect, useCallback, useRef, useState } from 'react'
+import { useEffect, useCallback, useMemo, useRef, useState } from 'react'
 import { useEditor, EditorContent, ReactNodeViewRenderer } from '@tiptap/react'
 import StarterKit from '@tiptap/starter-kit'
 import Placeholder from '@tiptap/extension-placeholder'
@@ -25,6 +25,8 @@ import bash from 'highlight.js/lib/languages/bash'
 import { toast } from 'sonner'
 import { CodeBlockView } from './CodeBlockView'
 import { BubbleMenuBar } from './BubbleMenuBar'
+import { SlashCommand, getSlashCommandItems } from './slash-command'
+import { createSlashCommandRender } from './slash-command/suggestion-render'
 import {
   Bold,
   Italic,
@@ -180,6 +182,16 @@ export function NoteEditor({
     [],
   )
 
+  // Stable slash command configuration (callbacks use refs, no re-creation needed)
+  const slashCommandRender = useMemo(() => createSlashCommandRender(), [])
+  const slashCommandItems = useMemo(
+    () => getSlashCommandItems({
+      onImageUpload: () => imageInputRef.current?.click(),
+      onYoutubeEmbed: () => { setYoutubeUrl(''); setYoutubeDialogOpen(true) },
+    }),
+    [],
+  )
+
   const editor = useEditor({
     extensions: [
       StarterKit.configure({
@@ -238,6 +250,15 @@ export function NoteEditor({
       DetailsSummary,
       TextStyle,
       Color,
+      SlashCommand.configure({
+        suggestion: {
+          items: ({ query }) =>
+            slashCommandItems.filter((item) =>
+              item.title.toLowerCase().includes(query.toLowerCase()),
+            ),
+          render: slashCommandRender,
+        },
+      }),
     ],
     content: initialContent,
     editorProps: {
