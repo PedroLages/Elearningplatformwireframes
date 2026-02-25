@@ -13,6 +13,8 @@ import Image from '@tiptap/extension-image'
 import { FileHandler } from '@tiptap/extension-file-handler'
 import Youtube from '@tiptap/extension-youtube'
 import { Details, DetailsContent, DetailsSummary } from '@tiptap/extension-details'
+import Color from '@tiptap/extension-color'
+import { TextStyle } from '@tiptap/extension-text-style'
 import { createLowlight } from 'lowlight'
 import javascript from 'highlight.js/lib/languages/javascript'
 import typescript from 'highlight.js/lib/languages/typescript'
@@ -22,6 +24,7 @@ import xml from 'highlight.js/lib/languages/xml'
 import bash from 'highlight.js/lib/languages/bash'
 import { toast } from 'sonner'
 import { CodeBlockView } from './CodeBlockView'
+import { BubbleMenuBar } from './BubbleMenuBar'
 import {
   Bold,
   Italic,
@@ -233,6 +236,8 @@ export function NoteEditor({
       }),
       DetailsContent,
       DetailsSummary,
+      TextStyle,
+      Color,
     ],
     content: initialContent,
     editorProps: {
@@ -675,6 +680,9 @@ export function NoteEditor({
         className="hidden"
         onChange={handleImageUpload}
       />
+
+      {/* Bubble Menu (appears on text selection) */}
+      <BubbleMenuBar editor={editor} onOpenLinkDialog={openLinkDialog} />
 
       {/* Editor */}
       <EditorContent editor={editor} />
