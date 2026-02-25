@@ -16,11 +16,11 @@ export function TableGridPicker({ editor, onClose }: TableGridPickerProps) {
     containerRef.current?.focus();
   }, []);
 
-  function insertTable() {
+  function insertTable(rows: number, cols: number) {
     editor
       .chain()
       .focus()
-      .insertTable({ rows: hoveredRow, cols: hoveredCol, withHeaderRow: true })
+      .insertTable({ rows, cols, withHeaderRow: true })
       .run();
     onClose();
   }
@@ -48,7 +48,7 @@ export function TableGridPicker({ editor, onClose }: TableGridPickerProps) {
       case "Enter":
       case " ":
         e.preventDefault();
-        if (hoveredRow > 0 && hoveredCol > 0) insertTable();
+        if (hoveredRow > 0 && hoveredCol > 0) insertTable(hoveredRow, hoveredCol);
         break;
       case "Escape":
         e.preventDefault();
@@ -92,7 +92,7 @@ export function TableGridPicker({ editor, onClose }: TableGridPickerProps) {
                   setHoveredRow(row);
                   setHoveredCol(col);
                 }}
-                onClick={insertTable}
+                onClick={() => insertTable(row, col)}
                 aria-label={`${col} x ${row} table`}
               />
             );

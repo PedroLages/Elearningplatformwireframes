@@ -53,7 +53,7 @@ test.describe('AC1: Table Grid Picker & Slash Command', () => {
     await openNoteEditor(page)
 
     // Click the Table toolbar button
-    const tableButton = page.getByRole('button', { name: /table/i })
+    const tableButton = page.getByRole('button', { name: 'Insert table' })
     await tableButton.click()
 
     // Grid picker should appear
@@ -67,7 +67,7 @@ test.describe('AC1: Table Grid Picker & Slash Command', () => {
     await openNoteEditor(page)
 
     // Open grid picker
-    const tableButton = page.getByRole('button', { name: /table/i })
+    const tableButton = page.getByRole('button', { name: 'Insert table' })
     await tableButton.click()
 
     const gridPicker = page.locator('[data-testid="table-grid-picker"]')
@@ -108,7 +108,7 @@ test.describe('AC1: Table Grid Picker & Slash Command', () => {
     await page.keyboard.type('table')
 
     // Select the Table command
-    const tableCommand = commandList.getByText('Table')
+    const tableCommand = commandList.getByText('Table', { exact: true })
     await expect(tableCommand).toBeVisible({ timeout: 3000 })
     await page.keyboard.press('Enter')
 
