@@ -1,5 +1,4 @@
-import { NodeViewWrapper, NodeViewContent } from '@tiptap/react'
-import type { ReactNodeViewProps } from '@tiptap/react'
+import { NodeViewWrapper, NodeViewContent, type ReactNodeViewProps } from '@tiptap/react'
 
 const LANGUAGES = [
   { value: '', label: 'Plain text' },
@@ -22,7 +21,8 @@ export function CodeBlockView({
         value={node.attrs.language || ''}
         onChange={e => updateAttributes({ language: e.target.value })}
         aria-label="Code language"
-        className="code-block-language-select"
+        data-testid="code-block-language-select"
+        className="absolute top-2 right-2 text-xs px-1.5 py-0.5 border border-border rounded bg-background text-foreground cursor-pointer"
       >
         {LANGUAGES.map(lang => (
           <option key={lang.value} value={lang.value}>

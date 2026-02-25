@@ -13,7 +13,13 @@ import Image from '@tiptap/extension-image'
 import { FileHandler } from '@tiptap/extension-file-handler'
 import Youtube from '@tiptap/extension-youtube'
 import { Details, DetailsContent, DetailsSummary } from '@tiptap/extension-details'
-import { common, createLowlight } from 'lowlight'
+import { createLowlight } from 'lowlight'
+import javascript from 'highlight.js/lib/languages/javascript'
+import typescript from 'highlight.js/lib/languages/typescript'
+import python from 'highlight.js/lib/languages/python'
+import css from 'highlight.js/lib/languages/css'
+import xml from 'highlight.js/lib/languages/xml'
+import bash from 'highlight.js/lib/languages/bash'
 import { toast } from 'sonner'
 import { CodeBlockView } from './CodeBlockView'
 import {
@@ -57,8 +63,9 @@ import {
   DropdownMenuTrigger,
 } from '@/app/components/ui/dropdown-menu'
 import { cn } from '@/app/components/ui/utils'
+import { formatTimestamp } from '@/lib/format'
 
-const lowlight = createLowlight(common)
+const lowlight = createLowlight({ javascript, typescript, python, css, xml, bash })
 
 const IMAGE_MAX_SIZE = 5 * 1024 * 1024 // 5MB
 
@@ -88,20 +95,6 @@ function extractTags(content: string): string[] {
   return Array.from(tags)
 }
 
-/**
- * Format seconds to MM:SS or HH:MM:SS
- */
-function formatTimestamp(seconds: number): string {
-  const hrs = Math.floor(seconds / 3600)
-  const mins = Math.floor((seconds % 3600) / 60)
-  const secs = Math.floor(seconds % 60)
-
-  if (hrs > 0) {
-    return `${hrs}:${mins.toString().padStart(2, '0')}:${secs.toString().padStart(2, '0')}`
-  }
-  return `${mins}:${secs.toString().padStart(2, '0')}`
-}
-
 /** Convert a File to a base64 data URL */
 function fileToBase64(file: File): Promise<string> {
   return new Promise((resolve, reject) => {
@@ -114,7 +107,7 @@ function fileToBase64(file: File): Promise<string> {
 
 /** Validate a YouTube URL and return true if valid */
 function isValidYoutubeUrl(url: string): boolean {
-  return /^https?:\/\/(www\.)?(youtube\.com\/watch\?v=|youtu\.be\/|youtube\.com\/embed\/)/.test(url)
+  return /^https?:\/\/([a-z]+\.)?youtube\.com\/(watch\?.*v=|embed\/|shorts\/|v\/)|^https?:\/\/youtu\.be\//.test(url)
 }
 
 export function NoteEditor({
@@ -167,13 +160,17 @@ export function NoteEditor({
 
   const handleImageFiles = useCallback(
     async (files: File[], editor: ReturnType<typeof useEditor> extends infer E ? NonNullable<E> : never) => {
-      for (const file of files) {
-        if (!file.type.startsWith('image/')) continue
+      const validFiles = files.filter(file => {
+        if (!file.type.startsWith('image/')) return false
         if (file.size > IMAGE_MAX_SIZE) {
           toast.warning(`Image "${file.name}" exceeds 5 MB limit`)
-          continue
+          return false
         }
-        const src = await fileToBase64(file)
+        return true
+      })
+
+      const base64s = await Promise.all(validFiles.map(fileToBase64))
+      for (const src of base64s) {
         editor.chain().focus().setImage({ src }).run()
       }
     },
@@ -212,8 +209,28 @@ export function NoteEditor({
         onDrop: (editor, files) => handleImageFiles(files, editor),
         onPaste: (editor, files) => handleImageFiles(files, editor),
       }),
-      Youtube.configure({ nocookie: true }),
-      Details,
+      Youtube.configure({ nocookie: true, HTMLAttributes: { title: 'YouTube video' } }),
+      Details.extend({
+        addNodeView() {
+          const parentFactory = this.parent?.()
+          if (!parentFactory) return parentFactory as never
+          // eslint-disable-next-line @typescript-eslint/no-explicit-any
+          return (props: any) => {
+            // eslint-disable-next-line @typescript-eslint/no-explicit-any
+            const view = (parentFactory as any)(props)
+            const origIgnoreMutation = view.ignoreMutation
+            // Ignore ARIA attribute mutations on child elements to prevent ProseMirror re-renders
+            // eslint-disable-next-line @typescript-eslint/no-explicit-any
+            view.ignoreMutation = (mutation: any) => {
+              if (mutation.type === 'attributes' && view.dom.contains(mutation.target)) {
+                return true
+              }
+              return origIgnoreMutation?.call(view, mutation) ?? true
+            }
+            return view
+          }
+        },
+      }),
       DetailsContent,
       DetailsSummary,
     ],
@@ -287,6 +304,42 @@ export function NoteEditor({
       }
     }
   }, [editor, initialContent, courseId, lessonId])
+
+  // Add ARIA attributes to details toggle buttons for accessibility
+  useEffect(() => {
+    if (!editor) return
+    const editorDom = editor.view.dom
+    const blockObservers = new Map<Element, MutationObserver>()
+
+    function attachAriaToBlock(block: Element) {
+      if (blockObservers.has(block)) return
+      const btn = block.querySelector(':scope > button')
+      if (!btn) return
+      btn.setAttribute('aria-label', 'Toggle details')
+      btn.setAttribute('aria-expanded', block.classList.contains('is-open') ? 'true' : 'false')
+
+      const obs = new MutationObserver(() => {
+        btn.setAttribute('aria-expanded', block.classList.contains('is-open') ? 'true' : 'false')
+      })
+      obs.observe(block, { attributes: true, attributeFilter: ['class'] })
+      blockObservers.set(block, obs)
+    }
+
+    function scanForDetails() {
+      editorDom.querySelectorAll('div[data-type="details"]').forEach(attachAriaToBlock)
+    }
+
+    // Scan on every transaction (fires after content model changes)
+    const onTransaction = () => { scanForDetails() }
+    editor.on('transaction', onTransaction)
+    scanForDetails()
+
+    return () => {
+      editor.off('transaction', onTransaction)
+      blockObservers.forEach(obs => obs.disconnect())
+      blockObservers.clear()
+    }
+  }, [editor])
 
   // Force save on unmount
   useEffect(() => {
@@ -662,15 +715,15 @@ export function NoteEditor({
           />
           <DialogFooter>
             {editor.isActive('link') && (
-              <Button variant="destructive" size="sm" onClick={handleRemoveLink}>
+              <Button variant="destructive" className="h-11" onClick={handleRemoveLink}>
                 Remove Link
               </Button>
             )}
-            <Button variant="outline" size="sm" onClick={() => setLinkDialogOpen(false)}>
+            <Button variant="outline" className="h-11" onClick={() => setLinkDialogOpen(false)}>
               Cancel
             </Button>
             <Button
-              size="sm"
+              className="h-11"
               onClick={handleInsertLink}
               disabled={!linkUrl.trim() || !/^(https?:\/\/|\/|video:\/\/)/.test(linkUrl.trim())}
             >
@@ -701,11 +754,11 @@ export function NoteEditor({
             }}
           />
           <DialogFooter>
-            <Button variant="outline" size="sm" onClick={() => setYoutubeDialogOpen(false)}>
+            <Button variant="outline" className="h-11" onClick={() => setYoutubeDialogOpen(false)}>
               Cancel
             </Button>
             <Button
-              size="sm"
+              className="h-11"
               onClick={handleInsertYoutube}
               disabled={!youtubeUrl.trim() || !isValidYoutubeUrl(youtubeUrl.trim())}
             >

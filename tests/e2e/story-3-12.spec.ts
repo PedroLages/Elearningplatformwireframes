@@ -85,7 +85,7 @@ test.describe('AC1: Code blocks with syntax highlighting', () => {
     await page.keyboard.type('print("hello")')
 
     // Verify language selector is visible
-    const langSelect = editor.locator('select')
+    const langSelect = page.locator('[data-testid="code-block-language-select"]')
     await expect(langSelect).toBeVisible()
 
     // Verify supported languages are present in the dropdown
@@ -110,7 +110,7 @@ test.describe('AC1: Code blocks with syntax highlighting', () => {
     await page.keyboard.type('const x = 42;')
 
     // Change language to Python
-    const langSelect = editor.locator('select')
+    const langSelect = page.locator('[data-testid="code-block-language-select"]')
     await langSelect.selectOption('python')
 
     // Verify the language attribute changed
@@ -124,14 +124,18 @@ test.describe('AC1: Code blocks with syntax highlighting', () => {
 // ---------------------------------------------------------------------------
 
 test.describe('AC2: Inline images', () => {
-  test('toolbar image button inserts an image via file picker', async ({
+  test('toolbar image button triggers file picker', async ({
     page,
   }) => {
     await openNoteEditor(page)
 
-    // Verify image toolbar button exists
+    // Click image button and verify file chooser event fires
     const imageBtn = page.getByRole('button', { name: /image/i })
-    await expect(imageBtn).toBeVisible()
+    const [fileChooser] = await Promise.all([
+      page.waitForEvent('filechooser'),
+      imageBtn.click(),
+    ])
+    expect(fileChooser).toBeTruthy()
   })
 
   test('image uploads via file input and renders inline', async ({
@@ -211,6 +215,32 @@ test.describe('AC3: YouTube embeds', () => {
     // Verify YouTube embed container exists (Tiptap wraps in div[data-youtube-video])
     const embed = page.locator('.tiptap div[data-youtube-video]')
     await expect(embed).toBeVisible({ timeout: 10000 })
+
+    // Verify 16:9 aspect ratio via CSS
+    const box = await embed.boundingBox()
+    if (box) {
+      const ratio = box.width / box.height
+      expect(ratio).toBeCloseTo(16 / 9, 0)
+    }
+  })
+
+  test('invalid YouTube URL keeps Insert button disabled', async ({
+    page,
+  }) => {
+    await openNoteEditor(page)
+
+    const youtubeBtn = page.getByRole('button', { name: /youtube/i })
+    await youtubeBtn.click()
+
+    const dialog = page.getByRole('dialog')
+    const urlInput = dialog.locator('input')
+    const insertBtn = dialog.getByRole('button', { name: 'Insert' })
+
+    // Enter an invalid URL
+    await urlInput.fill('https://example.com/not-youtube')
+
+    // Insert button should be disabled
+    await expect(insertBtn).toBeDisabled()
   })
 })
 

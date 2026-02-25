@@ -1,12 +1,12 @@
 ---
 story_id: E03-S12
 story_name: "Code & Media Blocks"
-status: in-progress
+status: done
 started: 2026-02-24
-completed:
-reviewed: false
-review_started:
-review_gates_passed: []
+completed: 2026-02-25
+reviewed: true
+review_started: 2026-02-24
+review_gates_passed: [build, lint, e2e-tests, design-review, code-review]
 ---
 
 # Story 3.12: Code & Media Blocks
@@ -83,11 +83,25 @@ So that I can capture technical content and reference materials alongside my stu
 
 ## Design Review Feedback
 
-[Populated by /review-story]
+**2026-02-24** — Report: `docs/reviews/design/design-review-2026-02-24-E03-S12.md`
+
+- **High**: Details toggle button 20x20px (below 44px touch target)
+- **High**: YouTube iframe missing `title` attribute
+- **High**: Details toggle missing `aria-label` and `aria-expanded`
+- **High**: Dialog buttons at 32px height (below 44px touch target)
+- **Pass**: Background #FAF5EE, YouTube 16:9 responsive, toolbar 44px touch targets, syntax highlighting themed
 
 ## Code Review Feedback
 
-[Populated by /review-story]
+**2026-02-24** — Report: `docs/reviews/code/code-review-2026-02-24-E03-S12.md`
+
+- **Blocker**: Comment syntax highlighting contrast ~3.1:1 (needs 4.5:1 WCAG AA)
+- **High**: `lowlight/common` imports 37 languages (~376KB), AC specifies 6 (~25KB)
+- **High**: YouTube URL regex rejects mobile/shorts URLs
+- **High**: Details toggle 20x20px touch target
+- **High**: AC2 test only checks visibility, no drag-and-drop coverage
+- **Medium**: `formatTimestamp` duplicated in 5+ locations
+- **Medium**: Missing edge case tests (invalid URLs, oversized images, aspect ratio)
 
 ## Challenges and Lessons Learned
 
