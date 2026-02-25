@@ -104,7 +104,7 @@ export const SearchReplace = Extension.create<SearchReplaceOptions, SearchReplac
         return true
       },
 
-      replaceAll: () => ({ editor, chain }) => {
+      replaceAll: () => ({ editor }) => {
         const { results, replaceTerm } = this.storage
         if (results.length === 0) return false
         // Replace from end to start to preserve positions

@@ -129,7 +129,7 @@ export function FindReplacePanel({ editor, onClose }: FindReplacePanelProps) {
           type="button"
           onClick={handleReplaceAll}
           className={cn(
-            'inline-flex items-center justify-center h-9 px-3 rounded-md text-xs font-medium transition-colors cursor-pointer whitespace-nowrap',
+            'inline-flex items-center justify-center h-11 px-3 rounded-md text-xs font-medium transition-colors cursor-pointer whitespace-nowrap',
             'hover:bg-accent hover:text-accent-foreground',
             'focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-1',
           )}
@@ -155,7 +155,7 @@ function PanelButton({
       type="button"
       onClick={onClick}
       className={cn(
-        'inline-flex items-center justify-center size-9 rounded-md text-sm transition-colors cursor-pointer shrink-0',
+        'inline-flex items-center justify-center size-11 rounded-md text-sm transition-colors cursor-pointer shrink-0',
         'hover:bg-accent hover:text-accent-foreground',
         'focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-1',
       )}

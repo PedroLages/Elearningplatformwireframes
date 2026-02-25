@@ -745,6 +745,12 @@ export function NoteEditor({
                 <ChevronRight className="size-4 mr-2" />
                 Toggle
               </DropdownMenuItem>
+              <DropdownMenuItem
+                onClick={() => setFindReplaceOpen((prev) => !prev)}
+              >
+                <Search className="size-4 mr-2" />
+                Find & Replace
+              </DropdownMenuItem>
             </DropdownMenuContent>
           </DropdownMenu>
         </div>
