@@ -193,6 +193,17 @@
   clear: both;
 }
 
+/* ── Search/Replace match highlighting ── */
+.search-match {
+  background-color: oklch(0.90 0.12 95);
+  border-radius: 2px;
+}
+
+.search-match-active {
+  background-color: oklch(0.80 0.16 65);
+  border-radius: 2px;
+}
+
 /* ── Drag handle ── */
 .drag-handle {
   position: fixed;

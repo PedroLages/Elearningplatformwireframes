@@ -30,6 +30,7 @@ import { SlashCommand, getSlashCommandItems } from './slash-command'
 import { createSlashCommandRender } from './slash-command/suggestion-render'
 import { Emoji, emojis as emojiData } from '@tiptap/extension-emoji'
 import { createEmojiSuggestionRender } from './emoji-suggestion-render'
+import { SearchReplace, FindReplacePanel } from './search-replace'
 import {
   Bold,
   Italic,
@@ -134,6 +135,7 @@ export function NoteEditor({
   const [linkUrl, setLinkUrl] = useState('')
   const [youtubeDialogOpen, setYoutubeDialogOpen] = useState(false)
   const [youtubeUrl, setYoutubeUrl] = useState('')
+  const [findReplaceOpen, setFindReplaceOpen] = useState(false)
   const imageInputRef = useRef<HTMLInputElement>(null)
   const saveTimeoutRef = useRef<ReturnType<typeof setTimeout>>(undefined)
   const maxWaitRef = useRef<ReturnType<typeof setTimeout>>(undefined)
@@ -271,6 +273,7 @@ export function NoteEditor({
           render: emojiSuggestionRender,
         },
       }),
+      SearchReplace,
     ],
     content: initialContent,
     editorProps: {
@@ -378,6 +381,18 @@ export function NoteEditor({
       blockObservers.clear()
     }
   }, [editor])
+
+  // Cmd+F to toggle find/replace panel
+  useEffect(() => {
+    const handleKeyDown = (e: KeyboardEvent) => {
+      if ((e.metaKey || e.ctrlKey) && e.key === 'f') {
+        e.preventDefault()
+        setFindReplaceOpen((prev) => !prev)
+      }
+    }
+    document.addEventListener('keydown', handleKeyDown)
+    return () => document.removeEventListener('keydown', handleKeyDown)
+  }, [])
 
   // Force save on unmount
   useEffect(() => {
@@ -704,6 +719,14 @@ export function NoteEditor({
           Add Timestamp
         </Button>
       </div>
+
+      {/* Find/Replace panel (between toolbar and editor) */}
+      {findReplaceOpen && (
+        <FindReplacePanel
+          editor={editor}
+          onClose={() => setFindReplaceOpen(false)}
+        />
+      )}
 
       {/* Hidden file input for image uploads */}
       <input
