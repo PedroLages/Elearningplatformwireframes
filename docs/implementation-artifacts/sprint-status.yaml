@@ -59,10 +59,14 @@ development_status:
   2-9-mini-player-theater-mode: done
   epic-2-retrospective: done
 
-  # Epic 3: Note-Taking & Knowledge Capture (11 stories)
+  # Epic 3: Note-Taking & Knowledge Capture (15 stories)
   epic-3: in-progress
   3-0-data-layer-migration: done
-  3-1-markdown-note-editor-with-autosave: backlog
+  3-1-markdown-note-editor-with-autosave: done
+  3-11-rich-text-toolbar-expansion: done
+  3-12-code-and-media-blocks: done
+  3-13-smart-editor-ux: done
+  3-14-tables: in-progress
   3-2-side-by-side-study-layout: backlog
   3-3-timestamp-notes-and-video-navigation: backlog
   3-4-tag-based-note-organization: backlog
