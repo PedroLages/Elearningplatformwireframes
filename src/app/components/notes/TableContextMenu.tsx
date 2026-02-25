@@ -1,6 +1,6 @@
 import { useState, useEffect, useCallback, useRef, useLayoutEffect, useMemo } from 'react'
 import { Editor } from '@tiptap/react'
-import { Trash2, Plus, Minus } from 'lucide-react'
+import { Trash2, ArrowUp, ArrowDown, ArrowLeft, ArrowRight, Minus } from 'lucide-react'
 import { cn } from '@/app/components/ui/utils'
 
 interface TableContextMenuProps {
@@ -120,23 +120,23 @@ export function TableContextMenu({ editor, children }: TableContextMenuProps) {
     () => [
       {
         label: 'Add Row Above',
-        icon: Plus,
+        icon: ArrowUp,
         action: () => editor.chain().focus().addRowBefore().run(),
       },
       {
         label: 'Add Row Below',
-        icon: Plus,
+        icon: ArrowDown,
         action: () => editor.chain().focus().addRowAfter().run(),
       },
       { separator: true },
       {
         label: 'Add Column Left',
-        icon: Plus,
+        icon: ArrowLeft,
         action: () => editor.chain().focus().addColumnBefore().run(),
       },
       {
         label: 'Add Column Right',
-        icon: Plus,
+        icon: ArrowRight,
         action: () => editor.chain().focus().addColumnAfter().run(),
       },
       { separator: true },
@@ -181,7 +181,7 @@ export function TableContextMenu({ editor, children }: TableContextMenuProps) {
 
             const { label, icon: Icon, action, destructive } = item as {
               label: string
-              icon: typeof Plus
+              icon: typeof ArrowUp
               action: () => void
               destructive?: boolean
             }
