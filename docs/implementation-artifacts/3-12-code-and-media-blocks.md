@@ -105,7 +105,12 @@ So that I can capture technical content and reference materials alongside my stu
 
 ## Challenges and Lessons Learned
 
-[Document issues, solutions, and patterns worth remembering]
+- **Tiptap `lowlight/common` imports all 37 languages (~376KB); always use selective `registerLanguage` imports when the AC specifies a bounded language list** — caught by code review, would have shipped a 15x bundle bloat silently.
+- **Tiptap NodeView components render outside React's normal DOM tree, so CSS selectors targeting `.tiptap details` fail until you account for the NodeView wrapper divs** — required a dedicated fix commit after initial implementation; write a quick Playwright visibility assertion early to catch this class of rendering mismatch.
+- **Details/collapsible `<summary>` triangles default to ~20x20px across browsers; always wrap the native disclosure triangle in a 44x44px touch target from the start** — flagged by both design and code review; easier to build oversized hit areas upfront than retrofit.
+- **YouTube iframe accessibility requires an explicit `title` attribute and the URL regex must cover `m.youtube.com`, `/shorts/`, and `/v/` paths** — mobile-origin URLs are the majority of paste sources; validate regex against all YouTube URL variants before marking the AC complete.
+- **Duplicated utility functions (`formatTimestamp` in 5+ files) accumulate silently across stories; extract shared helpers into `src/lib/` as soon as the second usage appears** — the `src/lib/format.ts` extraction was deferred to cleanup but should have been caught earlier.
+- **Running both design review and code review surfaces complementary issues — design review catches touch-target and ARIA gaps via live DOM, code review catches bundle size, regex, and test coverage gaps via static analysis** — neither review alone is sufficient.
 
 ## Implementation Plan
 
