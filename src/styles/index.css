@@ -212,6 +212,49 @@
   z-index: 50;
 }
 
+/* ── Tables ── */
+.tiptap table {
+  border-collapse: collapse;
+  width: 100%;
+  table-layout: fixed;
+  margin: 1rem 0;
+}
+
+.tiptap td,
+.tiptap th {
+  border: 1px solid var(--color-border);
+  padding: 0.5rem 0.75rem;
+  min-width: 80px;
+  vertical-align: top;
+}
+
+.tiptap th {
+  background: var(--color-muted, oklch(0.96 0.005 280));
+  font-weight: 600;
+}
+
+.tiptap .selectedCell {
+  background: oklch(0.92 0.05 250);
+}
+
+.tiptap .column-resize-handle {
+  position: absolute;
+  right: -2px;
+  top: 0;
+  bottom: 0;
+  width: 4px;
+  background: oklch(0.65 0.18 250);
+  pointer-events: none;
+}
+
+/* Horizontal scroll for wide tables on mobile */
+@media (max-width: 640px) {
+  .tiptap .tableWrapper {
+    overflow-x: auto;
+    -webkit-overflow-scrolling: touch;
+  }
+}
+
 @media (prefers-reduced-motion: reduce) {
   *,
   *::before,

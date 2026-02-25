@@ -12,6 +12,7 @@ import {
   Youtube,
   ChevronRight,
   Quote,
+  Table2,
 } from 'lucide-react'
 
 export interface SlashCommandItem {
@@ -91,6 +92,12 @@ export function getSlashCommandItems(callbacks: {
       description: 'Quote text',
       icon: <Quote className="size-4" />,
       command: (editor) => editor.chain().focus().toggleBlockquote().run(),
+    },
+    {
+      title: 'Table',
+      description: 'Insert a table',
+      icon: <Table2 className="size-4" />,
+      command: (editor) => editor.chain().focus().insertTable({ rows: 3, cols: 3, withHeaderRow: true }).run(),
     },
   ]
 }

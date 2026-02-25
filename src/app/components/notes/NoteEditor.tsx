@@ -32,7 +32,10 @@ import { Emoji, emojis as emojiData } from '@tiptap/extension-emoji'
 import { createEmojiSuggestionRender } from './emoji-suggestion-render'
 import { SearchReplace, FindReplacePanel } from './search-replace'
 import { TableOfContents } from '@tiptap/extension-table-of-contents'
+import { TableKit } from '@tiptap/extension-table'
 import { TableOfContentsPanel } from './TableOfContentsPanel'
+import { TableGridPicker } from './TableGridPicker'
+import { TableContextMenu } from './TableContextMenu'
 import { Bold,
   Italic,
   Underline as UnderlineIcon,
@@ -53,7 +56,8 @@ import { Bold,
   GripVertical,
   ListTree,
   Search,
-  ChevronsUpDown } from 'lucide-react'
+  ChevronsUpDown,
+  Table2 } from 'lucide-react'
 import { Button } from '@/app/components/ui/button'
 import { Separator } from '@/app/components/ui/separator'
 import {
@@ -143,6 +147,7 @@ export function NoteEditor({
   const [youtubeDialogOpen, setYoutubeDialogOpen] = useState(false)
   const [youtubeUrl, setYoutubeUrl] = useState('')
   const [findReplaceOpen, setFindReplaceOpen] = useState(false)
+  const [tablePickerOpen, setTablePickerOpen] = useState(false)
   const [, setTocVersion] = useState(0)
   const editorContainerRef = useRef<HTMLDivElement>(null)
   const imageInputRef = useRef<HTMLInputElement>(null)
@@ -295,6 +300,12 @@ export function NoteEditor({
       SearchReplace,
       TableOfContents.configure({
         onUpdate: () => setTocVersion((v) => v + 1),
+      }),
+      TableKit.configure({
+        table: {
+          resizable: false,
+          HTMLAttributes: { class: 'tiptap-table' },
+        },
       }),
     ],
     content: initialContent,
@@ -650,6 +661,26 @@ export function NoteEditor({
           <ChevronsUpDown className="size-4" />
         </ToolbarButton>
 
+        {/* Table */}
+        <Popover open={tablePickerOpen} onOpenChange={setTablePickerOpen}>
+          <PopoverTrigger asChild>
+            <button
+              type="button"
+              className={cn(
+                'inline-flex items-center justify-center size-11 rounded-md text-sm transition-colors cursor-pointer',
+                'hover:bg-accent hover:text-accent-foreground',
+                'focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-1',
+              )}
+              aria-label="Insert table"
+            >
+              <Table2 className="size-4" />
+            </button>
+          </PopoverTrigger>
+          <PopoverContent className="w-auto p-0" align="start">
+            <TableGridPicker editor={editor} onClose={() => setTablePickerOpen(false)} />
+          </PopoverContent>
+        </Popover>
+
         <Separator orientation="vertical" decorative={false} className="h-6 mx-1" />
 
         {/* Link */}
@@ -758,6 +789,12 @@ export function NoteEditor({
                 Toggle
               </DropdownMenuItem>
               <DropdownMenuItem
+                onClick={() => editor.chain().focus().insertTable({ rows: 3, cols: 3, withHeaderRow: true }).run()}
+              >
+                <Table2 className="size-4 mr-2" />
+                Table
+              </DropdownMenuItem>
+              <DropdownMenuItem
                 onClick={() => setFindReplaceOpen((prev) => !prev)}
               >
                 <Search className="size-4 mr-2" />
@@ -814,7 +851,9 @@ export function NoteEditor({
       </DragHandle>
 
       {/* Editor */}
-      <EditorContent editor={editor} />
+      <TableContextMenu editor={editor}>
+        <EditorContent editor={editor} />
+      </TableContextMenu>
 
       {/* Status bar */}
       <div className="flex items-center justify-between px-5 py-2 border-t border-border text-xs text-muted-foreground">
