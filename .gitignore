@@ -6,8 +6,6 @@ dist/
 *.log
 .vite/
 
-*storybook.log
-storybook-static
 
 # Test artifacts
 playwright-report/
