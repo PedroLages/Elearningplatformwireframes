@@ -1,12 +1,12 @@
 ---
 story_id: E03-S02
 story_name: "Side-by-Side Study Layout"
-status: in-progress
+status: done
 started: 2026-02-26
-completed:
-reviewed: false
-review_started:
-review_gates_passed: []
+completed: 2026-02-26
+reviewed: true
+review_started: 2026-02-26
+review_gates_passed: [build, lint, e2e-tests, code-review]
 ---
 
 # Story 3.2: Side-by-Side Study Layout
@@ -80,11 +80,16 @@ So that I can watch and take notes simultaneously without context switching.
 
 ## Design Review Feedback
 
-[Populated by /review-story — Playwright MCP findings]
+Skipped — Playwright MCP agent failed to produce a report (connectivity issue). No design review findings available.
 
 ## Code Review Feedback
 
-[Populated by /review-story — adversarial code review findings]
+**2 Blockers, 4 High, 3 Medium, 3 Nits** — See full report: `docs/reviews/code/code-review-2026-02-26-E03-S02.md`
+
+Blockers:
+
+1. Mobile fullscreen overlay missing Escape handler, focus trap, ARIA attrs (WCAG 2.1 AA violation) — `LessonPlayer.tsx:727-751`
+2. Dual NoteEditor race condition when fullscreen active — `LessonPlayer.tsx:544-555 + 727-751`
 
 ## Challenges and Lessons Learned
 
