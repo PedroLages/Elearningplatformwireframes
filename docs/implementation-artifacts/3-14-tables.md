@@ -65,7 +65,11 @@ And Tab moves between cells, Tab at the last cell creates a new row
 
 ## Challenges and Lessons Learned
 
-[Document issues, solutions, and patterns worth remembering]
+- **Context menus need the full WAI-ARIA menu pattern, not just `role="menu"`.** Arrow-key navigation, focus management on open, and Home/End support are required — adding ARIA semantics alone is insufficient. Implement the complete pattern before first review.
+- **Hardcoded layout constants diverge from rendered dimensions.** The `menuHeight` (320px) and `menuWidth` (208px) approximations clipped off-screen when actual sizes differed. Use `getBoundingClientRect()` or CSS variables for layout math that must stay in sync.
+- **Test at all three viewports during development, not after review.** Grid picker cells at 28x28px (below 44px touch target minimum) and dead `.tableWrapper` CSS (Tiptap v3 changed the DOM structure) would have surfaced during 375px testing before feature completion.
+- **AC ambiguity surfaces through careful E2E test writing.** The AC specified "Tab at last cell creates new row" but mixed in "Enter" language — the E2E test caught this by testing only Tab. Write acceptance tests that validate the specified interaction before implementation.
+- **First-pass closures and effect deps need extra scrutiny.** The grid picker's stale-closure bug and context menu's `useLayoutEffect` double-render (caused by `position.y` in deps) both appeared in the initial implementation. Apply closure patterns with `useCallback` + minimal deps from the start.
 
 ## Implementation Plan
 
