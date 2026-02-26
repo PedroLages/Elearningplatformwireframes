@@ -71,6 +71,25 @@
 - E2E tests + course data + VTT file were left uncommitted -- branch was broken without them
 - `cn()` correctly used in TranscriptPanel (improvement over previous stories)
 
+### E03-S02: Side-by-Side Study Layout (Round 2)
+- CRITICAL: Blocker fixes (focus trap, Escape handler, ARIA attrs, `!noteFullScreen` guard) exist ONLY as uncommitted working tree changes -- never committed to the branch
+- Previous review identified 2 blockers, 4 high, 3 medium, 3 nits; fixes applied locally but shipped commit (1351fd3) only contains review report, not the actual code fixes
+- `usePanelRef` from `react-resizable-panels` imported directly (bypasses shadcn/ui wrapper) -- wrapper doesn't re-export hooks
+- `style={{ overflow: 'visible' }}` inline style needed because library sets `overflow: hidden`; could use `!overflow-visible` Tailwind important modifier instead
+- Notes panel close button uses `h-7 w-7` (28px) -- below 44px WCAG touch target
+- AC2 "notes available" indicator E2E test is still a no-op (no notes seeded, no indicator asserted)
+- `handleNotesToggle` tab fallback chain: materials > bookmarks > transcript -- lands on non-existent tab for lessons without PDFs, video, or captions
+- E2E tests missing: Escape key dismissal on fullscreen overlay, keyboard navigation in fullscreen overlay
+
+## Silent Failure Patterns to Watch
+
+- Empty catch blocks (seen in several IndexedDB operations across stories)
+- `.catch(() => {})` on promises — silently swallows errors
+- IndexedDB `put()`/`add()` without error callbacks or try/catch
+- Async event handlers (`onClick={async () => { ... }}`) without try/catch
+- `scrollIntoView()` and DOM APIs called without checking element existence
+- Fire-and-forget store actions — async Dexie operations whose failure silently breaks UI state
+
 ## Project Conventions
 - Import alias: `@/` resolves to `./src`
 - Card border radius: `rounded-[24px]`

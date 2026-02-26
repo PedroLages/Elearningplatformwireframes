@@ -43,11 +43,11 @@ Adaptive shipping skill. Detects whether `/review-story` was already run and adj
 4a. **If `reviewed: in-progress`** (interrupted review):
    - Inform the user: "Previous `/review-story` was interrupted. Checking what completed."
    - Read `review_gates_passed` from frontmatter. Check for existing report files.
-   - **If agent reviews completed** (both `design-review` and `code-review` in gates, reports exist):
-     - Treat as comprehensive mode — run lightweight validation only (step 5).
+   - **If agent reviews completed** (`design-review` or `design-review-skipped`, `code-review`, and `code-review-testing` all in gates, reports exist):
+     - Treat as comprehensive mode — run blocker cross-check + lightweight validation (step 5).
    - **If agent reviews incomplete**:
      - Inform the user: "Review was interrupted before completion. Running full review inline."
-     - Run the full review pipeline with resumption — same as `/review-story` steps 3-8 (respecting `review_gates_passed` to skip completed agent reviews).
+     - Run the full review pipeline with resumption — same as `/review-story` steps 3-8 (respecting `review_gates_passed` to skip completed agent reviews). Both `code-review` and `code-review-testing` agents dispatch in parallel.
      - If **Blockers** found → STOP with fix instructions.
      - If no blockers → continue to step 6.
 
@@ -56,14 +56,23 @@ Adaptive shipping skill. Detects whether `/review-story` was already run and adj
    - Run the full review pipeline inline — same steps as `/review-story` steps 4-8:
      a. Pre-checks: build, lint, unit tests, E2E tests
      b. Design review (if UI changes)
-     c. Code review
+     c. Code reviews — `code-review` and `code-review-testing` agents in parallel
      d. Consolidated report
    - Update `review_gates_passed` after each gate completes.
    - If **Blockers** found → STOP with fix instructions. Developer fixes and re-runs `/finish-story`. Completed gates are preserved.
    - If no blockers → continue to step 6.
 
 5. **If already reviewed** (comprehensive mode):
-   - Run lightweight validation only:
+   - **5a. Blocker cross-check**: Read the latest code review report at `docs/reviews/code/code-review-*-{story-id}.md`. Parse the `#### Blockers` section. If blockers exist:
+     - Check each blocker's file:line against the current code (`git show HEAD:path/to/file`). If the code at that location still matches the blocker description (issue not fixed), STOP:
+       ```
+       Cannot ship — [N] unresolved blocker(s) from code review:
+       1. [file:line]: [Description]
+       2. [file:line]: [Description]
+       Fix these and re-run /finish-story.
+       ```
+     - If the code has changed at those locations (likely fixed), note: "Code review had [N] blockers; code at those locations has changed since review. Proceeding with validation."
+   - **5b. Lightweight validation**:
      a. `npm run build` — STOP on failure.
      b. `npm run lint` — STOP on failure (if script exists).
      c. `npm run test:unit -- --run` — STOP on failure (if tests exist).
@@ -100,6 +109,7 @@ Adaptive shipping skill. Detects whether `/review-story` was already run and adj
     - E2E tests: {passed/skipped} ({N} tests)
     - Design review: {passed/skipped/warnings} ([report link])
     - Code review: {passed/warnings} ([report link])
+    - Code review (testing): {N/N ACs covered/warnings} ([report link])
 
     ## Test Plan
     - [ ] [Manual verification steps derived from acceptance criteria]
@@ -154,14 +164,15 @@ Adaptive shipping skill. Detects whether `/review-story` was already run and adj
     <details>
     <summary>Verification</summary>
 
-    | Check         | Result               |
-    | ------------- | -------------------- |
-    | Build         | passed               |
-    | Lint          | passed / skipped     |
-    | Unit tests    | passed (N) / skipped |
-    | E2E tests     | passed (N) / skipped |
-    | Design review | passed / N warnings  |
-    | Code review   | passed / N warnings  |
+    | Check                  | Result                      |
+    | ---------------------- | --------------------------- |
+    | Build                  | passed                      |
+    | Lint                   | passed / skipped            |
+    | Unit tests             | passed (N) / skipped        |
+    | E2E tests              | passed (N) / skipped        |
+    | Design review          | passed / N warnings         |
+    | Code review            | passed / N warnings         |
+    | Code review (testing)  | N/N ACs covered / N warnings |
 
     - Mode: Comprehensive / Streamlined
     - Branch: `feature/e##-s##-slug`
