@@ -100,9 +100,10 @@ export function LessonPlayer() {
     })
   }
 
-  // Reset auto-advance and completion state when lesson changes
+  // Reset state when lesson changes
   useEffect(() => {
     setShowAutoAdvance(false)
+    setActiveTab(pdfResources.length > 0 ? 'materials' : 'notes')
     if (courseId && lessonId) {
       setCompleted(isLessonComplete(courseId, lessonId))
       getNote(courseId, lessonId).then(setNoteText)
@@ -177,6 +178,10 @@ export function LessonPlayer() {
   }
 
   const [videoCurrentTime, setVideoCurrentTime] = useState(0)
+
+  // Controlled tabs state
+  const defaultTab = pdfResources.length > 0 ? 'materials' : 'notes'
+  const [activeTab, setActiveTab] = useState(defaultTab)
 
   const lastSaveTimeRef = useRef(-Infinity)
   const handleTimeUpdate = (time: number) => {
@@ -447,7 +452,7 @@ export function LessonPlayer() {
         </div>
 
         {/* Tabs: PDFs / Notes / Bookmarks / Transcript */}
-        <Tabs defaultValue={pdfResources.length > 0 ? 'materials' : 'notes'} key={lessonId}>
+        <Tabs value={activeTab} onValueChange={setActiveTab}>
           <TabsList>
             {pdfResources.length > 0 && (
               <TabsTrigger value="materials">Materials ({pdfResources.length})</TabsTrigger>
