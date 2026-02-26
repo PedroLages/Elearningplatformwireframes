@@ -1,10 +1,10 @@
 ---
 story_id: E03-S02
 story_name: "Side-by-Side Study Layout"
-status: in-progress
+status: done
 started: 2026-02-26
-completed:
-reviewed: in-progress
+completed: 2026-02-26
+reviewed: true
 review_started: 2026-02-26
 review_gates_passed: [build, lint, e2e-tests, code-review, test-quality]
 ---
@@ -86,10 +86,12 @@ Skipped — Playwright MCP agent timed out (OAuth expiry). No design review find
 
 **1 Blocker, 4 High, 3 Medium, 2 Nits** — See full report: `docs/reviews/code/code-review-2026-02-26-E03-S02.md`
 
-Blocker:
-1. Focus trap, Escape handler, ARIA attrs, and dual NoteEditor guard exist as **uncommitted changes** — must commit before merge.
+Blocker (resolved):
+
+1. ~~Focus trap, Escape handler, ARIA attrs, and dual NoteEditor guard~~ — committed in `eb5552b`.
 
 High:
+
 1. AC2 indicator test is a no-op (no notes seeded, no dot asserted)
 2. `handleNotesToggle` tab fallback can select non-existent tab
 3. Inline `style={{ overflow: 'visible' }}` violates Tailwind-only convention
