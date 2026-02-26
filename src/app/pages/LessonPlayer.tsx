@@ -1,4 +1,4 @@
-import { useParams, Link, useNavigate } from 'react-router'
+import { useParams, Link, useNavigate, useSearchParams } from 'react-router'
 import { useState, useRef, useEffect } from 'react'
 import { ArrowLeft, ChevronLeft, ChevronRight, CheckCircle2, Circle, Menu } from 'lucide-react'
 import { Button } from '../components/ui/button'
@@ -7,6 +7,7 @@ import { Sheet, SheetContent, SheetHeader, SheetTitle, SheetTrigger } from '../c
 import { VideoPlayer } from '../components/figma/VideoPlayer'
 import { cn } from '../components/ui/utils'
 import { useIntersectionObserver } from '@/app/hooks/useIntersectionObserver'
+import { useIsDesktop, useIsTablet, useIsMobile } from '@/app/hooks/useMediaQuery'
 import { TranscriptPanel } from '../components/figma/TranscriptPanel'
 import { PdfViewer } from '../components/figma/PdfViewer'
 import { ModuleAccordion } from '../components/figma/ModuleAccordion'
@@ -37,6 +38,10 @@ export function LessonPlayer() {
     lessonId: string
   }>()
   const navigate = useNavigate()
+  const [searchParams] = useSearchParams()
+  const isDesktop = useIsDesktop()
+  const isTablet = useIsTablet()
+  const isMobile = useIsMobile()
 
   const course = allCourses.find(c => c.id === courseId)
 
@@ -53,6 +58,8 @@ export function LessonPlayer() {
     courseId && lessonId ? isLessonComplete(courseId, lessonId) : false
   )
   const [noteText, setNoteText] = useState('')
+  const [notesOpen, setNotesOpen] = useState(() => searchParams.get('panel') === 'notes')
+  const hasNotes = noteText.length > 0 && noteText !== '<p></p>'
 
   const [seekToTime, setSeekToTime] = useState<number | undefined>(undefined)
   const [bookmarks, setBookmarks] = useState<import('@/data/types').VideoBookmark[]>([])
@@ -73,7 +80,12 @@ export function LessonPlayer() {
   const isVideoIntersecting = useIntersectionObserver(videoWrapperRef, intersectionOptions)
   const isMiniPlayer = !isVideoIntersecting && isVideoPlaying
 
-  const handleTheaterModeToggle = () => setIsTheaterMode((prev) => !prev)
+  const handleTheaterModeToggle = () => {
+    setIsTheaterMode((prev) => {
+      if (!prev) setNotesOpen(false) // Close notes when entering theater mode
+      return !prev
+    })
+  }
 
   // Sync theater mode to <html> data attribute so Layout can hide the left sidebar via CSS
   useEffect(() => {
@@ -249,6 +261,16 @@ export function LessonPlayer() {
     if (courseId && lessonId) {
       saveNote(courseId, lessonId, value)
     }
+  }
+
+  const handleNotesToggle = () => {
+    setNotesOpen(prev => {
+      if (!prev && activeTab === 'notes') {
+        // Opening side panel — switch away from notes tab to avoid duplicate editor
+        setActiveTab(pdfResources.length > 0 ? 'materials' : videoResource ? 'bookmarks' : 'transcript')
+      }
+      return !prev
+    })
   }
 
   if (!course || !lesson) {
