@@ -79,6 +79,7 @@ export function LessonPlayer() {
   const [isTheaterMode, setIsTheaterMode] = useState(false)
   const [isVideoPlaying, setIsVideoPlaying] = useState(false)
   const videoWrapperRef = useRef<HTMLDivElement>(null)
+  const fullscreenRef = useRef<HTMLDivElement>(null)
   const intersectionOptions = { threshold: 0.3 }
   const isVideoIntersecting = useIntersectionObserver(videoWrapperRef, intersectionOptions)
   const isMiniPlayer = !isVideoIntersecting && isVideoPlaying
@@ -93,6 +94,38 @@ export function LessonPlayer() {
       notesPanelRef.current?.collapse()
     }
   }, [notesOpen, isDesktop])
+
+  // Focus trap for mobile fullscreen notes overlay
+  useEffect(() => {
+    if (!noteFullScreen) return
+    const el = fullscreenRef.current
+    if (!el) return
+    el.focus()
+
+    const handleKeyDown = (e: KeyboardEvent) => {
+      if (e.key === 'Escape') {
+        setNoteFullScreen(false)
+        return
+      }
+      if (e.key !== 'Tab') return
+      const focusable = el.querySelectorAll<HTMLElement>(
+        'button, [href], input, select, textarea, [tabindex]:not([tabindex="-1"])'
+      )
+      if (focusable.length === 0) return
+      const first = focusable[0]
+      const last = focusable[focusable.length - 1]
+      if (e.shiftKey && document.activeElement === first) {
+        e.preventDefault()
+        last.focus()
+      } else if (!e.shiftKey && document.activeElement === last) {
+        e.preventDefault()
+        first.focus()
+      }
+    }
+
+    document.addEventListener('keydown', handleKeyDown)
+    return () => document.removeEventListener('keydown', handleKeyDown)
+  }, [noteFullScreen])
 
   const handleTheaterModeToggle = () => {
     setIsTheaterMode((prev) => {
@@ -532,7 +565,7 @@ export function LessonPlayer() {
           </TabsContent>
         )}
 
-        {(!isDesktop || !notesOpen) && (
+        {(!isDesktop || !notesOpen) && !noteFullScreen && (
           <TabsContent value="notes" className="mt-4">
             <NoteEditor
               courseId={courseId || ''}
@@ -725,7 +758,15 @@ export function LessonPlayer() {
 
       {/* Mobile full-screen notes overlay */}
       {noteFullScreen && (
-        <div data-testid="notes-fullscreen" className="fixed inset-0 z-50 bg-background flex flex-col">
+        <div
+          ref={fullscreenRef}
+          data-testid="notes-fullscreen"
+          role="dialog"
+          aria-modal="true"
+          aria-label="Full screen notes"
+          tabIndex={-1}
+          className="fixed inset-0 z-50 bg-background flex flex-col outline-none"
+        >
           <div className="flex items-center justify-between px-4 py-3 border-b border-border">
             <h3 className="text-sm font-semibold">Notes</h3>
             <Button
