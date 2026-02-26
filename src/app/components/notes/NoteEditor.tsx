@@ -168,7 +168,7 @@ export function NoteEditor({
   const characterCount = content.length
 
   return (
-    <div className={cn('bg-card rounded-[24px] shadow-sm', className)}>
+    <div data-testid="note-editor" className={cn('bg-card rounded-[24px] shadow-sm', className)}>
       <Tabs value={activeTab} onValueChange={v => setActiveTab(v as 'edit' | 'preview')}>
         <div className="flex items-center justify-between px-5 pt-5 pb-3 border-b border-border">
           <h3 className="text-sm font-semibold">Your Notes</h3>
