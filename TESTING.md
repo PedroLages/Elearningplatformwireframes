@@ -14,9 +14,8 @@ npm run typecheck         # TypeScript type checking
 npm run lint              # ESLint code quality
 npm run format:check      # Prettier formatting
 npm run build             # Production build
-npm run test:unit         # Unit tests + Storybook
+npm run test:unit         # Unit tests
 npm run lighthouse        # Performance & accessibility
-npm run storybook         # Component development
 ```
 
 ---
@@ -164,7 +163,7 @@ dist/assets/index-XXXXX.js       595 kB │ gzip: 162 kB
 
 ---
 
-### 5. Unit Tests (Vitest + Storybook)
+### 5. Unit Tests (Vitest)
 
 **Command:**
 ```bash
@@ -175,26 +174,8 @@ npm run test:unit
 - Unit test coverage
 - Component logic
 - Utility functions
-- Storybook stories render correctly
 
 **Configuration:** `vitest.config.ts`
-
-**Expected results:**
-- **Recent run:** 31/32 tests passing
-- **Known failure:** 1 Storybook test (CourseCard Grid Layout Router error)
-
-**Expected output:**
-```
- ✓ src/lib/__tests__/journal.test.ts
- ✓ src/lib/__tests__/progress.test.ts
- ✓ src/stories/Button.stories.ts
- ❯ src/app/components/figma/CourseCard.stories.tsx
-   ✓ Default, In Progress, Completed...
-   ✕ Grid Layout (Router nesting error)
-
-Test Files  1 failed | 4 passed (5)
-Tests       1 failed | 31 passed (32)
-```
 
 **Coverage reports:** Check `coverage/` directory after running.
 
@@ -366,45 +347,6 @@ npx playwright test --debug
 
 ---
 
-## Storybook Component Development
-
-**Command:**
-```bash
-npm run storybook
-```
-
-**What it provides:**
-- Interactive component development
-- Visual testing of UI components
-- Component documentation
-- Isolated component testing
-
-**Configuration:** `.storybook/main.ts`
-
-**Access Storybook:**
-```
-http://localhost:6006
-```
-
-### Available Stories
-
-Current component stories:
-- `Button` - Button variants and states
-- `Header` - Header logged in/out states
-- `Page` - Full page examples
-- `VideoPlayer` - Video player with controls
-- `CourseCard` - Course card layouts
-
-### Build Storybook
-
-```bash
-npm run build-storybook
-```
-
-**Output:** `storybook-static/` directory
-
----
-
 ## Test Results Interpretation
 
 ### ✅ Successful Test Run
@@ -521,22 +463,6 @@ pkill -f "vite"
 npm run test:e2e
 ```
 
-### Storybook Port Already in Use
-
-**Error:**
-```
-Port 6006 is already in use
-```
-
-**Solution:**
-```bash
-# Kill Storybook process
-pkill -f "storybook"
-
-# Restart
-npm run storybook
-```
-
 ### Git Pre-commit Hook Failures
 
 **Error:**
@@ -588,8 +514,6 @@ npm run test
 # Interactive E2E testing
 npm run test:e2e:ui
 
-# Component development
-npm run storybook
 ```
 
 ### CI/CD Integration
@@ -617,7 +541,6 @@ The GitHub Actions workflow (`.github/workflows/ci.yml`) automatically runs:
 | `vitest.config.ts` | Unit test configuration |
 | `playwright.config.ts` | E2E test configuration |
 | `lighthouserc.cjs` | Lighthouse CI config |
-| `.storybook/main.ts` | Storybook configuration |
 
 ---
 
@@ -632,9 +555,8 @@ The GitHub Actions workflow (`.github/workflows/ci.yml`) automatically runs:
 
 ### Known Issues
 
-1. **Storybook:** Grid Layout Router nesting error (1 test)
-2. **Accessibility:** 90 Playwright failures (color contrast, ARIA labels)
-3. **Lighthouse:** Color contrast violations on multiple pages
+1. **Accessibility:** 90 Playwright failures (color contrast, ARIA labels)
+2. **Lighthouse:** Color contrast violations on multiple pages
 
 ### Quality Goals
 
@@ -654,7 +576,6 @@ The GitHub Actions workflow (`.github/workflows/ci.yml`) automatically runs:
 - [Playwright Documentation](https://playwright.dev/)
 - [Lighthouse CI Documentation](https://github.com/GoogleChrome/lighthouse-ci)
 - [Vitest Documentation](https://vitest.dev/)
-- [Storybook Documentation](https://storybook.js.org/)
 - [WCAG 2.1 Guidelines](https://www.w3.org/WAI/WCAG21/quickref/)
 
 ---
@@ -665,7 +586,7 @@ The GitHub Actions workflow (`.github/workflows/ci.yml`) automatically runs:
 - [ ] Prettier installed? Check `node_modules/.bin/prettier`
 - [ ] Playwright browsers installed? Run `npx playwright install`
 - [ ] Preview server running for Lighthouse? Run `npm run preview &`
-- [ ] Port conflicts? Kill processes with `pkill -f "vite"` or `pkill -f "storybook"`
+- [ ] Port conflicts? Kill processes with `pkill -f "vite"`
 - [ ] Clean build? Run `make clean` then `npm ci`
 - [ ] Still failing? Check the specific test output and error messages
 
