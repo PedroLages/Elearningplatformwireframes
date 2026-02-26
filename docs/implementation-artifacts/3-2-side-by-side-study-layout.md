@@ -1,12 +1,12 @@
 ---
 story_id: E03-S02
 story_name: "Side-by-Side Study Layout"
-status: done
+status: in-progress
 started: 2026-02-26
-completed: 2026-02-26
-reviewed: true
+completed:
+reviewed: in-progress
 review_started: 2026-02-26
-review_gates_passed: [build, lint, e2e-tests, code-review]
+review_gates_passed: [build, lint, e2e-tests, code-review, test-quality]
 ---
 
 # Story 3.2: Side-by-Side Study Layout
@@ -80,20 +80,28 @@ So that I can watch and take notes simultaneously without context switching.
 
 ## Design Review Feedback
 
-Skipped — Playwright MCP agent failed to produce a report (connectivity issue). No design review findings available.
+Skipped — Playwright MCP agent timed out (OAuth expiry). No design review findings.
 
 ## Code Review Feedback
 
-**2 Blockers, 4 High, 3 Medium, 3 Nits** — See full report: `docs/reviews/code/code-review-2026-02-26-E03-S02.md`
+**1 Blocker, 4 High, 3 Medium, 2 Nits** — See full report: `docs/reviews/code/code-review-2026-02-26-E03-S02.md`
 
-Blockers:
+Blocker:
+1. Focus trap, Escape handler, ARIA attrs, and dual NoteEditor guard exist as **uncommitted changes** — must commit before merge.
 
-1. Mobile fullscreen overlay missing Escape handler, focus trap, ARIA attrs (WCAG 2.1 AA violation) — `LessonPlayer.tsx:727-751`
-2. Dual NoteEditor race condition when fullscreen active — `LessonPlayer.tsx:544-555 + 727-751`
+High:
+1. AC2 indicator test is a no-op (no notes seeded, no dot asserted)
+2. `handleNotesToggle` tab fallback can select non-existent tab
+3. Inline `style={{ overflow: 'visible' }}` violates Tailwind-only convention
+4. Close button 28x28px below 44x44px WCAG target size
 
 ## Challenges and Lessons Learned
 
-[Document issues, solutions, and patterns worth remembering]
+- **Controlled tabs unlock composition.** Converting from `defaultValue` to `value`/`onValueChange` was prerequisite for the side panel — without it, the tabs couldn't react to external state (URL params, toggle button). Do this refactor first when adding state-driven UI alongside existing tab components.
+- **`react-resizable-panels` imperative API is essential.** The declarative props alone can't sync panel collapse/expand with external React state. Use `usePanelRef()` with `expand()`/`collapse()` — don't fight the library by trying to control size via props alone.
+- **Dual-instance race condition.** Mounting two instances of the same stateful component (NoteEditor in tab + fullscreen overlay) sharing the same save callback creates feedback loops. Conditionally unmount the background instance when the foreground one is active.
+- **Mobile overlays need dialog semantics.** A `fixed inset-0 z-50` div is not a dialog — it needs `role="dialog"`, `aria-modal`, focus trap, and Escape handler. Use shadcn/ui Dialog or Sheet to get these for free instead of hand-rolling.
+- **E2E test no-ops are silent failures.** A test that seeds no data and asserts nothing passes vacuously. Always verify the precondition exists before asserting the behavior.
 
 ## Implementation Plan
 
