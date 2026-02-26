@@ -1,6 +1,6 @@
 import { useParams, Link, useNavigate, useSearchParams } from 'react-router'
 import { useState, useRef, useEffect } from 'react'
-import { ArrowLeft, ChevronLeft, ChevronRight, CheckCircle2, Circle, Menu, PencilLine, X } from 'lucide-react'
+import { ArrowLeft, ChevronLeft, ChevronRight, CheckCircle2, Circle, Menu, PencilLine, X, Video, Maximize2, Minimize2 } from 'lucide-react'
 import { Button } from '../components/ui/button'
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '../components/ui/tabs'
 import { Sheet, SheetContent, SheetHeader, SheetTitle, SheetTrigger } from '../components/ui/sheet'
@@ -61,6 +61,7 @@ export function LessonPlayer() {
   )
   const [noteText, setNoteText] = useState('')
   const [notesOpen, setNotesOpen] = useState(() => searchParams.get('panel') === 'notes')
+  const [noteFullScreen, setNoteFullScreen] = useState(false)
   const hasNotes = noteText.length > 0 && noteText !== '<p></p>'
 
   const [seekToTime, setSeekToTime] = useState<number | undefined>(undefined)
@@ -540,6 +541,17 @@ export function LessonPlayer() {
               onSave={handleNoteChange}
               onVideoSeek={handleVideoSeek}
             />
+            {isMobile && (
+              <Button
+                variant="outline"
+                size="sm"
+                className="mt-3 w-full gap-1.5"
+                onClick={() => setNoteFullScreen(true)}
+              >
+                <Maximize2 className="h-4 w-4" />
+                Expand full screen
+              </Button>
+            )}
           </TabsContent>
         )}
 
@@ -656,7 +668,42 @@ export function LessonPlayer() {
       ) : (
         /* Tablet + Mobile: stacked layout */
         <div className="flex-1 min-w-0" data-testid="lesson-content-scroll">
-          {mainContent}
+          {/* Tablet Video/Notes toggle */}
+          {isTablet && (
+            <div data-testid="tablet-view-toggle" className="flex gap-1 mb-4 bg-muted rounded-lg p-1">
+              <Button
+                variant={!notesOpen ? 'default' : 'ghost'}
+                size="sm"
+                className="flex-1 gap-1.5"
+                onClick={() => setNotesOpen(false)}
+              >
+                <Video className="h-4 w-4" />
+                Video
+              </Button>
+              <Button
+                variant={notesOpen ? 'default' : 'ghost'}
+                size="sm"
+                className="flex-1 gap-1.5"
+                onClick={() => setNotesOpen(true)}
+              >
+                <PencilLine className="h-4 w-4" />
+                Notes
+              </Button>
+            </div>
+          )}
+
+          {/* On tablet with notes open: show NoteEditor instead of video+tabs */}
+          {isTablet && notesOpen ? (
+            <NoteEditor
+              courseId={courseId || ''}
+              lessonId={lessonId || ''}
+              initialContent={noteText}
+              onSave={handleNoteChange}
+              onVideoSeek={handleVideoSeek}
+            />
+          ) : (
+            mainContent
+          )}
         </div>
       )}
 
@@ -675,6 +722,33 @@ export function LessonPlayer() {
           />
         </div>
       </div>
+
+      {/* Mobile full-screen notes overlay */}
+      {noteFullScreen && (
+        <div data-testid="notes-fullscreen" className="fixed inset-0 z-50 bg-background flex flex-col">
+          <div className="flex items-center justify-between px-4 py-3 border-b border-border">
+            <h3 className="text-sm font-semibold">Notes</h3>
+            <Button
+              variant="ghost"
+              size="sm"
+              className="gap-1.5"
+              onClick={() => setNoteFullScreen(false)}
+            >
+              <Minimize2 className="h-4 w-4" />
+              Minimize
+            </Button>
+          </div>
+          <div className="flex-1 overflow-y-auto p-4">
+            <NoteEditor
+              courseId={courseId || ''}
+              lessonId={lessonId || ''}
+              initialContent={noteText}
+              onSave={handleNoteChange}
+              onVideoSeek={handleVideoSeek}
+            />
+          </div>
+        </div>
+      )}
 
       {/* Completion Celebration Modal */}
       <CompletionModal

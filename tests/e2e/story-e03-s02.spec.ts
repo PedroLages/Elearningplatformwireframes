@@ -38,10 +38,10 @@ test.describe('AC1: Desktop resizable split', () => {
     await notesToggle.click()
 
     // THEN: The resizable panel group should be visible with a drag handle
-    const panelGroup = page.locator('[data-panel-group]')
+    const panelGroup = page.locator('[data-group]')
     await expect(panelGroup).toBeVisible()
 
-    const handle = page.locator('[data-panel-resize-handle-id]')
+    const handle = page.locator('[data-separator]')
     await expect(handle).toBeVisible()
   })
 
@@ -51,7 +51,7 @@ test.describe('AC1: Desktop resizable split', () => {
     // Open notes panel
     await page.getByRole('button', { name: /notes/i }).click()
 
-    const handle = page.locator('[data-panel-resize-handle-id]')
+    const handle = page.locator('[data-separator]')
     await expect(handle).toBeVisible()
 
     // Get initial handle position
@@ -73,7 +73,7 @@ test.describe('AC1: Desktop resizable split', () => {
     await goToLessonPlayer(page)
     await page.getByRole('button', { name: /notes/i }).click()
 
-    const handle = page.locator('[data-panel-resize-handle-id]')
+    const handle = page.locator('[data-separator]')
     const box = await handle.boundingBox()
 
     // WHEN: Try to drag handle far right (shrink video panel to minimum)
@@ -86,7 +86,7 @@ test.describe('AC1: Desktop resizable split', () => {
     const panels = page.locator('[data-panel]')
     const firstPanel = panels.first()
     const panelBox = await firstPanel.boundingBox()
-    const groupBox = await page.locator('[data-panel-group]').boundingBox()
+    const groupBox = await page.locator('[data-group]').boundingBox()
     const ratio = panelBox!.width / groupBox!.width
     expect(ratio).toBeGreaterThanOrEqual(0.30) // ~35% min with tolerance
   })
@@ -102,13 +102,9 @@ test.describe('AC2: Notes panel collapsed by default', () => {
   test('notes panel is collapsed by default on desktop', async ({ page }) => {
     await goToLessonPlayer(page)
 
-    // THEN: No notes panel should be visible (no resizable split active)
-    const noteEditor = page.getByTestId('note-editor')
-    // The note editor should NOT be visible in the side panel (may be in tabs)
-    const panelGroup = page.locator('[data-panel-group]')
-    // Either no panel group, or notes panel is collapsed
-    const handles = page.locator('[data-panel-resize-handle-id]')
-    await expect(handles).toHaveCount(0)
+    // THEN: The drag handle should not be visible (notes panel collapsed)
+    const handle = page.locator('[data-separator]')
+    await expect(handle).toBeHidden()
   })
 
   test('toggle button is visible on desktop', async ({ page }) => {
@@ -145,7 +141,7 @@ test.describe('AC3: URL param ?panel=notes', () => {
     await goToLessonPlayer(page, '?panel=notes')
 
     // THEN: Notes panel should be open immediately
-    const handle = page.locator('[data-panel-resize-handle-id]')
+    const handle = page.locator('[data-separator]')
     await expect(handle).toBeVisible()
 
     // AND: Note editor should be visible in the side panel
@@ -156,7 +152,7 @@ test.describe('AC3: URL param ?panel=notes', () => {
   test('notes toggle shows aria-expanded=true when opened via URL param', async ({ page }) => {
     await goToLessonPlayer(page, '?panel=notes')
 
-    const notesToggle = page.getByRole('button', { name: /notes/i })
+    const notesToggle = page.getByRole('button', { name: 'Notes', exact: true })
     await expect(notesToggle).toHaveAttribute('aria-expanded', 'true')
   })
 })
@@ -226,7 +222,7 @@ test.describe('AC5: Mobile full-screen notes', () => {
     await notesTab.click()
 
     // THEN: An expand button should be visible
-    const expandBtn = page.getByRole('button', { name: /expand|full.?screen/i })
+    const expandBtn = page.getByRole('button', { name: /expand full/i })
     await expect(expandBtn).toBeVisible()
   })
 
@@ -237,7 +233,7 @@ test.describe('AC5: Mobile full-screen notes', () => {
     await page.getByRole('tab', { name: /notes/i }).click()
 
     // WHEN: Click expand
-    const expandBtn = page.getByRole('button', { name: /expand|full.?screen/i })
+    const expandBtn = page.getByRole('button', { name: /expand full/i })
     await expandBtn.click()
 
     // THEN: Full-screen overlay should appear
@@ -253,7 +249,7 @@ test.describe('AC5: Mobile full-screen notes', () => {
     await goToLessonPlayer(page)
 
     await page.getByRole('tab', { name: /notes/i }).click()
-    await page.getByRole('button', { name: /expand|full.?screen/i }).click()
+    await page.getByRole('button', { name: /expand full/i }).click()
 
     // WHEN: Click minimize
     const minimizeBtn = page.getByRole('button', { name: /minimize|close|collapse/i })
