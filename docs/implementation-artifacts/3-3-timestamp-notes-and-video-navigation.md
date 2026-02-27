@@ -80,4 +80,9 @@ See [plan](../../.claude/plans/spicy-fluttering-crescent.md) for implementation 
 
 ## Challenges and Lessons Learned
 
-[Document issues, solutions, and patterns worth remembering]
+- **Uncommitted blocker (recurring)**: `urlTransform` override for `video://` protocol existed only in the working tree — committed branch broke AC2 and AC3. This is the third story where blocker-level fixes were left unstaged. Always verify `git diff` before `/review-story`.
+- **react-markdown strips custom protocols**: `defaultUrlTransform` silently empties non-standard protocol URLs. Override with `urlTransform={(url) => url.startsWith('video://') ? url : defaultUrlTransform(url)}`.
+- **rehype-sanitize blocks custom protocols too**: Even with `urlTransform`, `rehype-sanitize` strips `video://` hrefs. Extend `defaultSchema.attributes.a` with `protocols: { href: [...existing, 'video'] }`.
+- **Duplicate utility (4th copy)**: `formatTimestamp` was copy-pasted into NoteEditor, VideoPlayer, ChapterProgressBar, and bookmarks.ts. Extracted to `@/lib/time.ts`. Watch for this pattern in future stories.
+- **E2E seek test beyond video duration**: Test used `t=154` but the sample video is ~144 seconds — browser clamps `currentTime` to duration. Always use timestamps within the known video length.
+- **Component recreation in JSX props**: `components={{ a: createFn(callback) }}` inside JSX creates a new component reference every render, causing unmount/remount of all child elements. Memoize with `useMemo`.
