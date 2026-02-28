@@ -48,7 +48,8 @@ function formatRelativeDate(isoDate: string): string {
   if (diffDays === 0) return 'Today'
   if (diffDays === 1) return 'Yesterday'
   if (diffDays < 7) return `${diffDays} days ago`
-  if (diffDays < 30) return `${Math.floor(diffDays / 7)} weeks ago`
+  const weeks = Math.floor(diffDays / 7)
+  if (diffDays < 30) return `${weeks} ${weeks === 1 ? 'week' : 'weeks'} ago`
   return date.toLocaleDateString()
 }
 
@@ -166,14 +167,12 @@ export function NoteCard({ note, lessonTitle, courseId, onDelete }: NoteCardProp
       {/* Edit mode */}
       {viewState === 'editing' && (
         <div className="mt-4 border-t pt-4">
-          <div data-testid="note-editor">
-            <NoteEditor
-              courseId={courseId}
-              lessonId={note.videoId}
-              initialContent={note.content}
-              onSave={handleSave}
-            />
-          </div>
+          <NoteEditor
+            courseId={courseId}
+            lessonId={note.videoId}
+            initialContent={note.content}
+            onSave={handleSave}
+          />
           <Button variant="ghost" size="sm" className="mt-2" onClick={() => setViewState('expanded')}>
             <X className="h-3.5 w-3.5 mr-1.5" />
             Cancel

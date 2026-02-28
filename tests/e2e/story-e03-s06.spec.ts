@@ -113,11 +113,14 @@ test.describe('AC1: Notes tab with grouped notes', () => {
     // Click Notes tab
     await page.getByRole('tab', { name: /notes/i }).click()
 
-    // Notes should be visible, grouped under lesson titles
-    await expect(page.getByText('Introduction')).toBeVisible()
-    await expect(page.getByText('Introduction notes about the operative training program')).toBeVisible()
-    await expect(page.getByText('The Pillars of Influence')).toBeVisible()
-    await expect(page.getByText('Key takeaways from the pillars of influence lesson')).toBeVisible()
+    // Scope to the notes tab panel to avoid matching sidebar/header elements
+    const notesPanel = page.getByRole('tabpanel')
+
+    // Lesson titles as grouping headers
+    await expect(notesPanel.getByRole('heading', { name: /introduction/i })).toBeVisible()
+    await expect(notesPanel.getByText('Introduction notes about the operative training program')).toBeVisible()
+    await expect(notesPanel.getByRole('heading', { name: /pillars of influence/i })).toBeVisible()
+    await expect(notesPanel.getByText('Key takeaways from the pillars of influence lesson')).toBeVisible()
   })
 
   test('shows preview snippet, tags, and last updated date', async ({ page }) => {
@@ -126,13 +129,14 @@ test.describe('AC1: Notes tab with grouped notes', () => {
     await page.reload()
 
     await page.getByRole('tab', { name: /notes/i }).click()
+    const notesPanel = page.getByRole('tabpanel')
 
-    // Tags should be visible
-    await expect(page.getByText('overview')).toBeVisible()
-    await expect(page.getByText('training')).toBeVisible()
+    // Tags should be visible (scoped to notes panel to avoid sidebar "Overview" link)
+    await expect(notesPanel.getByText('overview', { exact: true })).toBeVisible()
+    await expect(notesPanel.getByText('training', { exact: true })).toBeVisible()
 
     // Timestamp link should be visible (0:30 for 30 seconds)
-    await expect(page.getByText('0:30')).toBeVisible()
+    await expect(notesPanel.getByText('0:30')).toBeVisible()
   })
 
   test('sort controls allow switching between video order and date created', async ({ page }) => {
@@ -169,15 +173,16 @@ test.describe('AC2: Note detail, inline edit, and delete', () => {
     await page.reload()
 
     await page.getByRole('tab', { name: /notes/i }).click()
+    const notesPanel = page.getByRole('tabpanel')
 
     // Expand note
-    await page.getByText('Introduction notes about the operative training program').click()
+    await notesPanel.getByText('Introduction notes about the operative training program').click()
 
-    // Click edit
-    await page.getByRole('button', { name: /edit/i }).click()
+    // Click edit (scoped to notes panel)
+    await notesPanel.getByRole('button', { name: /edit/i }).click()
 
     // NoteEditor should appear
-    await expect(page.getByTestId('note-editor')).toBeVisible()
+    await expect(notesPanel.getByTestId('note-editor')).toBeVisible()
   })
 
   test('note can be deleted with confirmation dialog', async ({ page }) => {
@@ -186,24 +191,23 @@ test.describe('AC2: Note detail, inline edit, and delete', () => {
     await page.reload()
 
     await page.getByRole('tab', { name: /notes/i }).click()
+    const notesPanel = page.getByRole('tabpanel')
 
-    // Find and click the delete button (hover-visible)
-    const firstNoteCard = page.getByText('Introduction notes about the operative training program').locator('..')
-    await firstNoteCard.hover()
-    const deleteButton = firstNoteCard.getByRole('button', { name: /delete/i }).or(
-      firstNoteCard.locator('[data-testid="delete-note-button"]'),
-    )
-    await deleteButton.click()
+    // Expand note first (delete button is in expanded view)
+    await notesPanel.getByText('Introduction notes about the operative training program').click()
+
+    // Click delete button
+    await notesPanel.getByTestId('delete-note-button').click()
 
     // Confirmation dialog should appear (NFR23)
     await expect(page.getByRole('alertdialog')).toBeVisible()
     await expect(page.getByText(/delete this note/i)).toBeVisible()
 
     // Confirm deletion
-    await page.getByRole('button', { name: /delete|confirm/i }).last().click()
+    await page.getByRole('alertdialog').getByRole('button', { name: /delete/i }).click()
 
     // Note should be removed from the list
-    await expect(page.getByText('Introduction notes about the operative training program')).not.toBeVisible()
+    await expect(notesPanel.getByText('Introduction notes about the operative training program')).not.toBeVisible()
   })
 })
 
