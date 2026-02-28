@@ -135,6 +135,8 @@ test.describe('AC1: Search results via Cmd+K command palette', () => {
     const noteResult = notesGroup.locator('[cmdk-item]').first()
     // Result should contain tag badge
     await expect(noteResult).toContainText(/react/i)
+    // Result should show course context
+    await expect(noteResult).toContainText(/operative/i)
   })
 
   test('results are ranked by relevance — tag matches rank higher', async ({ page }) => {
@@ -213,6 +215,10 @@ test.describe('AC3: Result navigation to Lesson Player', () => {
     // Should navigate to Lesson Player with ?panel=notes
     await page.waitForURL(/\/courses\/.*\?panel=notes/, { timeout: 10000 })
     expect(page.url()).toContain('panel=notes')
+
+    // Verify notes panel is actually open in the DOM
+    const notesToggle = page.getByRole('button', { name: 'Notes', exact: true })
+    await expect(notesToggle).toHaveAttribute('aria-expanded', 'true', { timeout: 5000 })
   })
 
   test('note with timestamp seeks video to that position', async ({ page }) => {
@@ -224,10 +230,9 @@ test.describe('AC3: Result navigation to Lesson Player', () => {
 
     await notesGroup.locator('[cmdk-item]').first().click()
 
-    // URL should include the timestamp parameter
-    await page.waitForURL(/\/courses\//, { timeout: 10000 })
-    // The note has timestamp: 42, so URL should reflect time seek
-    expect(page.url()).toMatch(/panel=notes/)
+    // URL should include the timestamp parameter (note has timestamp: 42)
+    await page.waitForURL(/\/courses\/.*t=42/, { timeout: 10000 })
+    expect(page.url()).toContain('t=42')
   })
 })
 
@@ -247,10 +252,9 @@ test.describe('AC4: Empty results show helpful message', () => {
     // Search for something that doesn't exist in any notes
     await page.keyboard.type('xyznonexistentquery123')
 
-    // Should show the empty/no-results message
-    // cmdk shows CommandEmpty when no items match
+    // Should show the exact empty state message from CommandEmpty
     await expect(
-      page.getByText(/no notes found|no results/i),
+      page.getByText('No notes found. Try different keywords or browse by tag.'),
     ).toBeVisible({ timeout: 5000 })
   })
 })

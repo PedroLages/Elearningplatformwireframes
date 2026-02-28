@@ -132,6 +132,16 @@ describe('searchNotes', () => {
     const results = searchNotes('operative')
     expect(results[0].score).toBeGreaterThan(0)
   })
+
+  it('should find results with fuzzy matching despite typos', () => {
+    initializeSearchIndex([
+      makeNote({ id: '1', content: 'Understanding custom hooks in React' }),
+    ])
+
+    const results = searchNotes('custm')
+    expect(results.length).toBeGreaterThan(0)
+    expect(results[0].id).toBe('1')
+  })
 })
 
 describe('searchNotesWithContext', () => {

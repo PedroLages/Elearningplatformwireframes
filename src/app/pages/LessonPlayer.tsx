@@ -176,6 +176,13 @@ export function LessonPlayer() {
     }
   }, [courseId, lessonId])
 
+  // Open notes panel when navigating with ?panel=notes (e.g. from note search deep-link)
+  useEffect(() => {
+    if (searchParams.get('panel') === 'notes') {
+      setNotesOpen(true)
+    }
+  }, [searchParams])
+
   // Seek video to timestamp from ?t= query param (e.g. from note search deep-link)
   useEffect(() => {
     const seekParam = searchParams.get('t')

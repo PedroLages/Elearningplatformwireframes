@@ -91,7 +91,18 @@
 - `handleNotesToggle` tab fallback chain: materials > bookmarks > transcript -- lands on non-existent tab for lessons without PDFs, video, or captions
 - E2E tests missing: Escape key dismissal on fullscreen overlay, keyboard navigation in fullscreen overlay
 
+### E03-S05: Full-Text Note Search
+- `notesOpen` state initialized from `searchParams.get('panel')` in useState initializer -- only runs on mount, NOT when navigating from search to the same LessonPlayer component (AC3 broken for same-page navigation)
+- `buildSearchIndex()` called inside render body (line 197) -- recreates entire static search index on every render cycle
+- `combineWith: 'AND'` in MiniSearch config may cause fuzzy "custm hooks" to fail -- "custm" fuzzy-matches "custom" but AND requires BOTH terms to match; if MiniSearch fuzzy doesn't find "custm" it returns nothing
+- `searchParams` in `[searchParams]` deps causes `?t=` seek effect to re-run on ANY param change (e.g., `panel` param change), not just `t=` changes
+- E2E timestamp test (line 218-231) does NOT assert `t=42` in URL -- comment says "should reflect time seek" but assertion only checks `panel=notes`
+- No unit test for fuzzy matching in noteSearch.test.ts (AC2 gap)
+- AC1 says "highlighted matching keywords" in snippets but `truncateSnippet()` strips HTML and returns plain text -- no keyword highlighting
+- `h-4 w-4` used instead of `size-4` Tailwind v4 shorthand in new StickyNote icon (recurring)
+
 ### E03-S04: Tag-Based Note Organization
+
 - Duplicate `setTags(initialTags)` across two useEffects in NoteEditor -- second one triggers on every `initialTags` reference change, potentially overwriting rapid user tag additions
 - AC1 requires "tags can be added by pressing Enter or comma" but TagEditor has NO comma key handler (cmdk handles Enter only)
 - Add-tag button in TagEditor is 20x20px (`h-5 w-5`), well below 44px WCAG touch target (recurring sub-44px button pattern)

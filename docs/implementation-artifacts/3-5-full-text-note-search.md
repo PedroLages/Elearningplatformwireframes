@@ -1,12 +1,12 @@
 ---
 story_id: E03-S05
 story_name: "Full-Text Note Search"
-status: in-progress
+status: done
 started: 2026-02-28
-completed:
-reviewed: false
-review_started:
-review_gates_passed: []
+completed: 2026-02-28
+reviewed: true
+review_started: 2026-02-28
+review_gates_passed: [build, lint, unit-tests, e2e-tests, design-review, code-review, code-review-testing]
 ---
 
 # Story 3.5: Full-Text Note Search
@@ -79,11 +79,33 @@ See [plan](../../.claude/plans/wobbly-inventing-hearth.md) for implementation ap
 
 ## Design Review Feedback
 
-[Populated by /review-story]
+Reviewed 2026-02-28. Report: `docs/reviews/design/design-review-2026-02-28-e03-s05.md`
+
+**No blockers.** 2 high-priority, 3 medium findings:
+
+- H1: Raw markdown link syntax visible in note snippets (truncateSnippet strips HTML but not markdown)
+- H2: Mobile close button 16x16px (pre-existing, fails 44px touch target)
+- M1: buildSearchIndex() on every render (needs useMemo)
+- M2: "No notes found" message scope ambiguity
+- M3: 300px max-height may clip results (pre-existing)
 
 ## Code Review Feedback
 
-[Populated by /review-story]
+Reviewed 2026-02-28. Reports:
+
+- `docs/reviews/code/code-review-2026-02-28-e03-s05.md`
+- `docs/reviews/code/code-review-testing-2026-02-28-e03-s05.md`
+
+**No blockers.** 5 high-priority (code) + 4 high-priority (testing) findings:
+
+- notesOpen deep-link limited to fresh mounts (edge case: intra-LessonPlayer nav)
+- Missing keyword highlighting in snippets (AC mentions "highlighted matching keywords")
+- buildSearchIndex() on every render (duplicate of design review M1)
+- E2E timestamp test doesn't assert t=42
+- No fuzzy matching unit test
+- E2E doesn't assert course name/video title in results
+- Empty state regex too loose
+- Panel open state not verified in DOM
 
 ## Challenges and Lessons Learned
 
