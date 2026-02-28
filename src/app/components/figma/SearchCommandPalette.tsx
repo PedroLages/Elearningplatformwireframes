@@ -1,4 +1,4 @@
-import { useRef, useEffect } from 'react'
+import { useState, useEffect, useRef } from 'react'
 import { useNavigate } from 'react-router'
 import {
   LayoutDashboard,
@@ -11,6 +11,7 @@ import {
   Notebook,
   FileText,
   PlayCircle,
+  StickyNote,
 } from 'lucide-react'
 import {
   CommandDialog,
@@ -21,7 +22,9 @@ import {
   CommandItem,
   CommandShortcut,
 } from '@/app/components/ui/command'
+import { Badge } from '@/app/components/ui/badge'
 import { allCourses } from '@/data/courses'
+import { searchNotesWithContext, type NoteSearchResult } from '@/lib/noteSearch'
 
 interface SearchItem {
   id: string
@@ -138,6 +141,12 @@ function buildSearchIndex(): SearchItem[] {
   return items
 }
 
+function truncateSnippet(content: string, maxLength = 80): string {
+  const text = content.replace(/<[^>]*>/g, '')
+  if (text.length <= maxLength) return text
+  return text.slice(0, maxLength).trimEnd() + '…'
+}
+
 interface SearchCommandPaletteProps {
   open: boolean
   onOpenChange: (open: boolean) => void
@@ -146,13 +155,37 @@ interface SearchCommandPaletteProps {
 export function SearchCommandPalette({ open, onOpenChange }: SearchCommandPaletteProps) {
   const navigate = useNavigate()
   const previouslyFocusedRef = useRef<HTMLElement | null>(null)
+  const [searchQuery, setSearchQuery] = useState('')
+  const [debouncedQuery, setDebouncedQuery] = useState('')
+  const [noteResults, setNoteResults] = useState<NoteSearchResult[]>([])
 
-  // Capture the element that had focus before the dialog opened
+  // Capture focus and reset state on open/close
   useEffect(() => {
     if (open) {
       previouslyFocusedRef.current = document.activeElement as HTMLElement
+    } else {
+      setSearchQuery('')
+      setDebouncedQuery('')
+      setNoteResults([])
     }
   }, [open])
+
+  // 150ms debounce for note search
+  useEffect(() => {
+    const timer = setTimeout(() => {
+      setDebouncedQuery(searchQuery)
+    }, 150)
+    return () => clearTimeout(timer)
+  }, [searchQuery])
+
+  // Run MiniSearch on debounced query
+  useEffect(() => {
+    if (!debouncedQuery.trim()) {
+      setNoteResults([])
+      return
+    }
+    setNoteResults(searchNotesWithContext(debouncedQuery))
+  }, [debouncedQuery])
 
   const handleOpenChange = (newOpen: boolean) => {
     onOpenChange(newOpen)
@@ -168,21 +201,80 @@ export function SearchCommandPalette({ open, onOpenChange }: SearchCommandPalett
     navigate(path)
   }
 
+  const handleNoteSelect = (result: NoteSearchResult) => {
+    handleOpenChange(false)
+    let path = `/courses/${result.courseId}/${result.videoId}?panel=notes`
+    if (result.timestamp != null) {
+      path += `&t=${result.timestamp}`
+    }
+    navigate(path)
+  }
+
   // Group items
   const pages = searchIndex.filter(item => item.group === 'Pages')
   const courses = searchIndex.filter(item => item.group === 'Courses')
   const lessons = searchIndex.filter(item => item.group === 'Lessons')
+
+  const hasNoteResults = noteResults.length > 0
+  const hasActiveQuery = debouncedQuery.trim().length > 0
 
   return (
     <CommandDialog
       open={open}
       onOpenChange={handleOpenChange}
       title="Search"
-      description="Search for pages, courses, and lessons"
+      description="Search for pages, courses, lessons, and notes"
+      filter={(value, search) => {
+        // Note items are managed by MiniSearch — always show them
+        if (value.startsWith('note:')) return 1
+        // Default filtering for pages/courses/lessons
+        if (!search) return 1
+        return value.toLowerCase().includes(search.toLowerCase()) ? 1 : 0
+      }}
     >
-      <CommandInput placeholder="Search pages, courses, lessons..." />
+      <CommandInput
+        placeholder="Search pages, courses, lessons, notes..."
+        onValueChange={setSearchQuery}
+      />
       <CommandList>
-        <CommandEmpty>No results found.</CommandEmpty>
+        <CommandEmpty>
+          {hasActiveQuery
+            ? 'No notes found. Try different keywords or browse by tag.'
+            : 'No results found.'}
+        </CommandEmpty>
+
+        {hasNoteResults && (
+          <CommandGroup heading="Notes">
+            {noteResults.map(result => (
+              <CommandItem
+                key={result.id}
+                value={`note:${result.id}`}
+                onSelect={() => handleNoteSelect(result)}
+              >
+                <StickyNote className="mr-2 h-4 w-4 shrink-0 text-amber-500" />
+                <div className="flex flex-col gap-0.5 min-w-0">
+                  <span className="text-sm truncate">{truncateSnippet(result.content)}</span>
+                  <span className="text-xs text-muted-foreground truncate">
+                    {result.courseName}{result.videoTitle ? ` · ${result.videoTitle}` : ''}
+                  </span>
+                  {result.tags.length > 0 && (
+                    <div className="flex flex-wrap gap-1 mt-0.5">
+                      {result.tags.map(tag => (
+                        <Badge
+                          key={tag}
+                          variant="secondary"
+                          className="text-[10px] px-1.5 py-0 h-4"
+                        >
+                          {tag}
+                        </Badge>
+                      ))}
+                    </div>
+                  )}
+                </div>
+              </CommandItem>
+            ))}
+          </CommandGroup>
+        )}
 
         <CommandGroup heading="Pages">
           {pages.map(item => {

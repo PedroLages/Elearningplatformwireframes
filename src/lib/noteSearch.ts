@@ -7,11 +7,14 @@ interface SearchableNote {
   tags: string
   courseName: string
   videoTitle: string
+  courseId: string
+  videoId: string
+  timestamp?: number
 }
 
 const miniSearch = new MiniSearch<SearchableNote>({
   fields: ['content', 'tags', 'courseName', 'videoTitle'],
-  storeFields: ['id', 'courseName', 'videoTitle', 'tags'],
+  storeFields: ['id', 'courseName', 'videoTitle', 'tags', 'courseId', 'videoId', 'content', 'timestamp'],
   searchOptions: {
     boost: { tags: 2, courseName: 1.5 },
     prefix: true,
@@ -50,6 +53,9 @@ function toSearchableNote(note: Note): SearchableNote {
     tags: note.tags.join(' '),
     courseName: courseNameMap.get(note.courseId) ?? '',
     videoTitle: lessonTitleMap.get(note.videoId) ?? '',
+    courseId: note.courseId,
+    videoId: note.videoId,
+    timestamp: note.timestamp,
   }
 }
 
@@ -120,14 +126,18 @@ export function searchNotes(query: string): SearchResult[] {
 export interface NoteSearchResult {
   id: string
   score: number
+  content: string
   courseName: string
   videoTitle: string
+  courseId: string
+  videoId: string
   tags: string[]
+  timestamp?: number
 }
 
 /**
  * Search notes with enriched context for rendering in the command palette.
- * Returns results with stored fields (courseName, videoTitle, tags).
+ * Returns results with stored fields for rendering and navigation.
  */
 export function searchNotesWithContext(query: string): NoteSearchResult[] {
   if (!initialized || !query.trim()) return []
@@ -138,8 +148,12 @@ export function searchNotesWithContext(query: string): NoteSearchResult[] {
     .map(result => ({
       id: result.id as string,
       score: result.score,
+      content: (result.content as string) ?? '',
       courseName: (result.courseName as string) ?? '',
       videoTitle: (result.videoTitle as string) ?? '',
+      courseId: (result.courseId as string) ?? '',
+      videoId: (result.videoId as string) ?? '',
       tags: ((result.tags as string) ?? '').split(' ').filter(Boolean),
+      timestamp: result.timestamp as number | undefined,
     }))
 }
