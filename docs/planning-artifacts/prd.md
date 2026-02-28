@@ -1,12 +1,34 @@
 ---
-stepsCompleted: ['step-01-init', 'step-02-discovery', 'step-03-success', 'step-04-journeys', 'step-05-domain', 'step-06-innovation', 'step-07-project-type', 'step-08-scoping', 'step-09-functional', 'step-10-nonfunctional', 'step-11-polish']
+stepsCompleted: ['step-01-init', 'step-02-discovery', 'step-03-success', 'step-04-journeys', 'step-05-domain', 'step-06-innovation', 'step-07-project-type', 'step-08-scoping', 'step-09-functional', 'step-10-nonfunctional', 'step-11-polish', 'step-e-validation-edit-2026-02-28', 'step-e-domain-research-edit-2026-02-28']
+editHistory:
+  - date: '2026-02-28'
+    scope: 'Domain research integration'
+    changes:
+      - 'Added 14 domain-specific FRs (FR80-FR93) from LMS/edtech domain research'
+      - 'Added 12 domain-specific NFRs (NFR57-NFR68) for edtech accessibility, data portability, learning standards'
+      - 'Added Domain Requirements section covering learning science, accessibility compliance, data portability, content interoperability'
+      - 'Added Phase 4 (Post-MVP) to Product Scope with spaced repetition, data portability, and content standard features'
+      - 'Updated researchCount from 0 to 1'
+    researchInput: '_bmad-output/planning-artifacts/research/domain-lms-personal-learning-dashboards-research-2026-02-28.md'
+  - date: '2026-02-28'
+    scope: 'Validation-driven edit pass'
+    changes:
+      - 'Fixed 13 NFR measurability violations (subjective → quantified)'
+      - 'Removed implementation leakage (IndexedDB references in NFR4, NFR9, NFR10)'
+      - 'Converted NFR48, NFR49 from test activities to testable requirements'
+      - 'Replaced NFR35 untestable future claim with exportable Markdown requirement'
+      - 'Defined 8 vague AI/intelligence FRs (FR39-42, FR47, FR50-53) with testable specifics'
+      - 'Fixed FR13 subjective language and FR77 format (added breakpoint)'
+      - 'Added Journey 5 (gamification/momentum) and Journey 6 (AI-augmented learning)'
+      - 'Added 6-month and 9-month success criteria for analytics and AI features'
+      - 'Added FR79 completion time estimation (Journey 4 traceability gap)'
 inputDocuments:
   - CLAUDE.md
   - README.md
   - ATTRIBUTIONS.md
 workflowType: 'prd'
 briefCount: 0
-researchCount: 0
+researchCount: 1
 brainstormingCount: 0
 projectDocsCount: 3
 classification:
@@ -115,6 +137,16 @@ classification:
 - ✅ Consistent study habit maintained (80%+ weekly adherence)
 - ✅ Active application of learned skills in real projects
 - ✅ Measurable improvement in learning speed/efficiency
+- ✅ Using momentum scores and challenges to choose what to study (not random browsing)
+- ✅ Analytics dashboard consulted at least weekly
+
+**9-Month Success Metrics:**
+
+- ✅ AI video summaries used for at least 50% of new videos
+- ✅ AI note Q&A used at least 3 times per week for recall
+- ✅ Cross-course concept connections surfaced and acted on
+- ✅ Learning velocity shows measurable upward trend over 3+ months
+- ✅ Knowledge gap suggestions lead to revisiting and completing skipped content
 
 ## Product Scope
 
@@ -220,6 +252,38 @@ classification:
    - Bulk course import
    - Tag management across multiple courses
    - Export notes to external tools
+
+### Phase 4 Features (Post-MVP, Domain-Driven)
+
+**Features surfaced by domain research** (LMS/edtech standards, learning science):
+
+1. **Spaced Note Review (Learning Echoes)**
+   - Schedule notes for evidence-based review using spaced repetition algorithms
+   - 3-grade review rating (Hard / Good / Easy) with adaptive interval scheduling
+   - Review queue with predicted retention percentage per note
+   - Knowledge decay visualization (forgetting curve position per topic)
+
+2. **Data Portability & Export**
+   - Multi-format export: JSON (full data), CSV (sessions/progress), Markdown (notes with frontmatter)
+   - xAPI-compatible activity log for future LRS interoperability
+   - Open Badges v3.0 export for earned achievements
+   - GDPR Article 20 compliant data portability
+
+3. **Content Standards Awareness**
+   - WebVTT caption/subtitle file support for local videos
+   - Content metadata using Dublin Core + Schema.org Course fields
+   - Future-ready awareness of SCORM, Common Cartridge, and H5P formats
+
+4. **Advanced Learning Analytics**
+   - Session quality scoring (active time ratio, focus density, optimal length)
+   - Engagement decay detection with configurable alert thresholds
+   - Learning activity heatmap (GitHub-style contribution calendar)
+   - Interleaved review mode across multiple courses
+
+5. **Enhanced Streak Mechanics**
+   - Streak freeze (configurable rest days that don't break streak)
+   - Specific daily/weekly study goals with progress tracking
+   - Total days studied metric alongside current streak
 
 ### Vision (Future)
 
@@ -382,6 +446,68 @@ Pedro no longer downloads courses randomly and forgets about them. His learning 
 
 ---
 
+### Journey 5: The Competitor - Pedro Gamifies His Learning
+
+**Meet Pedro (Month 4):** Four months in. Phase 2 features are live. Pedro has completed 4 courses and wants to push harder.
+
+**Opening Scene - The Challenge Board:**
+Monday morning. Pedro opens the platform and sees his Challenge Board:
+- **Active Challenge:** "Complete 10 videos this week" (2/10)
+- **Course Momentum:** System Design is GREEN, Docker is YELLOW, AWS is RED (cold)
+- **At-Risk Alert:** "AWS Solutions Architect has had no activity for 18 days"
+
+**Rising Action - Motivated by Momentum:**
+
+1. **Momentum Decision:** The dashboard shows AWS is RED. Pedro decides to either archive it or commit. He opens the course and sees: "28% complete - 14 videos remaining." He creates a challenge: "Finish AWS Section 3 by Friday."
+
+2. **Challenge Stacking:** Pedro now has two active challenges running simultaneously. The platform tracks both and shows a combined progress view.
+
+3. **Adaptive Scheduling:** The system suggests: "Based on your study history, you're most productive between 7-9 PM. Schedule AWS for tonight?" Pedro accepts and sets a reminder.
+
+4. **Milestone Celebration:** After completing 5 videos, the platform celebrates: "Halfway through your weekly challenge! AWS momentum upgraded to YELLOW."
+
+**Climax - Data-Driven Decisions:**
+Pedro opens the analytics dashboard and sees:
+- **Completion velocity:** 3.2 videos/day this week (up from 2.1 last month)
+- **Insight:** "Your completion rate improves 40% when you study before 9 PM"
+- **Recommendation:** "At current pace, you'll finish AWS in 9 days"
+
+He thinks: "The numbers don't lie. I'm actually getting faster."
+
+**Resolution - Intentional Growth:**
+Pedro finishes his session having cleared the at-risk warning on AWS. His challenges are on track, his momentum scores are all warm or hot, and the analytics confirm his habits are improving.
+
+**The platform turned abstract motivation into measurable progress.**
+
+---
+
+### Journey 6: The AI-Augmented Learner - Pedro Leverages AI for Deeper Understanding
+
+**Meet Pedro (Month 7):** Seven months in. Phase 3 AI features are live. Pedro has completed 6 courses and is tackling advanced system design topics.
+
+**Opening Scene - The Complex Topic:**
+Thursday evening. Pedro is watching a video on distributed consensus algorithms. The content is dense, and he's struggling to connect it to earlier material on CAP theorem.
+
+**Rising Action - AI-Powered Learning:**
+
+1. **Video Summary:** Pedro clicks "Summarize" on the current video. Within seconds, a 200-word summary appears: key concepts, prerequisites, and connections to other topics in his library.
+
+2. **Note Q&A:** Pedro types in the AI panel: "What did I learn about CAP theorem?" The AI searches his notes and surfaces: his note from Week 3 with the original definition, a follow-up note linking CAP to database partitioning, and a tag cluster showing #distributed-systems appears in 12 notes.
+
+3. **Knowledge Gap Detection:** The AI flags: "You have 8 notes on distributed systems but none covering leader election. This video's Section 3 covers it — consider taking detailed notes."
+
+4. **Cross-Course Connections:** The "Related Concepts" panel shows: "Your React course notes on state management share patterns with distributed state discussed here. See: Note from React Course, Video 23."
+
+**Climax - Synthesis:**
+Pedro asks the AI: "Help me organize my distributed systems notes." The AI suggests a tag restructuring and links between 4 courses that cover related topics. Pedro previews the changes, approves them, and his note library gains new cross-references.
+
+**Resolution - AI as Study Partner:**
+Pedro finishes his session with deeper understanding than he'd have achieved alone. The AI didn't replace his learning — it connected the dots across months of accumulated knowledge.
+
+**He's no longer just learning — he's building a personal knowledge graph.**
+
+---
+
 ### Journey Requirements Summary
 
 These journeys reveal the following core capabilities needed:
@@ -420,12 +546,19 @@ These journeys reveal the following core capabilities needed:
 - Course momentum scoring
 - Intelligent next-step suggestions
 
-**AI-Enhanced Intelligence:**
-- Course content analysis and summaries
-- Smart Q&A based on user's own notes
-- Personalized learning path recommendations
-- Knowledge gap identification
-- Note enhancement and connection suggestions
+**Gamification & Momentum (Journey 5):**
+- Challenge stacking (multiple concurrent goals)
+- At-risk course detection and alerts
+- Adaptive study scheduling based on historical patterns
+- Momentum-driven decision making (archive vs commit)
+- Milestone celebrations with progress upgrades
+
+**AI-Enhanced Intelligence (Journey 6):**
+- On-demand video summaries (100-300 words)
+- Note Q&A with cross-course semantic search
+- Knowledge gap detection (low note density, skipped sections)
+- Cross-course concept connections and related notes panel
+- AI-assisted note organization with preview before applying
 
 ## Web App Specific Requirements
 
@@ -548,6 +681,106 @@ Single Page Application (SPA) built with React + Vite, designed as a local-first
 - Content Security Policy for XSS protection
 - Sanitize user-generated Markdown content
 - Secure AI API key storage (environment variables)
+
+## Domain Requirements
+
+### EdTech Domain Classification
+
+**Domain:** Personal Learning Management (EdTech)
+**Sub-domain:** Self-directed learning dashboards, course completion tracking, knowledge retention
+**Regulatory Context:** WCAG 2.2 AA (accessibility), GDPR Article 20 (data portability), EAA (European Accessibility Act, effective June 2025)
+
+### Learning Science Standards
+
+**Spaced Repetition & Retention:**
+
+- The platform's note review system aligns with evidence-based spacing algorithms (Cepeda et al. 2006 meta-analysis, d=0.42-0.97). Optimal spacing gap is 10-20% of desired retention period.
+- Retrieval practice (testing effect) produces d=0.50 improvement over re-study (Rowland 2014, 159 studies). Self-quiz features and note resurfacing directly support this.
+- The 3-grade review model (Hard/Good/Easy) follows established patterns from Obsidian Spaced Repetition and Anki, validated across millions of users.
+
+**Motivation & Engagement:**
+
+- Streak mechanics grounded in implementation intentions research (Gollwitzer 1999, d=0.65) and Duolingo's finding that streak length is the strongest predictor of 12-month retention.
+- Study goal setting follows Locke & Latham's goal-setting theory (2002, d=0.42-0.80 across 1000+ studies): specific goals outperform vague goals, proximal goals outperform distal goals.
+- Self-Determination Theory (Deci & Ryan 2000) informs feature design: autonomy (choose learning path), competence (mastery indicators), relatedness (future social features).
+
+**Learning Analytics:**
+
+- Session quality metrics follow research on optimal focus blocks (25-52 minutes) and cognitive performance degradation after 90 minutes continuous study.
+- Engagement decay detection uses early warning signals adapted from dropout prediction research: frequency drop, session shortening, velocity decay, completion stall.
+
+### Accessibility Compliance (EdTech-Specific)
+
+**WCAG 2.2 AA (October 2023):**
+Beyond the existing WCAG 2.1 AA+ target, WCAG 2.2 adds edtech-relevant criteria:
+
+- SC 2.4.11 Focus Not Obscured: Focused elements not hidden by sticky headers or floating video players
+- SC 2.5.7 Dragging Movements: Single-pointer alternative for all drag interactions (volume sliders, progress scrubbers)
+- SC 2.5.8 Target Size: Interactive targets ≥24×24 CSS pixels
+- SC 3.2.6 Consistent Help: Help mechanisms in same position on every page
+- SC 3.3.7 Redundant Entry: Auto-populate previously entered data in multi-step flows
+
+**Video Accessibility (FCC + WCAG):**
+
+- Caption synchronization within 200ms of corresponding audio (FCC standard)
+- SRT/VTT sidecar caption file support for locally-stored videos
+- Audio description or text alternative for visual-only video content (WCAG 1.2.5 AA)
+- Standard keyboard bindings: Space=play/pause, arrows=seek/volume, M=mute, C=captions
+
+**Cognitive Accessibility (W3C COGA):**
+
+- Consistent navigation order across all pages
+- Confirmation dialogs for all destructive actions
+- Progress indicators with text equivalents (not visual-only bars)
+- Clear visual hierarchy with chunked content
+
+**Chart/Visualization Accessibility:**
+
+- Alt text for simple charts; data table alternative for complex charts
+- Color never sole differentiator (patterns, labels, or textures required)
+- SVG charts use `<title>` + `<desc>` elements
+- Graphical objects maintain minimum 3:1 contrast (WCAG 1.4.11)
+
+### Data Portability & Learning Records
+
+**Export Standards:**
+
+- xAPI (Experience API) statement format for activity logging: Actor + Verb + Object structure enables future interoperability with Learning Record Stores
+- Open Badges v3.0 for achievement export: W3C Verifiable Credentials compatible, self-issued badges are valid per spec
+- Markdown with YAML frontmatter for note export (compatible with Obsidian, Notion, any editor)
+- JSON with schema versioning for full data export
+- CSV for tabular data (sessions, progress, streaks) compatible with Excel/Google Sheets
+
+**Data Sovereignty (Local-First):**
+
+- All learning data stored locally — no server-side transmission without explicit per-feature user consent
+- Each AI feature has independent consent toggle for cloud data transmission
+- Cloud AI calls send aggregated/anonymized data only, never raw personal notes
+- Full data deletion capability with single action
+- Schema versioned with non-destructive automatic migrations
+
+**GDPR Article 20 Compliance:**
+
+- Full data export in structured, machine-readable format (JSON, CSV)
+- Export completes within 30 seconds regardless of data volume
+- Exported data includes schema documentation (parseable without the app)
+- Round-trip fidelity: exported data can be re-imported with ≥95% semantic fidelity
+
+### Content Format Awareness
+
+**Immediate Relevance (Phase 1-3):**
+
+- WebVTT for video captions/transcripts (native browser support via `<track>` element)
+- Dublin Core metadata fields (title, creator, subject, description, date, language) for course records
+- Schema.org Course type for structured course metadata
+
+**Future Interoperability (Phase 4+):**
+
+- SCORM package import awareness (imsmanifest.xml parsing, SCO rendering via iframe)
+- Common Cartridge (.imscc) for importing course structures from institutional LMS
+- H5P interactive content playback
+- cmi5/xAPI profile for content launch compatibility
+- LTI 1.3 awareness for potential institutional integration (low priority for personal tool)
 
 ## Project Scoping & Phased Development
 
@@ -769,7 +1002,7 @@ Single Page Application (SPA) built with React + Vite, designed as a local-first
 - FR10: User can resume video playback from last viewed position
 - FR11: User can navigate between videos within a course
 - FR12: User can view course structure showing sections, videos, and PDFs
-- FR13: User can access content viewing interface optimized for minimal distractions
+- FR13: Content viewing interface displays only the video/PDF player, note panel, and course navigation — no sidebar, dashboard widgets, or unrelated UI elements
 
 ### Progress & Session Tracking
 
@@ -791,7 +1024,7 @@ Single Page Application (SPA) built with React + Vite, designed as a local-first
 - FR26: User can view all notes for a specific course
 - FR27: System can automatically save notes without requiring manual save action
 - FR76: User can insert current video timestamp into note via keyboard shortcut (Alt+T in editor). *(Added during epic decomposition; derived from FR24.)*
-- FR77: Note editor displays in side-by-side layout with video player on desktop, stacked on mobile. *(Added during epic decomposition; derived from UX Design Specification.)*
+- FR77: User can view the note editor alongside the video player in a side-by-side layout on desktop (1024px+) and stacked layout on mobile (<1024px). *(Added during epic decomposition; derived from UX Design Specification.)*
 
 ### Motivation & Gamification
 
@@ -809,10 +1042,11 @@ Single Page Application (SPA) built with React + Vite, designed as a local-first
 - FR36: User can view momentum score for each course displayed as hot/warm/cold indicator
 - FR37: User can sort course list by momentum score
 - FR38: System can calculate course momentum based on study recency, completion percentage, and study frequency
-- FR39: User can receive course recommendations based on current study patterns
-- FR40: User can receive suggestions for next course to study
-- FR41: System can identify courses at risk of abandonment
-- FR42: User can receive adaptive study scheduling suggestions
+- FR79: System displays estimated completion time for each course based on remaining content and user's average study pace (e.g., "~6 weeks at 4 days/week")
+- FR39: Dashboard displays a "Recommended Next" section showing the top 3 courses ranked by momentum score, recency, and completion proximity
+- FR40: After completing a course, system suggests the next course from the user's library based on topic similarity and momentum score
+- FR41: System flags courses with no study activity for 14+ days and momentum score below 20% as "at risk" with a visual indicator in the course library
+- FR42: System suggests a daily study schedule based on the user's historical study times, active course count, and weekly goal (e.g., "Study React at 7 PM — your most productive hour")
 
 ### Analytics & Reporting
 
@@ -821,17 +1055,46 @@ Single Page Application (SPA) built with React + Vite, designed as a local-first
 - FR45: User can view and manage bookmarked lessons on a dedicated Bookmarks page (Epic 3, Story 3.7)
   > **Note:** FR45 was reassigned during epic decomposition from learning velocity metrics to bookmarks management. The original velocity metrics requirement is preserved as FR78 below.
 - FR46: User can see retention insights comparing completed versus abandoned courses
-- FR47: User can receive personalized insights and recommendations based on study patterns
+- FR47: Analytics dashboard displays 3-5 actionable insights derived from study patterns (e.g., "Your completion rate improves 40% when you study before 9 PM")
 - FR78: User can view learning velocity metrics — completion rate over time (videos completed per week), content consumed per hour (duration watched / time spent), and progress acceleration/deceleration trends (week-over-week comparison). *(Added to preserve original FR45 intent after FR45 was reassigned to bookmarks. Implemented in Epic 7 Story 7.3.)*
 
 ### AI-Powered Assistance
 
-- FR48: User can request AI-generated summaries of video content
+- FR48: User can request an AI-generated summary (100-300 words) of a video's content, displayed in a collapsible panel alongside the video
 - FR49: User can ask questions and receive answers based on their own notes
-- FR50: User can receive AI-suggested optimal learning paths
-- FR51: System can identify knowledge gaps and suggest reinforcement activities
-- FR52: User can receive AI assistance with note organization and enhancement
-- FR53: System can suggest connections between concepts across different courses
+- FR50: User can view an AI-generated learning path that orders their imported courses by prerequisite relationships and topic progression
+- FR51: System identifies topics with low note density or skipped videos and suggests specific videos/sections to revisit for reinforcement
+- FR52: User can request AI to auto-tag, categorize, and link related notes across courses, with a preview before applying changes
+- FR53: System displays a "Related Concepts" panel showing notes from other courses that share tags or semantic similarity with the current note
+
+### Knowledge Retention & Review *(Domain-driven: Learning Science)*
+
+- FR80: User can schedule notes for spaced review using a 3-grade rating system (Hard / Good / Easy) that adjusts the next review interval based on recall difficulty
+- FR81: User can view a review queue showing notes due for review, sorted by predicted retention percentage (lowest retention first)
+- FR82: User can view knowledge retention status per topic showing time since last review and estimated retention level (strong / fading / weak, based on days elapsed vs. review interval)
+- FR83: System detects engagement decay when study frequency drops below 50% of the user's 2-week rolling average, session duration declines more than 30% over 4 weeks, or completion velocity is negative for 3+ consecutive weeks — and displays a contextual alert
+- FR84: System scores each study session on a 0-100 scale based on active time ratio (40% weight), interaction density (30% weight), session length within 25-52 minute optimal range (15% weight), and breaks taken (15% weight)
+
+### Data Portability & Export *(Domain-driven: EdTech Standards)*
+
+- FR85: User can export all learning data in three formats: JSON (full structured data with schema version), CSV (sessions, progress, and streak tabular data), and Markdown (notes with YAML frontmatter including title, tags, course, and timestamp)
+- FR86: System logs learning activities using an Actor + Verb + Object structure compatible with the xAPI statement format, enabling future export to Learning Record Stores
+- FR87: User can export earned achievements as Open Badges v3.0 JSON files containing badge name, description, criteria, evidence, and issuance date
+- FR88: User can load SRT or WebVTT caption/subtitle files alongside local video content, with captions displayed synchronized to video playback
+
+### Content Metadata *(Domain-driven: Content Standards)*
+
+- FR89: System stores course metadata using standard fields: title, creator, subject, description, language, date added, estimated duration, and difficulty level
+
+### Enhanced Motivation *(Domain-driven: Streak Psychology)*
+
+- FR90: User can set specific daily or weekly study goals (e.g., "Study 45 minutes daily" or "Complete 5 videos this week") and view progress against those goals on the dashboard
+- FR91: User can configure streak freeze days (1-3 per week) that count as rest days without breaking the study streak
+
+### Advanced Analytics *(Domain-driven: Learning Analytics)*
+
+- FR92: User can activate an interleaved review mode that surfaces notes from multiple courses in a mixed sequence, weighted by topic similarity and time since last review
+- FR93: User can view a learning activity heatmap showing daily study activity over the past 12 months, with color intensity indicating session duration
 
 ## Non-Functional Requirements
 
@@ -840,13 +1103,13 @@ Single Page Application (SPA) built with React + Vite, designed as a local-first
 **Load Time Requirements:**
 - NFR1: Initial app load completes in less than 2 seconds (cold start)
 - NFR2: Route navigation completes in less than 200ms (instant feel)
-- NFR3: Video playback starts instantly with no buffering for local files
-- NFR4: IndexedDB queries complete in less than 100ms (note search, progress loading)
+- NFR3: Video playback starts within 500ms of user action for local files (no network buffering)
+- NFR4: Data queries (note search, progress loading) complete in less than 100ms
 - NFR5: Note autosave completes in less than 50ms (invisible to user)
 
 **Resource Constraints:**
 - NFR6: Initial bundle size does not exceed 500KB (gzipped)
-- NFR7: Memory footprint remains stable during extended use (no memory leaks)
+- NFR7: Memory usage does not increase by more than 50MB over a 2-hour session (no memory leaks as measured by browser DevTools heap snapshots)
 
 **Optimization Strategies:**
 - Code splitting via React Router lazy loading
@@ -859,30 +1122,30 @@ Single Page Application (SPA) built with React + Vite, designed as a local-first
 
 **Data Persistence:**
 - NFR8: Zero data loss for notes, progress, or course metadata under normal operation
-- NFR9: All user data persists in IndexedDB with automatic save (no manual save required)
-- NFR10: System recovers gracefully from IndexedDB write failures with error notification
+- NFR9: All user data persists in local storage with automatic save (no manual save required)
+- NFR10: System detects storage write failures within 1 second and displays a user-visible error notification with retry option
 
 **Error Handling:**
-- NFR11: File system errors (moved/renamed courses) display clear user messages with recovery options
-- NFR12: AI API failures degrade gracefully without blocking core functionality
-- NFR13: Invalid file formats are detected and reported with helpful error messages
+- NFR11: File system errors (moved/renamed courses) display a toast notification within 2 seconds identifying the affected file and offering re-link or remove options
+- NFR12: AI API failures fall back to non-AI workflows within 2 seconds, with all core features (import, playback, notes, progress) remaining fully functional
+- NFR13: Invalid file formats are detected during import and reported with a message identifying the unsupported format and listing accepted formats
 
 **Data Integrity:**
 - NFR14: Notes are autosaved every 3 seconds during editing with conflict resolution
 - NFR15: Progress tracking data is atomic (completion state changes are all-or-nothing)
-- NFR16: Course metadata is validated on import with clear feedback on issues
+- NFR16: Course metadata is validated on import; validation errors display inline next to the affected field within 1 second of import
 
 ### Usability
 
 **Frictionless Daily Use:**
-- NFR17: No barriers to opening app and starting study session (zero-click resume)
+- NFR17: User can resume last study session within 1 click from app launch (dashboard shows "Continue Learning" button)
 - NFR18: Core workflows (import course, watch video, take notes) require no documentation
 - NFR19: User can complete primary tasks (mark complete, add note, create challenge) in under 3 clicks
 
 **Workflow Efficiency:**
 - NFR20: Video resume functionality loads user to exact last position within 1 second
 - NFR21: Search results appear as user types with no perceptible delay (< 100ms)
-- NFR22: Navigation between courses, videos, and notes is instant (no loading states)
+- NFR22: Navigation between courses, videos, and notes completes in under 200ms (no visible loading spinners)
 
 **Error Prevention:**
 - NFR23: Destructive actions (delete course, clear progress) require confirmation
@@ -895,17 +1158,17 @@ Single Page Application (SPA) built with React + Vite, designed as a local-first
 - NFR26: AI API requests timeout after 30 seconds with fallback error handling
 - NFR27: AI API keys are stored securely in environment variables (not in code)
 - NFR28: System supports multiple AI providers (OpenAI, Anthropic) with configurable selection
-- NFR29: AI features degrade gracefully when API is unavailable (core features remain functional)
+- NFR29: When AI API is unavailable, AI-dependent UI elements display "AI unavailable" status and all non-AI features remain fully operational
 
 **File System Integration:**
-- NFR30: Web File System Access API handles folder selection with clear permission prompts
-- NFR31: System detects and handles file system changes (moved/renamed files) without crashing
+- NFR30: Folder selection triggers a browser-native permission prompt; denied permissions display a message explaining required access with a retry button
+- NFR31: System detects missing or relocated files on course load and marks affected items with a "file not found" badge without crashing or blocking other courses
 - NFR32: Course import supports video formats (MP4, MKV, AVI, WEBM) and PDF files
 - NFR33: File reading operations handle large files (2GB+ videos) without memory issues
 
 **Future Integration Readiness:**
 - NFR34: Data export functionality supports standard formats (JSON, Markdown) for migration
-- NFR35: Note storage structure allows future integration with external tools (Notion, Obsidian)
+- NFR35: Notes are exportable as individual Markdown files with frontmatter (title, tags, course, date) preserving the original Markdown content
 
 ### Accessibility
 
@@ -928,8 +1191,8 @@ Single Page Application (SPA) built with React + Vite, designed as a local-first
 
 **Validation:**
 - NFR47: Lighthouse accessibility audits score 100 (or identify and document exceptions)
-- NFR48: Manual keyboard navigation testing confirms all workflows are keyboard-accessible
-- NFR49: Screen reader testing (VoiceOver/NVDA) validates meaningful navigation
+- NFR48: All primary workflows (import, playback, note-taking, progress tracking) are completable using keyboard-only navigation without mouse interaction
+- NFR49: Screen reader users (VoiceOver/NVDA) can navigate all page regions, read content, and operate interactive controls via announced labels and landmarks
 
 ### Security
 
@@ -944,5 +1207,24 @@ Single Page Application (SPA) built with React + Vite, designed as a local-first
 - NFR55: Course content and notes never leave user's device (except explicit AI queries)
 
 **Authentication:**
+
 - NFR56: No authentication required (personal single-user tool on local device)
+
+### EdTech Accessibility *(Domain-driven: WCAG 2.2 + EdTech Standards)*
+
+- NFR57: Application meets WCAG 2.2 Level AA success criteria including SC 2.4.11 (focused elements not obscured by sticky headers or floating UI), SC 2.5.7 (single-pointer alternative for all drag interactions), and SC 2.5.8 (interactive targets ≥24×24 CSS pixels)
+- NFR58: Video player supports full keyboard operation with standard bindings: Space/Enter = play/pause, Left/Right arrows = seek ±5s, Up/Down arrows = volume ±10%, M = mute, C = toggle captions, F = fullscreen, Escape = exit fullscreen
+- NFR59: Loaded caption files (SRT/VTT) display synchronized within 200ms of corresponding audio as measured by timestamp comparison
+- NFR60: All progress indicators use `role="progressbar"` with `aria-valuenow`, `aria-valuemin`, `aria-valuemax` attributes and include a visible text equivalent (e.g., "75% complete")
+- NFR61: Charts and data visualizations include alt text descriptions, provide a data table alternative for complex charts, and never rely on color alone as the sole differentiator (patterns, labels, or textures required)
+- NFR62: Navigation order remains consistent across all pages, all destructive actions require confirmation, and all auto-updating content (animations, live progress) is pausable or stoppable
+
+### Data Portability *(Domain-driven: GDPR, xAPI, Learning Records)*
+
+- NFR63: Full data export in structured, machine-readable format (JSON with schema version, CSV) completes within 30 seconds regardless of data volume
+- NFR64: All learning data is stored locally with no server-side data transmission occurring without explicit per-feature user consent
+- NFR65: All data schemas include a version identifier; schema changes apply non-destructive automatic migrations that preserve existing data
+- NFR66: Cloud AI features transmit only aggregated or anonymized data (never raw personal notes or full session logs); each AI feature has an independent user consent toggle
+- NFR67: Exported data can be re-imported into the application with ≥95% semantic fidelity (no loss of notes, progress, tags, or timestamps)
+- NFR68: All animations and transitions respect the `prefers-reduced-motion` media query by disabling or reducing motion to static alternatives
 
