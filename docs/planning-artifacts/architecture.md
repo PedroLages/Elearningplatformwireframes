@@ -2208,9 +2208,11 @@ Study session ends
 **Future Directories:**
 - `src/stores/` - Zustand stores (Phase 1)
 - `src/db/` - Dexie.js schema (Phase 1)
-- `src/search/` - MiniSearch integration (Phase 2)
-- `src/ai/` - AI integration (Phase 3)
-- `src/analytics/` - Analytics algorithms (Phase 3)
+- `src/search/` - MiniSearch integration (Phase 1)
+- `src/analytics/` - Analytics algorithms (Phase 2)
+- `src/app/components/flashcards/` - Flashcard components (Phase 3)
+- `src/app/components/ai/` - AI tutor components (Phase 4)
+- `src/ai/` - AI integration (Phase 4)
 
 ---
 
