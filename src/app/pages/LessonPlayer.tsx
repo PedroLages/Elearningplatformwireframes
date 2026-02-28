@@ -303,10 +303,10 @@ export function LessonPlayer() {
     }
   }
 
-  const handleNoteChange = (value: string) => {
+  const handleNoteChange = (value: string, tags: string[] = []) => {
     setNoteText(value)
     if (courseId && lessonId) {
-      saveNote(courseId, lessonId, value)
+      saveNote(courseId, lessonId, value, tags)
     }
   }
 
@@ -571,6 +571,7 @@ export function LessonPlayer() {
               courseId={courseId || ''}
               lessonId={lessonId || ''}
               initialContent={noteText}
+              currentVideoTime={videoCurrentTime}
               onSave={handleNoteChange}
               onVideoSeek={handleVideoSeek}
             />
