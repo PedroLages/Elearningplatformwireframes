@@ -67,6 +67,17 @@ export function LessonPlayer() {
   const [seekToTime, setSeekToTime] = useState<number | undefined>(undefined)
   const [bookmarks, setBookmarks] = useState<import('@/data/types').VideoBookmark[]>([])
 
+  // Seek to timestamp from ?t= query param (used by note timestamp links)
+  useEffect(() => {
+    const t = searchParams.get('t')
+    if (t) {
+      const seconds = Number(t)
+      if (!isNaN(seconds) && seconds >= 0) {
+        setSeekToTime(seconds)
+      }
+    }
+  }, [searchParams])
+
   // Celebration modal state
   const [celebrationModal, setCelebrationModal] = useState(false)
   const [celebrationType, setCelebrationType] = useState<CelebrationType>('lesson')
