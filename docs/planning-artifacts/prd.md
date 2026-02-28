@@ -22,6 +22,19 @@ editHistory:
       - 'Added Journey 5 (gamification/momentum) and Journey 6 (AI-augmented learning)'
       - 'Added 6-month and 9-month success criteria for analytics and AI features'
       - 'Added FR79 completion time estimation (Journey 4 traceability gap)'
+  - date: '2026-02-28'
+    scope: 'Validation report fix pass (critical + warnings)'
+    changes:
+      - 'Added Executive Summary section (critical completeness gap)'
+      - 'Fixed 5 FR format violations: FR13, FR39, FR47, FR79, FR84 rewritten with User/System can actor pattern'
+      - 'Fixed 7 SMART-flagged FRs: FR30 (notification specifics), FR32 (challenge fields), FR35 (milestone thresholds), FR42 (productive hour definition), FR46 (abandoned definition + metrics), FR49 (citation + UI surface), FR50 (ordering justification + override)'
+      - 'Fixed FR ambiguity: FR40 (tag-weighted ranking), FR51 (note density threshold), FR53 (matching criteria), FR82 (retention tier ratios)'
+      - 'Fixed 3 implementation leakages: FR76 (generalized key binding), NFR28 (vendor names → capability count), removed Optimization Strategies block'
+      - 'Fixed 17 NFR measurability violations: NFR2, NFR5, NFR8, NFR9, NFR13, NFR15, NFR18, NFR23, NFR24, NFR25, NFR27, NFR33, NFR37, NFR40, NFR43, NFR44, NFR53, NFR54, NFR56'
+      - 'Consolidated duplicates: NFR34 → FR85, NFR41 → NFR58'
+      - 'Added 8 traceability FRs (FR94-FR101): feature usage telemetry, Continue Learning button, onboarding prompts, proactive AI note-linking, streak milestones, import-triggered AI, per-course reminders, weekly adherence'
+      - 'Updated NFR17 to reference promoted FR95'
+    validationInput: 'docs/planning-artifacts/prd-validation-report.md'
 inputDocuments:
   - CLAUDE.md
   - README.md
@@ -58,6 +71,21 @@ classification:
 
 **Author:** Pedro
 **Date:** 2026-02-13
+
+## Executive Summary
+
+LevelUp is a personal learning platform for self-directed learners who accumulate locally-stored courses (video tutorials, PDFs) but struggle to complete them. The core problem is "course collection paralysis" — users download or purchase courses that remain unfinished for months or years, with no system for tracking progress, maintaining momentum, or retaining knowledge across courses.
+
+**Target User:** Self-directed solo learner managing a personal library of locally-stored educational content.
+
+**Core Solution:** A local-first web application that combines course management, progress tracking, study streaks, gamified motivation, and AI-powered learning assistance to transform passive course collection into active, measurable learning.
+
+**Key Differentiators:**
+
+- **Local-first:** All data stays on the user's device — no account, no cloud dependency
+- **Gamified momentum:** Study streaks, learning challenges, and momentum scoring sustain motivation
+- **AI-augmented:** AI summaries, Q&A, and cross-course connections enhance comprehension and retention
+- **Completion-focused:** Every feature drives course completion, not just consumption
 
 ## Success Criteria
 
@@ -1002,7 +1030,7 @@ Beyond the existing WCAG 2.1 AA+ target, WCAG 2.2 adds edtech-relevant criteria:
 - FR10: User can resume video playback from last viewed position
 - FR11: User can navigate between videos within a course
 - FR12: User can view course structure showing sections, videos, and PDFs
-- FR13: Content viewing interface displays only the video/PDF player, note panel, and course navigation — no sidebar, dashboard widgets, or unrelated UI elements
+- FR13: User can view content in a focused interface showing only the video/PDF player, note panel, and course navigation — no sidebar, dashboard widgets, or unrelated UI elements
 
 ### Progress & Session Tracking
 
@@ -1023,30 +1051,30 @@ Beyond the existing WCAG 2.1 AA+ target, WCAG 2.2 adds edtech-relevant criteria:
 - FR25: User can navigate to specific video position from timestamped note
 - FR26: User can view all notes for a specific course
 - FR27: System can automatically save notes without requiring manual save action
-- FR76: User can insert current video timestamp into note via keyboard shortcut (Alt+T in editor). *(Added during epic decomposition; derived from FR24.)*
+- FR76: User can insert current video timestamp into note via a configurable keyboard shortcut. *(Added during epic decomposition; derived from FR24.)*
 - FR77: User can view the note editor alongside the video player in a side-by-side layout on desktop (1024px+) and stacked layout on mobile (<1024px). *(Added during epic decomposition; derived from UX Design Specification.)*
 
 ### Motivation & Gamification
 
 - FR28: User can view daily study streak counter
 - FR29: User can view visual calendar showing study history
-- FR30: User can configure reminders to maintain study streak
+- FR30: User can configure browser notifications as study reminders with selectable trigger conditions: daily at a chosen time, or when a streak is within 2 hours of breaking (no activity for 22+ hours)
 - FR31: User can pause study streak without losing history
-- FR32: User can create learning challenges with specific goals
+- FR32: User can create learning challenges by specifying a name, target metric (videos completed, study hours, or streak days), target value, and deadline
 - FR33: User can track progress against active learning challenges
 - FR34: User can create completion-based, time-based, or streak-based challenge types
-- FR35: System can provide visual feedback when challenge milestones are achieved
+- FR35: System can display a toast notification with milestone badge when a challenge reaches 25%, 50%, 75%, or 100% of its target value
 
 ### Learning Intelligence
 
 - FR36: User can view momentum score for each course displayed as hot/warm/cold indicator
 - FR37: User can sort course list by momentum score
 - FR38: System can calculate course momentum based on study recency, completion percentage, and study frequency
-- FR79: System displays estimated completion time for each course based on remaining content and user's average study pace (e.g., "~6 weeks at 4 days/week")
-- FR39: Dashboard displays a "Recommended Next" section showing the top 3 courses ranked by momentum score, recency, and completion proximity
-- FR40: After completing a course, system suggests the next course from the user's library based on topic similarity and momentum score
+- FR79: System can display estimated completion time for each course based on remaining content and user's average study pace (e.g., "~6 weeks at 4 days/week")
+- FR39: User can view a "Recommended Next" section on the dashboard showing the top 3 courses ranked by momentum score, recency, and completion proximity
+- FR40: After completing a course, system suggests the next course from the user's library ranked by shared tags (weighted 60%) and momentum score (weighted 40%)
 - FR41: System flags courses with no study activity for 14+ days and momentum score below 20% as "at risk" with a visual indicator in the course library
-- FR42: System suggests a daily study schedule based on the user's historical study times, active course count, and weekly goal (e.g., "Study React at 7 PM — your most productive hour")
+- FR42: System suggests a daily study schedule based on the user's historical study times (the hour with the highest average session count over the past 30 days), active course count, and weekly goal (e.g., "Study React at 7 PM — your highest-activity hour")
 
 ### Analytics & Reporting
 
@@ -1054,26 +1082,26 @@ Beyond the existing WCAG 2.1 AA+ target, WCAG 2.2 adds edtech-relevant criteria:
 - FR44: User can track course completion rates over time
 - FR45: User can view and manage bookmarked lessons on a dedicated Bookmarks page (Epic 3, Story 3.7)
   > **Note:** FR45 was reassigned during epic decomposition from learning velocity metrics to bookmarks management. The original velocity metrics requirement is preserved as FR78 below.
-- FR46: User can see retention insights comparing completed versus abandoned courses
-- FR47: Analytics dashboard displays 3-5 actionable insights derived from study patterns (e.g., "Your completion rate improves 40% when you study before 9 PM")
+- FR46: User can see retention insights comparing completed courses versus abandoned courses (no activity for 14+ days with <100% completion), showing average study frequency, time-to-completion, and notes-per-video ratio for each group
+- FR47: User can view 3-5 actionable insights on the analytics dashboard derived from study patterns (e.g., "Your completion rate improves 40% when you study before 9 PM")
 - FR78: User can view learning velocity metrics — completion rate over time (videos completed per week), content consumed per hour (duration watched / time spent), and progress acceleration/deceleration trends (week-over-week comparison). *(Added to preserve original FR45 intent after FR45 was reassigned to bookmarks. Implemented in Epic 7 Story 7.3.)*
 
 ### AI-Powered Assistance
 
 - FR48: User can request an AI-generated summary (100-300 words) of a video's content, displayed in a collapsible panel alongside the video
-- FR49: User can ask questions and receive answers based on their own notes
-- FR50: User can view an AI-generated learning path that orders their imported courses by prerequisite relationships and topic progression
-- FR51: System identifies topics with low note density or skipped videos and suggests specific videos/sections to revisit for reinforcement
+- FR49: User can ask questions in a chat-style panel and receive answers citing specific source notes (note title and linked video), generated from the user's own note corpus
+- FR50: User can view an AI-generated learning path that orders their imported courses by inferred prerequisite relationships (based on course titles, metadata, and note content) with a justification for each ordering decision and manual drag-to-reorder override
+- FR51: System identifies topics with fewer than 1 note per 3 videos or skipped videos (marked complete without watching >50% duration) and suggests specific videos/sections to revisit for reinforcement
 - FR52: User can request AI to auto-tag, categorize, and link related notes across courses, with a preview before applying changes
-- FR53: System displays a "Related Concepts" panel showing notes from other courses that share tags or semantic similarity with the current note
+- FR53: System displays a "Related Concepts" panel showing notes from other courses that share 1+ tags or AI-determined topical overlap (minimum 2 shared key terms), with each suggestion showing the matching reason
 
 ### Knowledge Retention & Review *(Domain-driven: Learning Science)*
 
 - FR80: User can schedule notes for spaced review using a 3-grade rating system (Hard / Good / Easy) that adjusts the next review interval based on recall difficulty
 - FR81: User can view a review queue showing notes due for review, sorted by predicted retention percentage (lowest retention first)
-- FR82: User can view knowledge retention status per topic showing time since last review and estimated retention level (strong / fading / weak, based on days elapsed vs. review interval)
+- FR82: User can view knowledge retention status per topic showing time since last review and estimated retention level: strong (≤100% of review interval elapsed), fading (100-200% elapsed), or weak (>200% elapsed)
 - FR83: System detects engagement decay when study frequency drops below 50% of the user's 2-week rolling average, session duration declines more than 30% over 4 weeks, or completion velocity is negative for 3+ consecutive weeks — and displays a contextual alert
-- FR84: System scores each study session on a 0-100 scale based on active time ratio (40% weight), interaction density (30% weight), session length within 25-52 minute optimal range (15% weight), and breaks taken (15% weight)
+- FR84: System can score each study session on a 0-100 scale based on active time ratio (40% weight), interaction density (30% weight), session length within 25-52 minute optimal range (15% weight), and breaks taken (15% weight)
 
 ### Data Portability & Export *(Domain-driven: EdTech Standards)*
 
@@ -1084,7 +1112,7 @@ Beyond the existing WCAG 2.1 AA+ target, WCAG 2.2 adds edtech-relevant criteria:
 
 ### Content Metadata *(Domain-driven: Content Standards)*
 
-- FR89: System stores course metadata using standard fields: title, creator, subject, description, language, date added, estimated duration, and difficulty level
+- FR89: System can store course metadata using standard fields: title, creator, subject, description, language, date added, estimated duration, and difficulty level *(traces to FR4 course metadata display and FR50 learning path ordering)*
 
 ### Enhanced Motivation *(Domain-driven: Streak Psychology)*
 
@@ -1096,50 +1124,54 @@ Beyond the existing WCAG 2.1 AA+ target, WCAG 2.2 adds edtech-relevant criteria:
 - FR92: User can activate an interleaved review mode that surfaces notes from multiple courses in a mixed sequence, weighted by topic similarity and time since last review
 - FR93: User can view a learning activity heatmap showing daily study activity over the past 12 months, with color intensity indicating session duration
 
+### Traceability Gap Closures *(Validation-driven)*
+
+- FR94: User can view feature usage statistics showing usage frequency for AI features (summaries generated, Q&A questions asked, cross-course connections viewed) over daily, weekly, and monthly periods *(closes success criteria gaps: "AI summaries used for 50%+ videos," "AI Q&A used 3x/week," "cross-course connections acted on")*
+- FR95: User can resume their last study session directly from a "Continue Learning" button on the dashboard, loading the most recent course at the last video position *(promoted from NFR17 — functional capability, not quality attribute)*
+- FR96: System can display onboarding prompts during first use guiding the user through importing a course, starting a study session, and creating a first learning challenge *(traces to Journey 1 onboarding flow)*
+- FR97: System can proactively suggest AI-generated note links when a newly saved note shares 2+ tags or key terms with existing notes across other courses, with an accept/dismiss action *(traces to Journey 2 — unprompted AI suggestions)*
+- FR98: System can display a toast notification with streak milestone badge when the user reaches 7-day, 30-day, 60-day, and 100-day streak milestones *(traces to Journey 2 — streak celebrations distinct from challenge milestones in FR35)*
+- FR99: System can trigger AI analysis (summary generation, topic tagging) automatically when a new course is imported, with results available on next course view *(traces to Journey 4 — import-triggered AI)*
+- FR100: User can configure per-course study reminders with selectable days and times independent of the streak reminder in FR30 *(traces to Journey 5 — per-course scheduling)*
+- FR101: User can view weekly adherence percentage (study days / target days) on the dashboard and in analytics *(closes success criteria gap: "80%+ weekly adherence")*
+
 ## Non-Functional Requirements
 
 ### Performance
 
 **Load Time Requirements:**
 - NFR1: Initial app load completes in less than 2 seconds (cold start)
-- NFR2: Route navigation completes in less than 200ms (instant feel)
+- NFR2: Route navigation completes in less than 200ms
 - NFR3: Video playback starts within 500ms of user action for local files (no network buffering)
 - NFR4: Data queries (note search, progress loading) complete in less than 100ms
-- NFR5: Note autosave completes in less than 50ms (invisible to user)
+- NFR5: Note autosave completes in less than 50ms
 
 **Resource Constraints:**
 - NFR6: Initial bundle size does not exceed 500KB (gzipped)
 - NFR7: Memory usage does not increase by more than 50MB over a 2-hour session (no memory leaks as measured by browser DevTools heap snapshots)
 
-**Optimization Strategies:**
-- Code splitting via React Router lazy loading
-- IndexedDB indexes for fast note search
-- Virtual scrolling for large course lists (100+ courses)
-- Debounced autosave for notes
-- Optimistic UI updates for instant feedback
-
 ### Reliability
 
 **Data Persistence:**
-- NFR8: Zero data loss for notes, progress, or course metadata under normal operation
-- NFR9: All user data persists in local storage with automatic save (no manual save required)
+- NFR8: Zero data loss for notes, progress, or course metadata during standard workflows (import, edit, navigate, close/reopen); verified by round-trip test: create data → close app → reopen → all data intact
+- NFR9: All user data persists across browser sessions without requiring manual save actions; data is available after browser restart
 - NFR10: System detects storage write failures within 1 second and displays a user-visible error notification with retry option
 
 **Error Handling:**
 - NFR11: File system errors (moved/renamed courses) display a toast notification within 2 seconds identifying the affected file and offering re-link or remove options
 - NFR12: AI API failures fall back to non-AI workflows within 2 seconds, with all core features (import, playback, notes, progress) remaining fully functional
-- NFR13: Invalid file formats are detected during import and reported with a message identifying the unsupported format and listing accepted formats
+- NFR13: Invalid file formats are detected within 1 second of import attempt and reported with a message identifying the unsupported format and listing accepted formats
 
 **Data Integrity:**
 - NFR14: Notes are autosaved every 3 seconds during editing with conflict resolution
-- NFR15: Progress tracking data is atomic (completion state changes are all-or-nothing)
+- NFR15: Progress tracking data is atomic — completion state changes are all-or-nothing; a failed write does not leave partial state (verified by interrupting a save operation and confirming prior state is intact)
 - NFR16: Course metadata is validated on import; validation errors display inline next to the affected field within 1 second of import
 
 ### Usability
 
 **Frictionless Daily Use:**
-- NFR17: User can resume last study session within 1 click from app launch (dashboard shows "Continue Learning" button)
-- NFR18: Core workflows (import course, watch video, take notes) require no documentation
+- NFR17: User can resume last study session within 1 click from app launch *(functional behavior promoted to FR95; this NFR retains the performance criterion: resume loads within 1 click)*
+- NFR18: Core workflows (import course, watch video, take notes) are completable by a new user within 2 minutes without consulting documentation, as validated by usability testing
 - NFR19: User can complete primary tasks (mark complete, add note, create challenge) in under 3 clicks
 
 **Workflow Efficiency:**
@@ -1148,44 +1180,44 @@ Beyond the existing WCAG 2.1 AA+ target, WCAG 2.2 adds edtech-relevant criteria:
 - NFR22: Navigation between courses, videos, and notes completes in under 200ms (no visible loading spinners)
 
 **Error Prevention:**
-- NFR23: Destructive actions (delete course, clear progress) require confirmation
-- NFR24: System prevents accidental data loss through autosave and undo capabilities
-- NFR25: Form validation provides immediate inline feedback on invalid input
+- NFR23: Destructive actions (delete course, clear progress) require a confirmation dialog with explicit action name before execution
+- NFR24: System provides undo for the last destructive action (delete, clear) for at least 10 seconds after execution
+- NFR25: Form validation provides inline feedback on invalid input within 200ms of field blur or submit attempt
 
 ### Integration
 
 **AI API Integration:**
 - NFR26: AI API requests timeout after 30 seconds with fallback error handling
-- NFR27: AI API keys are stored securely in environment variables (not in code)
-- NFR28: System supports multiple AI providers (OpenAI, Anthropic) with configurable selection
+- NFR27: AI API keys are never present in source code, build output, or client-accessible storage; keys are loaded from environment configuration at runtime
+- NFR28: System supports at least 2 configurable AI providers with user-selectable active provider
 - NFR29: When AI API is unavailable, AI-dependent UI elements display "AI unavailable" status and all non-AI features remain fully operational
 
 **File System Integration:**
 - NFR30: Folder selection triggers a browser-native permission prompt; denied permissions display a message explaining required access with a retry button
 - NFR31: System detects missing or relocated files on course load and marks affected items with a "file not found" badge without crashing or blocking other courses
 - NFR32: Course import supports video formats (MP4, MKV, AVI, WEBM) and PDF files
-- NFR33: File reading operations handle large files (2GB+ videos) without memory issues
+- NFR33: File reading operations handle large files (2GB+ videos) without exceeding 100MB additional memory allocation (streaming, not full-file loading)
 
 **Future Integration Readiness:**
-- NFR34: Data export functionality supports standard formats (JSON, Markdown) for migration
+- NFR34: *(Consolidated into FR85 — full export format specification)*
 - NFR35: Notes are exportable as individual Markdown files with frontmatter (title, tags, course, date) preserving the original Markdown content
 
 ### Accessibility
 
 **WCAG 2.1 AA+ Compliance:**
 - NFR36: All text maintains minimum 4.5:1 contrast ratio (3:1 for large text ≥18pt)
-- NFR37: All interactive elements are keyboard accessible (tab navigation, keyboard shortcuts)
+- NFR37: All interactive elements are reachable via Tab key and operable via Enter/Space; verified by completing all primary workflows using keyboard-only navigation
 - NFR38: Focus indicators are visible on all interactive elements (2px outline minimum)
 - NFR39: ARIA labels are present on all icon-only buttons and complex widgets
-- NFR40: Semantic HTML is used throughout (nav, main, button vs div elements)
+- NFR40: Semantic HTML elements are used for all structural and interactive roles (nav, main, section, button) — verified by automated audit reporting zero instances of clickable div or span without a role attribute
 
 **Keyboard Navigation:**
-- NFR41: Video player supports keyboard controls (Space = play/pause, Arrow keys = seek ±5s)
+- NFR41: *(Consolidated into NFR58 — comprehensive video player keyboard bindings)*
 - NFR42: Note editor supports Markdown shortcuts and keyboard-only editing
-- NFR43: All dashboard widgets and navigation are fully keyboard accessible
+- NFR43: All dashboard widgets and navigation elements are operable via keyboard (Tab to reach, Enter/Space to activate, Arrow keys to navigate within composite widgets)
 
 **Screen Reader Support:**
-- NFR44: All images and icons have meaningful alt text or ARIA labels
+- NFR44: All images have alt text describing their content or function; decorative images use `alt=""`; icon-only buttons have ARIA labels matching their action verb
 - NFR45: ARIA landmarks are present for major page regions (navigation, main, complementary)
 - NFR46: Dynamic content updates are announced to screen readers via ARIA live regions
 
@@ -1202,13 +1234,13 @@ Beyond the existing WCAG 2.1 AA+ target, WCAG 2.2 adds edtech-relevant criteria:
 - NFR52: AI API keys are never exposed in client-side code or logs
 
 **Privacy:**
-- NFR53: All data remains local (no data transmitted to remote servers except AI API calls)
-- NFR54: AI API calls include only necessary data (no personal identifiable information)
+- NFR53: All data remains local — no network requests are made except to configured AI API endpoints; verified by monitoring network tab during a full workflow (import, study, notes, progress)
+- NFR54: AI API calls include only the content being analyzed (note text, video transcript excerpt) — no user metadata, file paths, or session data is transmitted
 - NFR55: Course content and notes never leave user's device (except explicit AI queries)
 
 **Authentication:**
 
-- NFR56: No authentication required (personal single-user tool on local device)
+- NFR56: Application operates without authentication — no login, registration, or session management required (personal single-user tool)
 
 ### EdTech Accessibility *(Domain-driven: WCAG 2.2 + EdTech Standards)*
 
