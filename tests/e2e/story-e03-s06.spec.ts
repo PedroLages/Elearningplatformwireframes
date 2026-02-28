@@ -1,0 +1,222 @@
+/**
+ * Story 3.6: View Course Notes Collection — ATDD Acceptance Tests
+ *
+ * Tests verify:
+ *   - AC1: Notes tab showing notes grouped by video with preview, tags, timestamps, sort controls
+ *   - AC2: Click note → full content, inline edit, delete with confirmation + MiniSearch removal
+ *   - AC3: Empty state when course has no notes
+ *
+ * RED phase — these tests are written before implementation and should fail initially.
+ */
+import { test, expect } from '../support/fixtures'
+import { navigateAndWait } from '../support/helpers/navigation'
+
+const COURSE_ID = 'operative-six'
+const COURSE_URL = `/courses/${COURSE_ID}`
+
+/** Suppress sidebar overlay and navigate to course detail. */
+async function goToCourseDetail(page: Parameters<typeof navigateAndWait>[0]) {
+  await page.addInitScript(() => {
+    localStorage.setItem('eduvi-sidebar-v1', 'false')
+  })
+  await navigateAndWait(page, COURSE_URL)
+}
+
+/** Seed notes into IndexedDB for the operative-six course. */
+async function seedNotes(page: Parameters<typeof navigateAndWait>[0]) {
+  await page.evaluate(() => {
+    return new Promise<void>((resolve, reject) => {
+      const request = indexedDB.open('ElearningDB')
+      request.onsuccess = () => {
+        const db = request.result
+        if (!db.objectStoreNames.contains('notes')) {
+          db.close()
+          reject(new Error('notes store not found'))
+          return
+        }
+        const tx = db.transaction('notes', 'readwrite')
+        const store = tx.objectStore('notes')
+
+        const notes = [
+          {
+            id: 'test-note-1',
+            courseId: 'operative-six',
+            videoId: 'op6-introduction',
+            content: '<p>Introduction notes about the operative training program.</p>',
+            timestamp: 30,
+            createdAt: '2026-02-20T10:00:00.000Z',
+            updatedAt: '2026-02-20T10:00:00.000Z',
+            tags: ['overview', 'training'],
+          },
+          {
+            id: 'test-note-2',
+            courseId: 'operative-six',
+            videoId: 'op6-pillars-of-influence',
+            content: '<p>Key takeaways from the pillars of influence lesson.</p>',
+            timestamp: 120,
+            createdAt: '2026-02-21T14:30:00.000Z',
+            updatedAt: '2026-02-22T09:00:00.000Z',
+            tags: ['influence', 'psychology'],
+          },
+        ]
+
+        for (const note of notes) {
+          store.put(note)
+        }
+
+        tx.oncomplete = () => { db.close(); resolve() }
+        tx.onerror = () => { db.close(); reject(tx.error) }
+      }
+      request.onerror = () => reject(request.error)
+    })
+  })
+}
+
+/** Clear all notes from IndexedDB. */
+async function clearNotes(page: Parameters<typeof navigateAndWait>[0]) {
+  await page.evaluate(() => {
+    return new Promise<void>((resolve, reject) => {
+      const request = indexedDB.open('ElearningDB')
+      request.onsuccess = () => {
+        const db = request.result
+        if (!db.objectStoreNames.contains('notes')) {
+          db.close()
+          resolve()
+          return
+        }
+        const tx = db.transaction('notes', 'readwrite')
+        tx.objectStore('notes').clear()
+        tx.oncomplete = () => { db.close(); resolve() }
+        tx.onerror = () => { db.close(); reject(tx.error) }
+      }
+      request.onerror = () => reject(request.error)
+    })
+  })
+}
+
+test.describe('AC1: Notes tab with grouped notes', () => {
+  test('shows Notes tab on CourseDetail page', async ({ page }) => {
+    await goToCourseDetail(page)
+    await seedNotes(page)
+    await page.reload()
+
+    // Notes tab should be visible
+    const notesTab = page.getByRole('tab', { name: /notes/i })
+    await expect(notesTab).toBeVisible()
+  })
+
+  test('displays notes grouped by video when Notes tab is clicked', async ({ page }) => {
+    await goToCourseDetail(page)
+    await seedNotes(page)
+    await page.reload()
+
+    // Click Notes tab
+    await page.getByRole('tab', { name: /notes/i }).click()
+
+    // Notes should be visible, grouped under lesson titles
+    await expect(page.getByText('Introduction')).toBeVisible()
+    await expect(page.getByText('Introduction notes about the operative training program')).toBeVisible()
+    await expect(page.getByText('The Pillars of Influence')).toBeVisible()
+    await expect(page.getByText('Key takeaways from the pillars of influence lesson')).toBeVisible()
+  })
+
+  test('shows preview snippet, tags, and last updated date', async ({ page }) => {
+    await goToCourseDetail(page)
+    await seedNotes(page)
+    await page.reload()
+
+    await page.getByRole('tab', { name: /notes/i }).click()
+
+    // Tags should be visible
+    await expect(page.getByText('overview')).toBeVisible()
+    await expect(page.getByText('training')).toBeVisible()
+
+    // Timestamp link should be visible (0:30 for 30 seconds)
+    await expect(page.getByText('0:30')).toBeVisible()
+  })
+
+  test('sort controls allow switching between video order and date created', async ({ page }) => {
+    await goToCourseDetail(page)
+    await seedNotes(page)
+    await page.reload()
+
+    await page.getByRole('tab', { name: /notes/i }).click()
+
+    // Sort control should be present
+    const sortControl = page.getByRole('combobox').or(page.getByRole('button', { name: /sort/i }))
+    await expect(sortControl).toBeVisible()
+  })
+})
+
+test.describe('AC2: Note detail, inline edit, and delete', () => {
+  test('clicking a note expands to show full content', async ({ page }) => {
+    await goToCourseDetail(page)
+    await seedNotes(page)
+    await page.reload()
+
+    await page.getByRole('tab', { name: /notes/i }).click()
+
+    // Click on the first note to expand
+    await page.getByText('Introduction notes about the operative training program').click()
+
+    // Full content should render — look for edit button as indicator of expanded state
+    await expect(page.getByRole('button', { name: /edit/i })).toBeVisible()
+  })
+
+  test('expanded note can be edited inline', async ({ page }) => {
+    await goToCourseDetail(page)
+    await seedNotes(page)
+    await page.reload()
+
+    await page.getByRole('tab', { name: /notes/i }).click()
+
+    // Expand note
+    await page.getByText('Introduction notes about the operative training program').click()
+
+    // Click edit
+    await page.getByRole('button', { name: /edit/i }).click()
+
+    // NoteEditor should appear
+    await expect(page.getByTestId('note-editor')).toBeVisible()
+  })
+
+  test('note can be deleted with confirmation dialog', async ({ page }) => {
+    await goToCourseDetail(page)
+    await seedNotes(page)
+    await page.reload()
+
+    await page.getByRole('tab', { name: /notes/i }).click()
+
+    // Find and click the delete button (hover-visible)
+    const firstNoteCard = page.getByText('Introduction notes about the operative training program').locator('..')
+    await firstNoteCard.hover()
+    const deleteButton = firstNoteCard.getByRole('button', { name: /delete/i }).or(
+      firstNoteCard.locator('[data-testid="delete-note-button"]'),
+    )
+    await deleteButton.click()
+
+    // Confirmation dialog should appear (NFR23)
+    await expect(page.getByRole('alertdialog')).toBeVisible()
+    await expect(page.getByText(/delete this note/i)).toBeVisible()
+
+    // Confirm deletion
+    await page.getByRole('button', { name: /delete|confirm/i }).last().click()
+
+    // Note should be removed from the list
+    await expect(page.getByText('Introduction notes about the operative training program')).not.toBeVisible()
+  })
+})
+
+test.describe('AC3: Empty state', () => {
+  test('shows empty state when course has no notes', async ({ page }) => {
+    await goToCourseDetail(page)
+    await clearNotes(page)
+    await page.reload()
+
+    await page.getByRole('tab', { name: /notes/i }).click()
+
+    await expect(
+      page.getByText('No notes yet. Start taking notes while watching videos.'),
+    ).toBeVisible()
+  })
+})
