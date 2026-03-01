@@ -12,7 +12,9 @@ import {
 } from '@/app/components/ui/breadcrumb'
 import { Progress } from '@/app/components/ui/progress'
 import { Separator } from '@/app/components/ui/separator'
+import { Tabs, TabsList, TabsTrigger, TabsContent } from '@/app/components/ui/tabs'
 import { ModuleAccordion } from '@/app/components/figma/ModuleAccordion'
+import { CourseNotesTab } from '@/app/components/notes/CourseNotesTab'
 import { categoryLabels, categoryColors } from '@/app/components/figma/CourseCard'
 import { allCourses } from '@/data/courses'
 import { getProgress, getCourseCompletionPercent } from '@/lib/progress'
@@ -126,13 +128,25 @@ export function CourseDetail() {
 
       <Separator className="mb-6" />
 
-      {/* Module List */}
-      <h2 className="text-lg font-semibold mb-4">Course Content</h2>
-      <ModuleAccordion
-        modules={course.modules}
-        courseId={course.id}
-        completedLessons={progress.completedLessons}
-      />
+      <Tabs defaultValue="content">
+        <TabsList className="mb-4">
+          <TabsTrigger value="content">Content</TabsTrigger>
+          <TabsTrigger value="notes">Notes</TabsTrigger>
+        </TabsList>
+
+        <TabsContent value="content">
+          <h2 className="text-lg font-semibold mb-4">Course Content</h2>
+          <ModuleAccordion
+            modules={course.modules}
+            courseId={course.id}
+            completedLessons={progress.completedLessons}
+          />
+        </TabsContent>
+
+        <TabsContent value="notes">
+          <CourseNotesTab courseId={course.id} modules={course.modules} />
+        </TabsContent>
+      </Tabs>
     </div>
   )
 }

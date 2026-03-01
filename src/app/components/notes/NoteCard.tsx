@@ -1,5 +1,8 @@
-import { useState, useCallback } from 'react'
-import { ChevronDown, ChevronRight, Pencil, Trash2, Clock, X } from 'lucide-react'
+import { useRef, useState } from 'react'
+import { Link } from 'react-router'
+import { ChevronDown, ChevronUp, Pencil, Trash2, X, Clock } from 'lucide-react'
+import { useEditor, EditorContent } from '@tiptap/react'
+import StarterKit from '@tiptap/starter-kit'
 import { Badge } from '@/app/components/ui/badge'
 import { Button } from '@/app/components/ui/button'
 import {
@@ -11,6 +14,7 @@ import {
   AlertDialogFooter,
   AlertDialogHeader,
   AlertDialogTitle,
+  AlertDialogTrigger,
 } from '@/app/components/ui/alert-dialog'
 import { NoteEditor } from './NoteEditor'
 import { useNoteStore } from '@/stores/useNoteStore'
@@ -20,201 +24,185 @@ import type { Note } from '@/data/types'
 
 interface NoteCardProps {
   note: Note
-  courseId: string
   lessonTitle: string
+  courseId: string
+  onDelete: (noteId: string) => Promise<void>
 }
 
-/** Strip HTML tags and collapse whitespace for preview text */
-function getPreviewText(html: string, maxLength = 120): string {
-  const text = html
-    .replace(/<[^>]*>/g, ' ')
-    .replace(/&nbsp;/g, ' ')
-    .replace(/&amp;/g, '&')
-    .replace(/&lt;/g, '<')
-    .replace(/&gt;/g, '>')
-    .replace(/\s+/g, ' ')
-    .trim()
-  if (text.length <= maxLength) return text
-  return text.slice(0, maxLength).trimEnd() + '\u2026'
+/** Strip HTML tags to extract plain text for preview snippets. */
+function stripHtml(html: string): string {
+  return html.replace(/<[^>]*>/g, '').replace(/&amp;/g, '&').replace(/&lt;/g, '<').replace(/&gt;/g, '>').replace(/&quot;/g, '"').replace(/&#39;/g, "'").trim()
 }
 
-/** Format an ISO date string to a relative or short date */
-function formatRelativeDate(iso: string): string {
-  const date = new Date(iso)
+function formatRelativeDate(isoDate: string): string {
+  const date = new Date(isoDate)
   const now = new Date()
   const diffMs = now.getTime() - date.getTime()
-  const diffMins = Math.floor(diffMs / 60000)
-  const diffHours = Math.floor(diffMs / 3600000)
-  const diffDays = Math.floor(diffMs / 86400000)
+  const diffDays = Math.floor(diffMs / (1000 * 60 * 60 * 24))
 
-  if (diffMins < 1) return 'Just now'
-  if (diffMins < 60) return `${diffMins}m ago`
-  if (diffHours < 24) return `${diffHours}h ago`
-  if (diffDays < 7) return `${diffDays}d ago`
-  return date.toLocaleDateString(undefined, { month: 'short', day: 'numeric' })
+  if (diffDays === 0) return 'Today'
+  if (diffDays === 1) return 'Yesterday'
+  if (diffDays < 7) return `${diffDays} days ago`
+  const weeks = Math.floor(diffDays / 7)
+  if (diffDays < 30) return `${weeks} ${weeks === 1 ? 'week' : 'weeks'} ago`
+  return date.toLocaleDateString()
 }
 
-/**
- * Rewrite video:// protocol links to navigable lesson URLs with ?t= param.
- * Content is self-authored via Tiptap editor and stored in local IndexedDB.
- */
-function rewriteTimestampLinks(html: string, courseId: string, videoId: string): string {
-  return html.replace(
-    /href="video:\/\/(\d+(?:\.\d+)?)"/g,
-    (_match, seconds) => `href="/courses/${courseId}/${videoId}?t=${seconds}"`,
-  )
+/** Read-only Tiptap renderer — mounts only when expanded to avoid stale content. */
+function ReadOnlyContent({ content }: { content: string }) {
+  const editor = useEditor({
+    editable: false,
+    content,
+    extensions: [StarterKit],
+    editorProps: {
+      attributes: { class: 'prose prose-sm max-w-none' },
+    },
+  })
+  return <EditorContent editor={editor} />
 }
 
-export function NoteCard({ note, courseId, lessonTitle }: NoteCardProps) {
-  const [expanded, setExpanded] = useState(false)
-  const [editing, setEditing] = useState(false)
-  const [deleteOpen, setDeleteOpen] = useState(false)
+type ViewState = 'collapsed' | 'expanded' | 'editing'
 
-  const { saveNote, deleteNote } = useNoteStore()
+export function NoteCard({ note, courseId, onDelete }: NoteCardProps) {
+  const [viewState, setViewState] = useState<ViewState>('collapsed')
+  const saveNote = useNoteStore(s => s.saveNote)
+  const cancelRef = useRef(false)
 
-  const preview = getPreviewText(note.content)
-  const hasContent = preview.length > 0
+  const preview = stripHtml(note.content)
+  const snippet = preview.length > 120 ? preview.slice(0, 120) + '...' : preview
 
-  const handleSave = useCallback(
-    (content: string, tags: string[]) => {
-      saveNote({
+  const toggleExpand = () => {
+    setViewState(v => v === 'collapsed' ? 'expanded' : 'collapsed')
+  }
+
+  const handleSave = async (content: string, tags: string[]) => {
+    if (cancelRef.current) {
+      cancelRef.current = false
+      return
+    }
+    try {
+      await saveNote({
         ...note,
         content,
         tags,
         updatedAt: new Date().toISOString(),
       })
-    },
-    [note, saveNote],
-  )
+      setViewState('expanded')
+      toast.success('Note saved')
+    } catch {
+      toast.error('Failed to save note')
+    }
+  }
 
-  const handleDelete = useCallback(async () => {
-    await deleteNote(note.id)
-    toast('Note deleted')
-    setDeleteOpen(false)
-  }, [note.id, deleteNote])
+  const handleDelete = async () => {
+    try {
+      await onDelete(note.id)
+      toast.success('Note deleted')
+    } catch {
+      toast.error('Failed to delete note')
+    }
+  }
 
-  if (editing) {
-    return (
-      <div className="bg-card rounded-2xl shadow-sm p-4">
-        <div className="flex items-center justify-between mb-3">
-          <h4 className="text-sm font-medium text-muted-foreground">{lessonTitle}</h4>
-          <Button
-            variant="ghost"
-            size="icon"
-            className="h-7 w-7"
-            onClick={() => setEditing(false)}
-            aria-label="Close editor"
-          >
-            <X className="h-4 w-4" />
-          </Button>
-        </div>
-        <NoteEditor
-          courseId={courseId}
-          lessonId={note.videoId}
-          initialContent={note.content}
-          onSave={handleSave}
-        />
-      </div>
-    )
+  const handleCancel = () => {
+    cancelRef.current = true
+    setViewState('expanded')
   }
 
   return (
-    <>
-      <div className="bg-card rounded-2xl shadow-sm overflow-hidden">
-        {/* Collapsed header — always visible */}
-        <button
-          onClick={() => setExpanded(!expanded)}
-          className="w-full flex items-start gap-3 p-4 text-left hover:bg-accent/50 transition-colors cursor-pointer"
-          aria-expanded={expanded}
-        >
-          <span className="mt-0.5 shrink-0 text-muted-foreground">
-            {expanded ? <ChevronDown className="h-4 w-4" /> : <ChevronRight className="h-4 w-4" />}
-          </span>
-
-          <div className="flex-1 min-w-0">
-            {hasContent ? (
-              <p className="text-sm line-clamp-2">{preview}</p>
-            ) : (
-              <p className="text-sm text-muted-foreground italic">Empty note</p>
+    <div className="bg-card rounded-[24px] border p-4 transition-shadow hover:shadow-sm">
+      {/* Card header — click anywhere to toggle (mouse), use chevron button for keyboard */}
+      <div
+        className="flex items-start justify-between gap-3 cursor-pointer"
+        onClick={toggleExpand}
+      >
+        <div className="flex-1 min-w-0">
+          <p className="text-sm text-foreground line-clamp-2">{snippet}</p>
+          <div className="flex flex-wrap items-center gap-2 mt-2">
+            {note.tags.map(tag => (
+              <Badge key={tag} variant="secondary" className="text-xs">
+                {tag}
+              </Badge>
+            ))}
+            {note.timestamp != null && (
+              <Link
+                to={`/courses/${courseId}/${note.videoId}?t=${note.timestamp}&panel=notes`}
+                className="inline-flex items-center gap-1 text-xs text-blue-600 hover:underline"
+                onClick={e => e.stopPropagation()}
+              >
+                <Clock className="size-3" />
+                {formatTimestamp(note.timestamp)}
+              </Link>
             )}
-
-            <div className="flex flex-wrap items-center gap-2 mt-2">
-              {note.tags.map(tag => (
-                <Badge key={tag} variant="secondary" className="text-xs">
-                  #{tag}
-                </Badge>
-              ))}
-              {note.timestamp != null && (
-                <span className="inline-flex items-center gap-1 text-xs text-muted-foreground">
-                  <Clock className="h-3 w-3" />
-                  {formatTimestamp(note.timestamp)}
-                </span>
-              )}
-              <span className="text-xs text-muted-foreground ml-auto">
-                {formatRelativeDate(note.updatedAt)}
-              </span>
-            </div>
+            <span className="text-xs text-muted-foreground">
+              {formatRelativeDate(note.updatedAt)}
+            </span>
           </div>
+        </div>
+
+        <button
+          type="button"
+          className="shrink-0 inline-flex items-center justify-center size-11 rounded-md hover:bg-accent transition-colors"
+          aria-expanded={viewState !== 'collapsed'}
+          aria-label={viewState === 'collapsed' ? 'Expand note' : 'Collapse note'}
+          onClick={e => { e.stopPropagation(); toggleExpand() }}
+        >
+          {viewState === 'collapsed'
+            ? <ChevronDown aria-hidden="true" className="size-4" />
+            : <ChevronUp aria-hidden="true" className="size-4" />
+          }
         </button>
-
-        {/* Expanded content */}
-        {expanded && (
-          <div className="border-t border-border">
-            {/* Action buttons */}
-            <div className="flex items-center justify-end gap-1 px-4 pt-3">
-              <Button
-                variant="ghost"
-                size="sm"
-                className="gap-1.5 text-xs"
-                onClick={() => setEditing(true)}
-              >
-                <Pencil className="h-3.5 w-3.5" />
-                Edit
-              </Button>
-              <Button
-                variant="ghost"
-                size="sm"
-                className="gap-1.5 text-xs text-destructive hover:text-destructive"
-                onClick={() => setDeleteOpen(true)}
-              >
-                <Trash2 className="h-3.5 w-3.5" />
-                Delete
-              </Button>
-            </div>
-
-            {/* Rendered note content — self-authored HTML from Tiptap, stored locally */}
-            <div
-              className="prose prose-sm dark:prose-invert max-w-none px-5 pb-4 pt-2
-                [&_a[href^='/courses/']]:text-brand [&_a[href^='/courses/']]:underline [&_a[href^='/courses/']]:cursor-pointer"
-              dangerouslySetInnerHTML={{
-                __html: rewriteTimestampLinks(note.content, courseId, note.videoId),
-              }}
-            />
-          </div>
-        )}
       </div>
 
-      {/* Delete confirmation dialog (NFR23) */}
-      <AlertDialog open={deleteOpen} onOpenChange={setDeleteOpen}>
-        <AlertDialogContent>
-          <AlertDialogHeader>
-            <AlertDialogTitle>Delete note?</AlertDialogTitle>
-            <AlertDialogDescription>
-              This will permanently delete your note for &ldquo;{lessonTitle}&rdquo;. This action
-              cannot be undone.
-            </AlertDialogDescription>
-          </AlertDialogHeader>
-          <AlertDialogFooter>
-            <AlertDialogCancel>Cancel</AlertDialogCancel>
-            <AlertDialogAction
-              onClick={handleDelete}
-              className="bg-destructive text-white hover:bg-destructive/90"
-            >
-              Delete
-            </AlertDialogAction>
-          </AlertDialogFooter>
-        </AlertDialogContent>
-      </AlertDialog>
-    </>
+      {/* Expanded view */}
+      {viewState === 'expanded' && (
+        <div className="mt-4 border-t pt-4">
+          <ReadOnlyContent content={note.content} />
+          <div className="flex items-center gap-2 mt-4">
+            <Button variant="outline" size="sm" onClick={() => setViewState('editing')}>
+              <Pencil className="size-3.5 mr-1.5" />
+              Edit
+            </Button>
+            <AlertDialog>
+              <AlertDialogTrigger asChild>
+                <Button variant="outline" size="sm" className="text-destructive hover:text-destructive" data-testid="delete-note-button">
+                  <Trash2 className="size-3.5 mr-1.5" />
+                  Delete
+                </Button>
+              </AlertDialogTrigger>
+              <AlertDialogContent>
+                <AlertDialogHeader>
+                  <AlertDialogTitle>Delete this note?</AlertDialogTitle>
+                  <AlertDialogDescription>
+                    This action cannot be undone. The note and its search index entry will be permanently removed.
+                  </AlertDialogDescription>
+                </AlertDialogHeader>
+                <AlertDialogFooter>
+                  <AlertDialogCancel>Cancel</AlertDialogCancel>
+                  <AlertDialogAction onClick={handleDelete} className="bg-destructive text-destructive-foreground hover:bg-destructive/90">
+                    Delete
+                  </AlertDialogAction>
+                </AlertDialogFooter>
+              </AlertDialogContent>
+            </AlertDialog>
+          </div>
+        </div>
+      )}
+
+      {/* Edit mode */}
+      {viewState === 'editing' && (
+        <div className="mt-4 border-t pt-4">
+          <NoteEditor
+            courseId={courseId}
+            lessonId={note.videoId}
+            initialContent={note.content}
+            onSave={handleSave}
+          />
+          <Button variant="ghost" size="sm" className="mt-2" onClick={handleCancel}>
+            <X className="size-3.5 mr-1.5" />
+            Cancel
+          </Button>
+        </div>
+      )}
+    </div>
   )
 }
