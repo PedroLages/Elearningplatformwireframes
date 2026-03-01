@@ -7,8 +7,6 @@
  *   - AC3: Tag-based filtering with AND semantics when combined with search
  *   - AC4: Sort controls (Most Recent, Oldest First, By Course)
  *   - AC5: Expand note card with full content and "Open in Lesson" navigation
- *
- * RED phase — these tests are written before implementation and should fail initially.
  */
 import { test, expect } from '../support/fixtures'
 import { navigateAndWait } from '../support/helpers/navigation'
@@ -23,73 +21,79 @@ async function goToNotes(page: Parameters<typeof navigateAndWait>[0]) {
   await navigateAndWait(page, NOTES_URL)
 }
 
-/** Seed notes into IndexedDB across two courses. */
+/** Seed notes into IndexedDB across two courses (with retry for Dexie init). */
 async function seedNotes(page: Parameters<typeof navigateAndWait>[0]) {
-  await page.evaluate(() => {
-    return new Promise<void>((resolve, reject) => {
-      const request = indexedDB.open('ElearningDB')
-      request.onsuccess = () => {
-        const db = request.result
-        if (!db.objectStoreNames.contains('notes')) {
-          db.close()
-          reject(new Error('notes store not found'))
-          return
+  await page.evaluate(async () => {
+    const notes = [
+      {
+        id: 'global-note-1',
+        courseId: 'operative-six',
+        videoId: 'op6-introduction',
+        content: '<p>Introduction notes about the operative training program.</p>',
+        timestamp: 30,
+        createdAt: '2026-02-18T10:00:00.000Z',
+        updatedAt: '2026-02-28T10:00:00.000Z',
+        tags: ['overview', 'training'],
+      },
+      {
+        id: 'global-note-2',
+        courseId: 'operative-six',
+        videoId: 'op6-pillars-of-influence',
+        content: '<p>Key takeaways from the pillars of influence lesson.</p>',
+        timestamp: 120,
+        createdAt: '2026-02-19T14:30:00.000Z',
+        updatedAt: '2026-02-27T09:00:00.000Z',
+        tags: ['influence', 'psychology'],
+      },
+      {
+        id: 'global-note-3',
+        courseId: 'authority',
+        videoId: 'authority-lesson-01-communication-laws',
+        content: '<p>Communication laws and strategies for authority building.</p>',
+        timestamp: 60,
+        createdAt: '2026-02-20T08:00:00.000Z',
+        updatedAt: '2026-02-26T15:00:00.000Z',
+        tags: ['communication', 'training'],
+      },
+      {
+        id: 'global-note-4',
+        courseId: 'authority',
+        videoId: 'authority-lesson-02-composure-confidence',
+        content: '<p>Composure techniques and confidence building exercises.</p>',
+        timestamp: 45,
+        createdAt: '2026-02-21T11:00:00.000Z',
+        updatedAt: '2026-02-25T12:00:00.000Z',
+        tags: ['confidence', 'psychology'],
+      },
+    ]
+
+    const maxRetries = 10
+    const retryDelay = 200
+
+    for (let attempt = 0; attempt < maxRetries; attempt++) {
+      const result = await new Promise<'ok' | 'store-missing'>((resolve, reject) => {
+        const request = indexedDB.open('ElearningDB')
+        request.onsuccess = () => {
+          const db = request.result
+          if (!db.objectStoreNames.contains('notes')) {
+            db.close()
+            resolve('store-missing')
+            return
+          }
+          const tx = db.transaction('notes', 'readwrite')
+          const store = tx.objectStore('notes')
+          for (const note of notes) {
+            store.put(note)
+          }
+          tx.oncomplete = () => { db.close(); resolve('ok') }
+          tx.onerror = () => { db.close(); reject(tx.error) }
         }
-        const tx = db.transaction('notes', 'readwrite')
-        const store = tx.objectStore('notes')
-
-        const notes = [
-          {
-            id: 'global-note-1',
-            courseId: 'operative-six',
-            videoId: 'op6-introduction',
-            content: '<p>Introduction notes about the operative training program.</p>',
-            timestamp: 30,
-            createdAt: '2026-02-18T10:00:00.000Z',
-            updatedAt: '2026-02-28T10:00:00.000Z',
-            tags: ['overview', 'training'],
-          },
-          {
-            id: 'global-note-2',
-            courseId: 'operative-six',
-            videoId: 'op6-pillars-of-influence',
-            content: '<p>Key takeaways from the pillars of influence lesson.</p>',
-            timestamp: 120,
-            createdAt: '2026-02-19T14:30:00.000Z',
-            updatedAt: '2026-02-27T09:00:00.000Z',
-            tags: ['influence', 'psychology'],
-          },
-          {
-            id: 'global-note-3',
-            courseId: 'authority',
-            videoId: 'authority-lesson-01-communication-laws',
-            content: '<p>Communication laws and strategies for authority building.</p>',
-            timestamp: 60,
-            createdAt: '2026-02-20T08:00:00.000Z',
-            updatedAt: '2026-02-26T15:00:00.000Z',
-            tags: ['communication', 'training'],
-          },
-          {
-            id: 'global-note-4',
-            courseId: 'authority',
-            videoId: 'authority-lesson-02-composure-confidence',
-            content: '<p>Composure techniques and confidence building exercises.</p>',
-            timestamp: 45,
-            createdAt: '2026-02-21T11:00:00.000Z',
-            updatedAt: '2026-02-25T12:00:00.000Z',
-            tags: ['confidence', 'psychology'],
-          },
-        ]
-
-        for (const note of notes) {
-          store.put(note)
-        }
-
-        tx.oncomplete = () => { db.close(); resolve() }
-        tx.onerror = () => { db.close(); reject(tx.error) }
-      }
-      request.onerror = () => reject(request.error)
-    })
+        request.onerror = () => reject(request.error)
+      })
+      if (result === 'ok') return
+      await new Promise(r => setTimeout(r, retryDelay))
+    }
+    throw new Error('notes store not found in ElearningDB after 10 retries')
   })
 }
 
@@ -131,13 +135,14 @@ test.describe('AC1: Notes page displays all notes across courses', () => {
 
     // Total note count in header
     await expect(page.getByText(/my notes/i)).toBeVisible()
-    await expect(page.getByText('4')).toBeVisible()
+    await expect(page.getByText('(4)')).toBeVisible()
 
     // Note cards show course title, lesson title, content preview, tags, date
-    await expect(page.getByText('The Operative - Six')).toBeVisible()
-    await expect(page.getByText('Authority')).toBeVisible()
-    await expect(page.getByText(/introduction notes about/i)).toBeVisible()
-    await expect(page.getByText(/communication laws and strategies/i)).toBeVisible()
+    const noteCards = page.locator('[data-testid="note-card"]')
+    await expect(noteCards.filter({ hasText: 'Operative Six' })).toHaveCount(2)
+    await expect(noteCards.filter({ hasText: 'Authority' })).toHaveCount(2)
+    await expect(noteCards.filter({ hasText: /introduction notes about/i }).first()).toBeVisible()
+    await expect(noteCards.filter({ hasText: /communication laws and strategies/i }).first()).toBeVisible()
   })
 
   test('notes are sorted by most recently updated first', async ({ page }) => {
@@ -155,10 +160,12 @@ test.describe('AC1: Notes page displays all notes across courses', () => {
     await seedNotes(page)
     await page.reload()
 
-    await expect(page.getByText('overview')).toBeVisible()
-    await expect(page.getByText('training').first()).toBeVisible()
-    await expect(page.getByText('influence')).toBeVisible()
-    await expect(page.getByText('psychology').first()).toBeVisible()
+    // Tags appear in both the filter bar and on note cards — scope to cards
+    const cards = page.locator('[data-testid="note-card"]')
+    await expect(cards.filter({ hasText: 'overview' }).first()).toBeVisible()
+    await expect(cards.filter({ hasText: 'training' }).first()).toBeVisible()
+    await expect(cards.filter({ hasText: 'influence' }).first()).toBeVisible()
+    await expect(cards.filter({ hasText: 'psychology' }).first()).toBeVisible()
   })
 
   test('shows empty state when no notes exist', async ({ page }) => {
@@ -179,11 +186,12 @@ test.describe('AC2: Full-text search filters notes in real-time', () => {
     const searchInput = page.getByRole('searchbox').or(page.getByPlaceholder(/search/i))
     await searchInput.fill('influence')
 
-    // Should show the pillars of influence note
-    await expect(page.getByText(/pillars of influence/i)).toBeVisible()
+    // Should show the pillars of influence note (text appears in lesson title and content)
+    const noteCards = page.locator('[data-testid="note-card"]')
+    await expect(noteCards.filter({ hasText: /pillars of influence/i }).first()).toBeVisible()
 
     // Should NOT show unrelated notes
-    await expect(page.getByText(/composure techniques/i)).not.toBeVisible()
+    await expect(noteCards.filter({ hasText: /composure techniques/i })).toHaveCount(0)
   })
 
   test('highlights matching terms in search results', async ({ page }) => {
@@ -220,11 +228,12 @@ test.describe('AC3: Tag-based filtering', () => {
     await page.getByText('psychology').first().click()
 
     // Should show notes with "psychology" tag (note-2 and note-4)
-    await expect(page.getByText(/pillars of influence/i)).toBeVisible()
-    await expect(page.getByText(/composure techniques/i)).toBeVisible()
+    const noteCards = page.locator('[data-testid="note-card"]')
+    await expect(noteCards.filter({ hasText: /pillars of influence/i }).first()).toBeVisible()
+    await expect(noteCards.filter({ hasText: /composure techniques/i }).first()).toBeVisible()
 
     // Should NOT show notes without "psychology" tag
-    await expect(page.getByText(/introduction notes about/i)).not.toBeVisible()
+    await expect(noteCards.filter({ hasText: /introduction notes about/i })).toHaveCount(0)
   })
 
   test('active tag filter is visually indicated', async ({ page }) => {
@@ -235,10 +244,9 @@ test.describe('AC3: Tag-based filtering', () => {
     // Click a tag in the filter bar
     await page.getByText('training').first().click()
 
-    // Active tag should have distinct styling (blue background)
-    const activeChip = page.locator('[data-active="true"]').or(
-      page.locator('.bg-blue-600'),
-    )
+    // Active tag should have distinct styling (blue background) — scope to filter bar
+    const filterBar = page.getByRole('group', { name: /filter by tag/i })
+    const activeChip = filterBar.locator('[data-active="true"]')
     await expect(activeChip.filter({ hasText: 'training' })).toBeVisible()
   })
 
@@ -247,10 +255,13 @@ test.describe('AC3: Tag-based filtering', () => {
     await seedNotes(page)
     await page.reload()
 
+    // Scope clicks to the filter bar to avoid ambiguity with note card content
+    const filterBar = page.getByRole('group', { name: /filter by tag/i })
+
     // Activate filter
-    await page.getByText('training').first().click()
+    await filterBar.getByText('training').click()
     // Click again to deactivate
-    await page.getByText('training').first().click()
+    await filterBar.getByText('training').click()
 
     // All 4 notes should be visible again
     const noteCards = page.locator('[data-testid="note-card"]')
@@ -270,8 +281,9 @@ test.describe('AC3: Tag-based filtering', () => {
     await searchInput.fill('operative')
 
     // Only note-1 should match both criteria
-    await expect(page.getByText(/introduction notes about/i)).toBeVisible()
-    await expect(page.getByText(/communication laws/i)).not.toBeVisible()
+    const noteCards = page.locator('[data-testid="note-card"]')
+    await expect(noteCards.filter({ hasText: /introduction notes about/i }).first()).toBeVisible()
+    await expect(noteCards.filter({ hasText: /communication laws/i })).toHaveCount(0)
   })
 })
 
@@ -281,7 +293,7 @@ test.describe('AC4: Sort controls', () => {
     await seedNotes(page)
     await page.reload()
 
-    const sortTrigger = page.getByRole('combobox').or(page.getByRole('button', { name: /sort|most recent/i }))
+    const sortTrigger = page.getByRole('combobox')
     await expect(sortTrigger).toBeVisible()
     await expect(sortTrigger).toContainText(/most recent/i)
   })
@@ -292,7 +304,7 @@ test.describe('AC4: Sort controls', () => {
     await page.reload()
 
     // Open sort dropdown and select Oldest First
-    const sortTrigger = page.getByRole('combobox').or(page.getByRole('button', { name: /sort|most recent/i }))
+    const sortTrigger = page.getByRole('combobox')
     await sortTrigger.click()
     await page.getByText(/oldest first/i).click()
 
@@ -307,7 +319,7 @@ test.describe('AC4: Sort controls', () => {
     await page.reload()
 
     // Open sort dropdown and select By Course
-    const sortTrigger = page.getByRole('combobox').or(page.getByRole('button', { name: /sort|most recent/i }))
+    const sortTrigger = page.getByRole('combobox')
     await sortTrigger.click()
     await page.getByText(/by course/i).click()
 
@@ -341,9 +353,7 @@ test.describe('AC5: Expand note card with navigation', () => {
     await page.locator('[data-testid="note-card"]').first().click()
 
     // Click "Open in Lesson" button
-    await page.getByRole('button', { name: /open in lesson/i }).or(
-      page.getByRole('link', { name: /open in lesson/i }),
-    ).click()
+    await page.getByRole('button', { name: /open in lesson/i }).click()
 
     // Should navigate to lesson player with notes panel and timestamp
     await expect(page).toHaveURL(/courses\/operative-six\/op6-introduction/)
@@ -359,8 +369,13 @@ test.describe('AC5: Expand note card with navigation', () => {
     // Expand note with timestamp
     await page.locator('[data-testid="note-card"]').first().click()
 
-    // Timestamp link should be visible (0:30 for 30 seconds)
-    const timestampLink = page.getByText('0:30')
-    await expect(timestampLink).toBeVisible()
+    // Timestamp button should be visible (0:30 for 30 seconds)
+    const timestampButton = page.getByRole('button', { name: /0:30/ })
+    await expect(timestampButton).toBeVisible()
+
+    // Click timestamp and verify navigation includes t= param
+    await timestampButton.click()
+    await expect(page).toHaveURL(/courses\/operative-six\/op6-introduction/)
+    await expect(page).toHaveURL(/t=30/)
   })
 })
