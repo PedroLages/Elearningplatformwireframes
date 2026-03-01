@@ -2,7 +2,7 @@ import { useState, useRef, useEffect, useMemo } from 'react'
 
 export function useHoverPreview(delay = 1000) {
   const [active, setActive] = useState(false)
-  const timerRef = useRef<ReturnType<typeof setTimeout>>()
+  const timerRef = useRef<ReturnType<typeof setTimeout>>(undefined)
 
   const handlers = useMemo(
     () => ({
@@ -14,7 +14,7 @@ export function useHoverPreview(delay = 1000) {
         setActive(false)
       },
     }),
-    [delay],
+    [delay]
   )
 
   useEffect(() => () => clearTimeout(timerRef.current), [])
