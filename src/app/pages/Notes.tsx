@@ -17,10 +17,7 @@ import { Skeleton } from '@/app/components/ui/skeleton'
 import { useNoteStore } from '@/stores/useNoteStore'
 import { searchNotesWithContext } from '@/lib/noteSearch'
 import { getAllNoteTags } from '@/lib/progress'
-import {
-  highlightMatches,
-  buildHighlightPatterns,
-} from '@/lib/searchUtils'
+import { highlightMatches, buildHighlightPatterns } from '@/lib/searchUtils'
 import { allCourses } from '@/data/courses'
 import { formatTimestamp } from '@/lib/format'
 import { stripHtml } from '@/lib/textUtils'
@@ -73,24 +70,17 @@ function sortNotes(notes: EnrichedNote[], sort: SortOption): EnrichedNote[] {
   switch (sort) {
     case 'most-recent':
       return sorted.sort(
-        (a, b) =>
-          new Date(b.note.updatedAt).getTime() -
-          new Date(a.note.updatedAt).getTime(),
+        (a, b) => new Date(b.note.updatedAt).getTime() - new Date(a.note.updatedAt).getTime()
       )
     case 'oldest-first':
       return sorted.sort(
-        (a, b) =>
-          new Date(a.note.updatedAt).getTime() -
-          new Date(b.note.updatedAt).getTime(),
+        (a, b) => new Date(a.note.updatedAt).getTime() - new Date(b.note.updatedAt).getTime()
       )
     case 'by-course':
       return sorted.sort((a, b) => {
         const courseCompare = a.courseName.localeCompare(b.courseName)
         if (courseCompare !== 0) return courseCompare
-        return (
-          new Date(b.note.updatedAt).getTime() -
-          new Date(a.note.updatedAt).getTime()
-        )
+        return new Date(b.note.updatedAt).getTime() - new Date(a.note.updatedAt).getTime()
       })
   }
 }
@@ -115,7 +105,9 @@ export function Notes() {
 
   // Load available tags when notes change
   useEffect(() => {
-    getAllNoteTags().then(setAvailableTags).catch(err => console.error('[Notes] Failed to load tags:', err))
+    getAllNoteTags()
+      .then(setAvailableTags)
+      .catch(err => console.error('[Notes] Failed to load tags:', err))
   }, [notes])
 
   // Debounce search input (150ms)
@@ -137,9 +129,7 @@ export function Notes() {
   // Apply tag filter (client-side from already-loaded notes array)
   const tagFilteredIds = useMemo(() => {
     if (!activeTag) return null
-    return new Set(
-      notes.filter(n => n.tags.includes(activeTag)).map(n => n.id),
-    )
+    return new Set(notes.filter(n => n.tags.includes(activeTag)).map(n => n.id))
   }, [notes, activeTag])
 
   // Combine filters (AND semantics) and sort
@@ -157,10 +147,7 @@ export function Notes() {
   }, [enriched, searchResultIds, tagFilteredIds, sortOption])
 
   // Build highlight patterns for search
-  const highlightPatterns = useMemo(
-    () => buildHighlightPatterns(debouncedQuery),
-    [debouncedQuery],
-  )
+  const highlightPatterns = useMemo(() => buildHighlightPatterns(debouncedQuery), [debouncedQuery])
 
   // Group by course for "By Course" sort
   const courseGroups = useMemo(() => {
@@ -218,9 +205,7 @@ export function Notes() {
           }}
         >
           <div className="flex items-center gap-2 text-xs text-muted-foreground mb-1">
-            <span className="font-medium text-foreground">
-              {item.courseName}
-            </span>
+            <span className="font-medium text-foreground">{item.courseName}</span>
             <span aria-hidden="true">&middot;</span>
             <span>{item.lessonTitle}</span>
           </div>
@@ -243,7 +228,7 @@ export function Notes() {
                 variant={activeTag === tag ? 'default' : 'secondary'}
                 className={cn(
                   'text-xs cursor-pointer',
-                  activeTag === tag && 'bg-blue-600 text-white hover:bg-blue-700',
+                  activeTag === tag && 'bg-blue-600 text-white hover:bg-blue-700'
                 )}
                 data-active={activeTag === tag ? 'true' : undefined}
               >
@@ -315,16 +300,10 @@ export function Notes() {
       {/* Page header */}
       <div className="flex items-center justify-between">
         <h1 className="text-2xl font-semibold tracking-tight">
-          My Notes{' '}
-          <span className="text-muted-foreground font-normal">
-            ({notes.length})
-          </span>
+          My Notes <span className="text-muted-foreground font-normal">({notes.length})</span>
         </h1>
         <div className="flex items-center gap-3">
-          <Select
-            value={sortOption}
-            onValueChange={v => setSortOption(v as SortOption)}
-          >
+          <Select value={sortOption} onValueChange={v => setSortOption(v as SortOption)}>
             <SelectTrigger className="w-[160px]">
               <ArrowUpDown className="size-3.5 mr-1.5" />
               <SelectValue />
@@ -353,11 +332,7 @@ export function Notes() {
 
       {/* Tag filter bar */}
       {availableTags.length > 0 && (
-        <div
-          className="flex flex-wrap gap-2"
-          role="group"
-          aria-label="Filter by tag"
-        >
+        <div className="flex flex-wrap gap-2" role="group" aria-label="Filter by tag">
           {availableTags.map(tag => (
             <button
               key={tag}
@@ -369,7 +344,7 @@ export function Notes() {
                 variant={activeTag === tag ? 'default' : 'outline'}
                 className={cn(
                   'cursor-pointer text-xs',
-                  activeTag === tag ? 'bg-blue-600 text-white hover:bg-blue-700' : 'hover:bg-accent',
+                  activeTag === tag ? 'bg-blue-600 text-white hover:bg-blue-700' : 'hover:bg-accent'
                 )}
                 data-active={activeTag === tag ? 'true' : undefined}
               >
@@ -386,8 +361,8 @@ export function Notes() {
           <StickyNote className="size-12 text-muted-foreground/50 mb-4" />
           <h2 className="text-lg font-medium mb-2">No notes yet</h2>
           <p className="text-sm text-muted-foreground max-w-md">
-            Start taking notes while watching lessons. Open any course, play a
-            video, and use the notes panel to capture your thoughts.
+            Start taking notes while watching lessons. Open any course, play a video, and use the
+            notes panel to capture your thoughts.
           </p>
         </div>
       )}
@@ -423,16 +398,12 @@ export function Notes() {
           {Array.from(courseGroups.entries()).map(([courseName, items]) => (
             <div key={courseName}>
               <h2 className="text-lg font-semibold mb-3">{courseName}</h2>
-              <div className="space-y-3">
-                {items.map(renderNoteCard)}
-              </div>
+              <div className="space-y-3">{items.map(renderNoteCard)}</div>
             </div>
           ))}
         </div>
       ) : (
-        <div className="space-y-3">
-          {displayedNotes.map(renderNoteCard)}
-        </div>
+        <div className="space-y-3">{displayedNotes.map(renderNoteCard)}</div>
       )}
     </div>
   )
