@@ -125,3 +125,6 @@ Round 1 blockers resolved (keyboard accessibility, contrast, touch targets). Rem
 
 - Task 4 (seek bar bookmark indicators) was already fully implemented by earlier stories — the `ChapterProgressBar` component renders bookmark markers and `LessonPlayer` loads/passes bookmarks. This demonstrates good prior architecture where the video player was designed to support bookmarks from the start.
 - Integrating bookmarks into the existing Library page (via tabs) was cleaner than creating a separate page — avoids adding a new route and leverages the existing navigation structure.
+- E2E tests that seed IndexedDB via raw API and reload are flaky under system load. Running Playwright alongside build/lint/unit tests caused 3 spurious failures that passed when re-run in isolation. Future stories should run E2E tests after other validation completes, not in parallel.
+- The code review flagged "uncommitted code" as a blocker — this is an artifact of the review running before the shipping step commits. The `/finish-story` workflow inherently resolves this by committing as part of the shipping process.
+- `findCourseAndLesson()` lookup against static course data works for the Operative Six curriculum but will need extension once user-imported courses have their own metadata in IndexedDB.
