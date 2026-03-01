@@ -187,6 +187,25 @@ export function LessonPlayer() {
     }
   }, [courseId, lessonId])
 
+  // Open notes panel when navigating with ?panel=notes (e.g. from note search deep-link)
+  const panelParam = searchParams.get('panel')
+  useEffect(() => {
+    if (panelParam === 'notes') {
+      setNotesOpen(true)
+    }
+  }, [panelParam])
+
+  // Seek video to timestamp from ?t= query param (e.g. from note search deep-link)
+  const seekParam = searchParams.get('t')
+  useEffect(() => {
+    if (seekParam) {
+      const time = Number(seekParam)
+      if (!Number.isNaN(time) && time >= 0) {
+        setSeekToTime(time)
+      }
+    }
+  }, [seekParam])
+
   // Scroll to top when navigating to a new lesson
   useEffect(() => {
     document.getElementById('main-content')?.scrollTo({ top: 0, behavior: 'instant' })

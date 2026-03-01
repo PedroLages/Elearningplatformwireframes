@@ -91,7 +91,25 @@
 - `handleNotesToggle` tab fallback chain: materials > bookmarks > transcript -- lands on non-existent tab for lessons without PDFs, video, or captions
 - E2E tests missing: Escape key dismissal on fullscreen overlay, keyboard navigation in fullscreen overlay
 
+### E03-S05: Full-Text Note Search (Round 2)
+- BLOCKER (RECURRING): Fixes exist ONLY as uncommitted working tree changes -- committed branch ships broken code. Recurring from E03-S03 and E03-S02.
+  - `combineWith: 'AND'` in committed noteSearch.ts breaks fuzzy multi-term search ("custm hooks" returns nothing)
+  - `searchParams` object in useEffect deps causes over-firing of seek/panel effects in committed LessonPlayer.tsx
+  - `highlightMatches` takes `string` query arg in committed version (recreates RegExp on every call) instead of memoized patterns
+  - `buildSearchIndex()` assigned to module-level const in committed version (not wrapped in useMemo)
+  - Tags joined with space in committed version -- multi-word tags like "machine learning" corrupt on round-trip
+  - OR semantics test and multi-word tag test only exist in uncommitted working tree
+- `h-4 w-4` used instead of `size-4` Tailwind v4 shorthand in StickyNote icon (recurring)
+- `bg-yellow-200` hardcoded in highlightMatches `<mark>` tag instead of using theme token
+
+## Recurring Anti-Pattern: Uncommitted Fixes
+- E03-S02: Blocker fixes (focus trap, ARIA attrs) existed only in working tree
+- E03-S03: `urlTransform` override for video:// protocol existed only in working tree
+- E03-S05: 6+ fixes (combineWith, searchParams deps, tag separator, highlight memoization, searchIndex useMemo, tests) exist only in working tree
+- Root cause: Review findings are applied locally but never committed before shipping
+
 ### E03-S04: Tag-Based Note Organization
+
 - Duplicate `setTags(initialTags)` across two useEffects in NoteEditor -- second one triggers on every `initialTags` reference change, potentially overwriting rapid user tag additions
 - AC1 requires "tags can be added by pressing Enter or comma" but TagEditor has NO comma key handler (cmdk handles Enter only)
 - Add-tag button in TagEditor is 20x20px (`h-5 w-5`), well below 44px WCAG touch target (recurring sub-44px button pattern)

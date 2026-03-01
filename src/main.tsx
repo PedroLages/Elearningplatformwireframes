@@ -3,11 +3,15 @@ import App from './app/App.tsx'
 import './styles/index.css'
 import { db } from '@/db'
 import { migrateBookmarksFromLocalStorage } from '@/lib/bookmarks'
-import { initializeSearchIndex } from '@/lib/noteSearch'
+import { buildCourseLookup, initializeSearchIndex } from '@/lib/noteSearch'
+import { allCourses } from '@/data/courses'
 import { toast } from 'sonner'
 
 // Fire-and-forget: migrate any legacy localStorage bookmarks to IndexedDB
 migrateBookmarksFromLocalStorage()
+
+// Build course/lesson lookup maps for search enrichment
+buildCourseLookup(allCourses)
 
 // Initialize Dexie (triggers v4 upgrade/migration if needed), then build search index
 db.open()
