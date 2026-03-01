@@ -1,44 +1,39 @@
-import { useEffect, useState, useMemo } from 'react'
-import { FileText } from 'lucide-react'
-import {
-  Accordion,
-  AccordionContent,
-  AccordionItem,
-  AccordionTrigger,
-} from '@/app/components/ui/accordion'
-import { Badge } from '@/app/components/ui/badge'
+import { useEffect, useMemo, useState } from 'react'
+import { FileText, ArrowUpDown } from 'lucide-react'
 import { Button } from '@/app/components/ui/button'
+import { Skeleton } from '@/app/components/ui/skeleton'
 import { NoteCard } from './NoteCard'
 import { useNoteStore } from '@/stores/useNoteStore'
 import type { Module, Note } from '@/data/types'
-
-type SortMode = 'video-order' | 'date-created'
 
 interface CourseNotesTabProps {
   courseId: string
   modules: Module[]
 }
 
-interface LessonGroup {
-  lessonId: string
+type SortMode = 'video-order' | 'date-created'
+
+interface LessonInfo {
   lessonTitle: string
   moduleTitle: string
   moduleOrder: number
   lessonOrder: number
-  notes: Note[]
 }
 
 export function CourseNotesTab({ courseId, modules }: CourseNotesTabProps) {
-  const { notes, isLoading, loadNotesByCourse } = useNoteStore()
+  const notes = useNoteStore(s => s.notes)
+  const isLoading = useNoteStore(s => s.isLoading)
+  const loadNotesByCourse = useNoteStore(s => s.loadNotesByCourse)
+  const deleteNote = useNoteStore(s => s.deleteNote)
   const [sortMode, setSortMode] = useState<SortMode>('video-order')
 
   useEffect(() => {
     loadNotesByCourse(courseId)
   }, [courseId, loadNotesByCourse])
 
-  // Build a lookup map from lessonId → { lessonTitle, moduleTitle, orders }
+  // Build lookup from videoId → lesson/module info
   const lessonMap = useMemo(() => {
-    const map = new Map<string, { lessonTitle: string; moduleTitle: string; moduleOrder: number; lessonOrder: number }>()
+    const map = new Map<string, LessonInfo>()
     for (const mod of modules) {
       for (const lesson of mod.lessons) {
         map.set(lesson.id, {
@@ -52,158 +47,134 @@ export function CourseNotesTab({ courseId, modules }: CourseNotesTabProps) {
     return map
   }, [modules])
 
-  // Group notes by module → lesson and apply sorting
-  const groupedByModule = useMemo(() => {
-    // Build lesson groups
-    const groupMap = new Map<string, LessonGroup>()
+  // Group and sort notes
+  const groupedNotes = useMemo(() => {
+    if (sortMode === 'date-created') {
+      // Flat list sorted by creation date (newest first)
+      return [{
+        moduleTitle: '',
+        lessons: [{
+          lessonTitle: '',
+          lessonId: '',
+          notes: [...notes].sort((a, b) =>
+            new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime()
+          ),
+        }],
+      }]
+    }
+
+    // Group by module → lesson in video order
+    const moduleMap = new Map<string, { moduleTitle: string; moduleOrder: number; lessons: Map<string, { lessonTitle: string; lessonOrder: number; notes: Note[] }> }>()
+
     for (const note of notes) {
       const info = lessonMap.get(note.videoId)
-      if (!info) continue // orphan note — skip
+      const moduleTitle = info?.moduleTitle ?? 'Unknown Module'
+      const moduleOrder = info?.moduleOrder ?? 999
+      const lessonTitle = info?.lessonTitle ?? 'Unknown Lesson'
+      const lessonOrder = info?.lessonOrder ?? 999
 
-      let group = groupMap.get(note.videoId)
-      if (!group) {
-        group = {
-          lessonId: note.videoId,
-          lessonTitle: info.lessonTitle,
-          moduleTitle: info.moduleTitle,
-          moduleOrder: info.moduleOrder,
-          lessonOrder: info.lessonOrder,
-          notes: [],
-        }
-        groupMap.set(note.videoId, group)
+      if (!moduleMap.has(moduleTitle)) {
+        moduleMap.set(moduleTitle, { moduleTitle, moduleOrder, lessons: new Map() })
       }
-      group.notes.push(note)
-    }
+      const modGroup = moduleMap.get(moduleTitle)!
 
-    // Sort notes within each group by creation date (newest first)
-    for (const group of groupMap.values()) {
-      group.notes.sort((a, b) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime())
-    }
-
-    // Collect all groups
-    const allGroups = Array.from(groupMap.values())
-
-    // Sort groups
-    if (sortMode === 'video-order') {
-      allGroups.sort((a, b) => a.moduleOrder - b.moduleOrder || a.lessonOrder - b.lessonOrder)
-    } else {
-      // Sort by most recent note first
-      allGroups.sort((a, b) => {
-        const aLatest = new Date(a.notes[0].updatedAt).getTime()
-        const bLatest = new Date(b.notes[0].updatedAt).getTime()
-        return bLatest - aLatest
-      })
-    }
-
-    // Group by module
-    const moduleGroups = new Map<string, LessonGroup[]>()
-    for (const group of allGroups) {
-      const key = group.moduleTitle
-      let arr = moduleGroups.get(key)
-      if (!arr) {
-        arr = []
-        moduleGroups.set(key, arr)
+      if (!modGroup.lessons.has(note.videoId)) {
+        modGroup.lessons.set(note.videoId, { lessonTitle, lessonOrder, notes: [] })
       }
-      arr.push(group)
+      modGroup.lessons.get(note.videoId)!.notes.push(note)
     }
 
-    return moduleGroups
+    return Array.from(moduleMap.values())
+      .sort((a, b) => a.moduleOrder - b.moduleOrder)
+      .map(mod => ({
+        moduleTitle: mod.moduleTitle,
+        lessons: Array.from(mod.lessons.entries())
+          .sort(([, a], [, b]) => a.lessonOrder - b.lessonOrder)
+          .map(([lessonId, data]) => ({
+            lessonTitle: data.lessonTitle,
+            lessonId,
+            notes: data.notes,
+          })),
+      }))
   }, [notes, lessonMap, sortMode])
 
-  const totalNotes = notes.length
+  const handleDelete = async (noteId: string) => {
+    await deleteNote(noteId)
+  }
 
+  // Loading state
   if (isLoading) {
     return (
-      <div className="space-y-3">
+      <div className="space-y-4">
         {[1, 2, 3].map(i => (
-          <div key={i} className="h-20 rounded-2xl bg-muted animate-pulse" />
+          <Skeleton key={i} className="h-24 w-full rounded-2xl" />
         ))}
       </div>
     )
   }
 
-  if (totalNotes === 0) {
+  // Empty state (AC3)
+  if (notes.length === 0) {
     return (
-      <div className="flex flex-col items-center justify-center py-16 text-center">
-        <FileText className="mb-4 h-12 w-12 text-muted-foreground/40" />
-        <h3 className="text-base font-semibold mb-1">No notes yet</h3>
-        <p className="text-sm text-muted-foreground max-w-xs">
-          Start taking notes while watching videos. Your notes will appear here grouped by lesson.
+      <div className="flex flex-col items-center justify-center py-16 text-center bg-card rounded-[24px] border">
+        <FileText className="size-12 text-muted-foreground/50 mb-4" />
+        <p className="text-muted-foreground">
+          No notes yet. Start taking notes while watching videos.
         </p>
       </div>
     )
   }
-
-  // All module IDs for default-open accordion
-  const moduleKeys = Array.from(groupedByModule.keys())
 
   return (
     <div>
       {/* Sort controls */}
       <div className="flex items-center justify-between mb-4">
         <p className="text-sm text-muted-foreground">
-          {totalNotes} {totalNotes === 1 ? 'note' : 'notes'}
+          {notes.length} {notes.length === 1 ? 'note' : 'notes'}
         </p>
-        <div className="flex gap-1 bg-muted rounded-lg p-0.5">
-          <Button
-            variant={sortMode === 'video-order' ? 'default' : 'ghost'}
-            size="sm"
-            className="text-xs h-7 px-2.5"
-            onClick={() => setSortMode('video-order')}
-          >
-            Video Order
-          </Button>
-          <Button
-            variant={sortMode === 'date-created' ? 'default' : 'ghost'}
-            size="sm"
-            className="text-xs h-7 px-2.5"
-            onClick={() => setSortMode('date-created')}
-          >
-            Date Created
-          </Button>
-        </div>
+        <Button
+          variant="outline"
+          size="sm"
+          onClick={() => setSortMode(m => m === 'video-order' ? 'date-created' : 'video-order')}
+          aria-label="Sort notes"
+        >
+          <ArrowUpDown className="size-3.5 mr-1.5" />
+          {sortMode === 'video-order' ? 'Video Order' : 'Date Created'}
+        </Button>
       </div>
 
-      {/* Notes grouped by module → lesson */}
-      <Accordion type="multiple" defaultValue={moduleKeys} className="space-y-3">
-        {Array.from(groupedByModule.entries()).map(([moduleTitle, lessonGroups]) => (
-          <AccordionItem
-            key={moduleTitle}
-            value={moduleTitle}
-            className="rounded-[24px] border border-border bg-card/50 px-5 shadow-sm"
-          >
-            <AccordionTrigger className="hover:no-underline">
-              <div className="flex items-center gap-2">
-                <span className="font-semibold text-sm">{moduleTitle}</span>
-                <Badge variant="secondary" className="text-xs">
-                  {lessonGroups.reduce((sum, g) => sum + g.notes.length, 0)}
-                </Badge>
-              </div>
-            </AccordionTrigger>
-            <AccordionContent>
-              <div className="space-y-4">
-                {lessonGroups.map(group => (
-                  <div key={group.lessonId}>
-                    <h4 className="text-xs font-medium text-muted-foreground mb-2 px-1">
-                      {group.lessonTitle}
-                    </h4>
-                    <div className="space-y-2">
-                      {group.notes.map(note => (
-                        <NoteCard
-                          key={note.id}
-                          note={note}
-                          courseId={courseId}
-                          lessonTitle={group.lessonTitle}
-                        />
-                      ))}
-                    </div>
+      {/* Grouped notes */}
+      <div className="space-y-6">
+        {groupedNotes.map((group) => (
+          <div key={group.moduleTitle || 'all'}>
+            {group.moduleTitle && (
+              <h3 className="text-sm font-semibold text-muted-foreground uppercase tracking-wide mb-3">
+                {group.moduleTitle}
+              </h3>
+            )}
+            <div className="space-y-4">
+              {group.lessons.map((lesson) => (
+                <div key={lesson.lessonId || 'flat'}>
+                  {lesson.lessonTitle && (
+                    <h4 className="text-sm font-medium mb-2">{lesson.lessonTitle}</h4>
+                  )}
+                  <div className="space-y-3">
+                    {lesson.notes.map(note => (
+                      <NoteCard
+                        key={note.id}
+                        note={note}
+                        lessonTitle={lesson.lessonTitle}
+                        courseId={courseId}
+                        onDelete={handleDelete}
+                      />
+                    ))}
                   </div>
-                ))}
-              </div>
-            </AccordionContent>
-          </AccordionItem>
+                </div>
+              ))}
+            </div>
+          </div>
         ))}
-      </Accordion>
+      </div>
     </div>
   )
 }

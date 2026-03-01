@@ -117,7 +117,10 @@ When invoked with a story ID (e.g., `E01-S03`):
 
     ### Next Steps
 
-    1. **Implement the story** following the approved plan
+    1. **Implement the story** (new session recommended):
+       ```
+       Implement E##-S## following the plan at .claude/plans/{plan-filename}.md
+       ```
     2. Make **granular commits** after each task as save points
     3. When done, ship it:
 
