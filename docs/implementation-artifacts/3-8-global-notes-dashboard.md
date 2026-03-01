@@ -257,6 +257,14 @@ Claude Opus 4.6
 - All 18 E2E tests pass (Chromium)
 - Build succeeds, no regressions in smoke tests
 
+### Challenges and Lessons Learned
+
+- **Keyboard accessibility on Badge components**: Code review caught that `<Badge>` renders as `<span>`, which is not keyboard-focusable or activatable. Wrapping in `<button>` is the correct fix — applies to both filter bar badges and in-card tag badges. Pattern: any clickable Badge must be inside a semantic `<button>`.
+- **Nested interactive elements create a11y confusion**: A `role="button"` container with clickable children (tag badges, timestamps) creates an ambiguous keyboard/screen reader experience. This was flagged in E03-S06 and recurred here. Future cards with expandable behavior should use `<details>`/`<summary>` or explicit ARIA disclosure patterns instead of `role="button"` on a wrapping div.
+- **Extract shared utilities early**: `stripHtml` and `ReadOnlyContent` were duplicated between NoteCard and Notes page. Extracted `ReadOnlyContent` to a shared module (`src/app/components/notes/ReadOnlyContent.tsx`) and `stripHtml`/`truncateText` to `src/lib/textUtils.ts`. Lesson: when the plan calls for rendering the same content type in two places, extract the renderer as step 1.
+- **E2E seed data needs retry logic**: Raw `indexedDB.open` in test fixtures can race with Dexie initialization. The existing `indexeddb-fixture.ts` has retry logic — future story specs should use it or copy its pattern.
+- **Commit before review**: The code review's top blocker was "all files uncommitted." Running `/review-story` on uncommitted work creates a false blocker. Commit implementation before running reviews.
+
 ### Change Log
 
 - 2026-03-01: Implemented story 3-8 — Global Notes Dashboard with search, tag filter, sort, and card expansion
