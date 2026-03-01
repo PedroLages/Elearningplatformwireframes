@@ -131,3 +131,7 @@ Testing report: `docs/reviews/code/code-review-testing-2026-03-01-E03-S10.md`
 
 - JSZip static import blocked the Notes page lazy-load chunk from resolving, causing Suspense fallback to persist. Fixed by using dynamic `import('jszip')` only when ZIP generation is needed.
 - Playwright strict mode requires unique text selectors — the page empty state "No notes yet" conflicted with dialog "No notes to export", causing `getByText(/no notes/i)` to match 2 elements. Resolved by changing the page empty state heading.
+- YAML frontmatter injection: user-controlled strings (lesson titles, course names) interpolated into double-quoted YAML values must be escaped. Code review caught this — fixed with `escapeYaml()` that handles quotes, backslashes, and newlines.
+- Code review identified `buildLookups()` duplicated across `noteExport.ts` and `Notes.tsx` — a pattern to watch in future stories when multiple files need the same course/lesson mapping.
+- Fire-and-forget async calls (`onClick={() => asyncFn()}`) silently swallow rejections. Always wrap async event handlers with try/catch or use a toast error boundary.
+- Regex-based HTML→Markdown conversion works well for TipTap's predictable output but won't scale to arbitrary HTML. If future stories need richer conversion, consider a DOM-based approach or turndown library.
