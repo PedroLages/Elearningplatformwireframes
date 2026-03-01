@@ -1,9 +1,11 @@
 import { useEffect, useMemo, useState } from 'react'
-import { FileText, ArrowUpDown } from 'lucide-react'
+import { FileText, ArrowUpDown, Download } from 'lucide-react'
+import { toast } from 'sonner'
 import { Button } from '@/app/components/ui/button'
 import { Skeleton } from '@/app/components/ui/skeleton'
 import { NoteCard } from './NoteCard'
 import { useNoteStore } from '@/stores/useNoteStore'
+import { exportNotes } from '@/lib/noteExport'
 import type { Module, Note } from '@/data/types'
 
 interface CourseNotesTabProps {
@@ -138,20 +140,37 @@ export function CourseNotesTab({ courseId, modules }: CourseNotesTabProps) {
 
   return (
     <div>
-      {/* Sort controls */}
+      {/* Sort controls + export */}
       <div className="flex items-center justify-between mb-4">
         <p className="text-sm text-muted-foreground">
           {notes.length} {notes.length === 1 ? 'note' : 'notes'}
         </p>
-        <Button
-          variant="outline"
-          size="sm"
-          onClick={() => setSortMode(m => (m === 'video-order' ? 'date-created' : 'video-order'))}
-          aria-label="Sort notes"
-        >
-          <ArrowUpDown className="size-3.5 mr-1.5" />
-          {sortMode === 'video-order' ? 'Video Order' : 'Date Created'}
-        </Button>
+        <div className="flex items-center gap-2">
+          <Button
+            variant="outline"
+            size="sm"
+            data-testid="export-course-notes-button"
+            onClick={async () => {
+              try {
+                await exportNotes(notes)
+              } catch {
+                toast.error('Export failed. Please try again.')
+              }
+            }}
+          >
+            <Download className="size-3.5 mr-1.5" />
+            Export
+          </Button>
+          <Button
+            variant="outline"
+            size="sm"
+            onClick={() => setSortMode(m => (m === 'video-order' ? 'date-created' : 'video-order'))}
+            aria-label="Sort notes"
+          >
+            <ArrowUpDown className="size-3.5 mr-1.5" />
+            {sortMode === 'video-order' ? 'Video Order' : 'Date Created'}
+          </Button>
+        </div>
       </div>
 
       {/* Grouped notes */}
