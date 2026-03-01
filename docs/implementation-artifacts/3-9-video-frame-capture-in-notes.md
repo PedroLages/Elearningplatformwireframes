@@ -1,9 +1,9 @@
 ---
 story_id: E03-S09
 story_name: "Video Frame Capture in Notes"
-status: in-progress
+status: done
 started: 2026-03-01
-completed:
+completed: 2026-03-01
 reviewed: true
 review_started: 2026-03-01
 review_gates_passed: [build, lint, unit-tests, e2e-tests, design-review, code-review, code-review-testing]
