@@ -144,6 +144,8 @@ test.describe('AC2: Markdown with YAML frontmatter', () => {
     expect(content).toMatch(/created:/)
     expect(content).toMatch(/updated:/)
     expect(content).toMatch(/course:/)
+    expect(content).toMatch(/title:/)
+    expect(content).toMatch(/video:/)
   })
 })
 
@@ -194,6 +196,8 @@ test.describe('AC4: Multi-note bundled export', () => {
     expect(filename).toMatch(/\.(zip|md)$/i)
     // Filename should be sanitized (no special characters that break filesystems)
     expect(filename).not.toMatch(/[<>:"/\\|?*]/)
+    // ZIP filename or contained files should reference course/lesson content
+    expect(filename.toLowerCase()).toMatch(/notes/)
   })
 })
 
@@ -217,6 +221,7 @@ test.describe('AC5: Export completion summary', () => {
 
     // Should show count of exported notes
     await expect(summary).toContainText(/3/)
+    await expect(summary).toContainText(/total size/i)
   })
 
   test('empty state shows helpful message when no notes to export', async ({ page }) => {

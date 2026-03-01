@@ -18,30 +18,14 @@ import { useNoteStore } from '@/stores/useNoteStore'
 import { searchNotesWithContext } from '@/lib/noteSearch'
 import { getAllNoteTags } from '@/lib/progress'
 import { highlightMatches, buildHighlightPatterns } from '@/lib/searchUtils'
-import { allCourses } from '@/data/courses'
 import { formatTimestamp } from '@/lib/format'
 import { stripHtml } from '@/lib/textUtils'
+import { getCourseName, getLessonTitle } from '@/lib/noteExport'
 import { ReadOnlyContent } from '@/app/components/notes/ReadOnlyContent'
+import { ExportNotesDialog } from '@/app/components/notes/ExportNotesDialog'
 import type { Note } from '@/data/types'
 
 type SortOption = 'most-recent' | 'oldest-first' | 'by-course'
-
-/** Build lookup maps from static course data — called ONCE at module level. */
-function buildLookups() {
-  const courseNames = new Map<string, string>()
-  const lessonTitles = new Map<string, string>()
-  for (const course of allCourses) {
-    courseNames.set(course.id, course.shortTitle || course.title)
-    for (const mod of course.modules) {
-      for (const lesson of mod.lessons) {
-        lessonTitles.set(lesson.id, lesson.title)
-      }
-    }
-  }
-  return { courseNames, lessonTitles }
-}
-
-const { courseNames, lessonTitles } = buildLookups()
 
 /** Truncate plain text to ~120 characters. */
 function truncatePreview(text: string, max = 120): string {
@@ -59,8 +43,8 @@ interface EnrichedNote {
 function enrichNotes(notes: Note[]): EnrichedNote[] {
   return notes.map(note => ({
     note,
-    courseName: courseNames.get(note.courseId) ?? note.courseId,
-    lessonTitle: lessonTitles.get(note.videoId) ?? note.videoId,
+    courseName: getCourseName(note.courseId),
+    lessonTitle: getLessonTitle(note.videoId),
     plainPreview: truncatePreview(stripHtml(note.content)),
   }))
 }
@@ -299,10 +283,11 @@ export function Notes() {
     <div className="space-y-6">
       {/* Page header */}
       <div className="flex items-center justify-between">
-        <h1 className="text-2xl font-semibold tracking-tight">
+        <h1 className="text-2xl font-semibold tracking-tight truncate">
           My Notes <span className="text-muted-foreground font-normal">({notes.length})</span>
         </h1>
         <div className="flex items-center gap-3">
+          <ExportNotesDialog notes={notes} />
           <Select value={sortOption} onValueChange={v => setSortOption(v as SortOption)}>
             <SelectTrigger className="w-[160px]">
               <ArrowUpDown className="size-3.5 mr-1.5" />
@@ -359,10 +344,10 @@ export function Notes() {
       {notes.length === 0 && (
         <div className="flex flex-col items-center justify-center py-16 text-center">
           <StickyNote className="size-12 text-muted-foreground/50 mb-4" />
-          <h2 className="text-lg font-medium mb-2">No notes yet</h2>
+          <h2 className="text-lg font-medium mb-2">Start capturing knowledge</h2>
           <p className="text-sm text-muted-foreground max-w-md">
-            Start taking notes while watching lessons. Open any course, play a video, and use the
-            notes panel to capture your thoughts.
+            Take notes while watching lessons. Open any course, play a video, and use the notes
+            panel to capture your thoughts.
           </p>
         </div>
       )}
