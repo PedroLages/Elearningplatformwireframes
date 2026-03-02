@@ -45,11 +45,7 @@ export const FrameCaptureExtension = Node.create({
   },
 
   renderHTML({ HTMLAttributes }) {
-    return [
-      'figure',
-      mergeAttributes(HTMLAttributes, { 'data-type': 'frame-capture' }),
-      0,
-    ]
+    return ['figure', mergeAttributes(HTMLAttributes, { 'data-type': 'frame-capture' }), 0]
   },
 
   addNodeView() {
