@@ -170,7 +170,7 @@ describe('captureVideoFrame', () => {
     const canvas = {
       width: 0,
       height: 0,
-      getContext: vi.fn(() => ctx),
+      getContext: vi.fn((): typeof ctx | null => ctx),
       toBlob: vi.fn(),
     }
     return { canvas, ctx }
