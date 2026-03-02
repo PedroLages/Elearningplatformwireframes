@@ -97,6 +97,13 @@ export default defineConfig({
     setupFiles: './src/test/setup.ts',
     testTimeout: 10_000,
     hookTimeout: 15_000,
+    coverage: {
+      provider: 'v8',
+      reportOnFailure: true,
+      thresholds: {
+        lines: 42,
+      },
+    },
     projects: [{
       extends: true,
       test: {
