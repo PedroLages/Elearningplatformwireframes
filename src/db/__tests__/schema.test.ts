@@ -47,6 +47,7 @@ describe('ElearningDB schema', () => {
     expect(db.name).toBe('ElearningDB')
     expect(db.tables.map(t => t.name).sort()).toEqual([
       'bookmarks',
+      'contentProgress',
       'importedCourses',
       'importedPdfs',
       'importedVideos',

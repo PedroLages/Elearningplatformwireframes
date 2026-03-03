@@ -620,7 +620,6 @@ export function LessonPlayer() {
                     modules={course.modules}
                     courseId={course.id}
                     activeLessonId={lessonId}
-                    completedLessons={progress?.completedLessons ?? []}
                     compact
                   />
                 </div>
@@ -914,7 +913,6 @@ export function LessonPlayer() {
               modules={course.modules}
               courseId={course.id}
               activeLessonId={lessonId}
-              completedLessons={progress?.completedLessons ?? []}
               compact
             />
           </div>
