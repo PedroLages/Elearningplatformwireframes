@@ -69,16 +69,16 @@ When invoked with a story ID (e.g., `E01-S03`):
     - UX design references (if applicable)
     - Note: during implementation, make granular commits after each small task as save points
 
-11. **Link plan to story file**: After `ExitPlanMode` returns (plan approved), append an `## Implementation Plan` section to the story file so the developer can find the plan in a later session. If the section already exists, skip.
+11. **Link plan to story file**: After `ExitPlanMode` returns (plan approved), save the plan to `docs/implementation-artifacts/plans/{plan-filename}.md`, then append an `## Implementation Plan` section to the story file so the developer can find the plan in a later session. If the section already exists, skip.
 
     Format:
     ```markdown
     ## Implementation Plan
 
-    See [plan](.claude/plans/{plan-filename}.md) for implementation approach.
+    See [plan](plans/{plan-filename}.md) for implementation approach.
     ```
 
-    Use the actual plan file path from the current session.
+    Use the actual plan filename (relative to `docs/implementation-artifacts/`) from the current session.
 
 12. **Assess workflow recommendation**: Based on research from Steps 9-10, determine which shipping workflow to recommend:
 
@@ -119,7 +119,7 @@ When invoked with a story ID (e.g., `E01-S03`):
 
     1. **Implement the story** (new session recommended):
        ```
-       Implement E##-S## following the plan at .claude/plans/{plan-filename}.md
+       Implement E##-S## following the plan at docs/implementation-artifacts/plans/{plan-filename}.md
        ```
     2. Make **granular commits** after each task as save points
     3. When done, ship it:
