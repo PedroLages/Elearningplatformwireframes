@@ -188,4 +188,46 @@ All 5 acceptance criteria passing:
 
 ## Challenges and Lessons Learned
 
-[Document issues, solutions, and patterns worth remembering]
+### Commit Discipline
+**Issue**: Implementation files were uncommitted (7th consecutive story with this pattern since E03-S02).
+**Solution**: Run `git status` before requesting review. Added pre-review checklist.
+**Lesson**: Uncommitted work makes branches non-functional. Check working tree state early.
+
+### Radix UI Prop Passthrough
+**Issue**: Destructured `value` prop but forgot to pass `normalizedValue` to `<ProgressPrimitive.Root>`, causing `data-state="indeterminate"` always.
+**Solution**: Explicitly pass `value={normalizedValue}` to Radix root.
+**Lesson**: When wrapping Radix primitives, destructured props must be passed through or Radix defaults to null/undefined.
+
+### E2E Test False Positives
+**Issue**: AC2 test wrapped all assertions in `if ((await element.count()) > 0)` where element didn't exist. Test passed with zero assertions.
+**Solution**: Removed conditional wrapper. If element doesn't exist, test should fail, not skip silently. Used `test.skip()` with reason for known gaps.
+**Lesson**: Vacuous test passes are dangerous. Tests should fail loudly when preconditions aren't met, not pass silently.
+
+### localStorage Seeding for E2E Tests
+**Issue**: AC5 test failed on tablet viewport (640-1023px) because sidebar defaults to `open: true` when localStorage is empty, creating fullscreen overlay blocking interactions.
+**Solution**: Seed `localStorage.setItem('eduvi-sidebar-v1', 'false')` before navigation in all tests.
+**Lesson**: E2E tests must seed localStorage state to avoid viewport-specific UI behaviors. Document defaults in MEMORY.md.
+
+### Accessibility Motion Preferences
+**Issue**: Progress bar animation used `duration-500 ease-out` without `motion-reduce:` modifier.
+**Solution**: Added `motion-reduce:duration-0` to respect OS motion preferences.
+**Lesson**: All animations need motion-reduce modifiers for WCAG 2.1 compliance. Check existing components (CourseCard line 603) for patterns.
+
+### Theme Tokens vs Hardcoded Colors
+**Issue**: Completion badges used hardcoded `bg-green-600` instead of `bg-success` theme token, breaking dark mode consistency.
+**Solution**: Replaced all hardcoded green colors with semantic tokens (`bg-success`, `text-success`).
+**Lesson**: Always use theme tokens from `theme.css` for dark mode support. Grep for hardcoded color values before review.
+
+### Backward-Compatible Component Enhancement
+**Success**: Enhanced existing Progress component with optional `showLabel` prop instead of creating new component. All 80+ existing usages still work.
+**Lesson**: Optional props enable backward-compatible enhancements. Existing callsites don't break; new features are opt-in.
+
+### Unit Test Coverage for UI Components
+**Issue**: Progress component had zero unit tests. Code review flagged this as high-priority gap.
+**Solution**: Added 62 unit tests covering value normalization, ARIA attributes, label rendering, edge cases (NaN, negative, >100).
+**Lesson**: UI components need unit tests for props, edge cases, and accessibility attributes. E2E tests alone are insufficient.
+
+### Test Selector Quality
+**Issue**: Tests used brittle CSS selectors (`.bg-muted`) that coupled tests to styling implementation.
+**Solution**: Switched to semantic selectors using `getByRole('progressbar')`, `getByRole('link')`, `getByText()`.
+**Lesson**: Role-based selectors are more resilient to styling changes. Use accessible landmarks (role, label) over CSS classes.
