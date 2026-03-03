@@ -174,7 +174,8 @@ describe('Progress', () => {
     it('sets correct transform for 100%', () => {
       const { container } = render(<Progress value={100} />)
       const indicator = container.querySelector('[data-slot="progress-indicator"]')
-      expect(indicator).toHaveStyle({ transform: 'translateX(0%)' })
+      // translateX(-0%) is equivalent to translateX(0%), both represent full progress
+      expect(indicator).toHaveStyle({ transform: 'translateX(-0%)' })
     })
   })
 

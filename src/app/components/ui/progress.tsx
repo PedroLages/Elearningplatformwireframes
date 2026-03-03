@@ -18,7 +18,9 @@ function Progress({
   labelFormat = (v) => `${v}% complete`,
   ...props
 }: ProgressProps) {
-  const normalizedValue = Math.min(100, Math.max(0, value))
+  // Handle NaN explicitly before normalization
+  const safeValue = Number.isNaN(value) ? 0 : value
+  const normalizedValue = Math.min(100, Math.max(0, safeValue))
 
   return (
     <div className="flex items-center gap-2">

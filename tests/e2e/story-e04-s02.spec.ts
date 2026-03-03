@@ -70,9 +70,16 @@ test.describe('E04-S02: Course Completion Percentage', () => {
 
   test('AC3: Progress bar shows 0% for courses with no completed items', async ({
     page,
+    localStorage,
   }) => {
     // Navigate to courses
     await goToCourses(page)
+
+    // Seed sidebar localStorage to prevent tablet overlay blocking pointer events
+    await localStorage.seed('eduvi-sidebar-v1', 'false')
+
+    // Wait for network to be idle and content to load
+    await page.waitForLoadState('networkidle')
 
     // Get all course cards that have progress bars
     const courseCards = page.getByRole('link').filter({ has: page.locator('[role="progressbar"]') })
@@ -101,9 +108,13 @@ test.describe('E04-S02: Course Completion Percentage', () => {
 
   test('AC4: Progress bar shows 100% with completion badge for fully completed courses', async ({
     page,
+    localStorage,
   }) => {
     // Navigate to courses
     await goToCourses(page)
+
+    // Seed sidebar localStorage to prevent tablet overlay blocking pointer events
+    await localStorage.seed('eduvi-sidebar-v1', 'false')
 
     // This test will pass once a course reaches 100% completion
     // For now, we'll verify the structure exists
