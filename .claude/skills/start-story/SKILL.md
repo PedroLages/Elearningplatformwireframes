@@ -20,6 +20,52 @@ Automates story setup: feature branch, sprint tracking, ATDD test suggestion, co
 
 When invoked with a story ID (e.g., `E01-S03`):
 
+0. **Git worktree setup** (optional): Offer the user a choice to create an isolated git worktree for this story.
+
+   **Ask the user via AskUserQuestion**:
+   ```
+   Would you like to create a git worktree for this story?
+
+   ✅ Recommended for:
+   - Multi-day stories
+   - Features requiring testing in parallel
+   - When you want to keep main workspace stable
+
+   ❌ Skip for:
+   - Quick hotfixes (1-2 hours)
+   - Simple documentation updates
+   - Experiments or spike work
+   ```
+
+   **If user selects YES**:
+   - Extract story key from `$ARGUMENTS` (e.g., `E01-S04`)
+   - Extract story name from epic lookup (slugified, lowercase)
+   - Detect project root: `PROJECT_ROOT=$(git rev-parse --show-toplevel)`
+   - Detect project name: `PROJECT_NAME=$(basename "$PROJECT_ROOT")`
+   - Calculate worktree base: `WORKTREE_BASE=$(dirname "$PROJECT_ROOT")/${PROJECT_NAME}-worktrees`
+   - Run: `worktree-story ${STORY_KEY} "${STORY_TITLE}"`
+     - This creates:
+       - Worktree at: `${WORKTREE_BASE}/${STORY_KEY_LOWER}/`
+       - Branch: `feature/${STORY_KEY_LOWER}-${STORY_SLUG}`
+   - Change working directory: `cd "${WORKTREE_BASE}/${STORY_KEY_LOWER}"`
+   - Inform user:
+     ```
+     ✨ Worktree created successfully!
+
+     📍 Location: ${WORKTREE_BASE}/${STORY_KEY_LOWER}
+     🌿 Branch: feature/${STORY_KEY_LOWER}-${STORY_SLUG}
+
+     📝 All story files will be created here.
+     🧑‍💻 You can develop in isolation without affecting your main workspace.
+
+     🧹 When done: worktree-cleanup ${STORY_KEY_LOWER}
+     ```
+   - **Important**: All subsequent steps (1-14) will execute in the worktree directory
+
+   **If user selects NO**:
+   - Continue in main workspace (current directory)
+   - Proceed to Step 1
+
 1. **Look up story** in `docs/planning-artifacts/epics.md`. Extract name, description, acceptance criteria, dependencies, technical notes. If `$ARGUMENTS` is empty, read `docs/implementation-artifacts/sprint-status.yaml` and find the first `backlog` story, then confirm with the user via AskUserQuestion.
 
 2. **Check status** in `docs/implementation-artifacts/sprint-status.yaml`. Warn if not `backlog` or `ready-for-dev`.
@@ -32,9 +78,11 @@ When invoked with a story ID (e.g., `E01-S03`):
 4. **Check working tree**: `git status`. Warn if uncommitted changes. Suggest commit or stash.
 
 5. **Create branch** (idempotent):
-   - Check if branch already exists: `git branch --list feature/e##-s##-slug`.
-   - **Branch exists**: Switch to it (`git checkout feature/e##-s##-slug`). Inform user: "Branch already exists, switching to it."
-   - **Branch does not exist**: `git checkout main && git pull && git checkout -b feature/e##-s##-slug`. Skip pull if no remote.
+   - **If worktree was created in Step 0**: Skip this step entirely. The branch was already created by `worktree-story`. Inform user: "Branch created by worktree setup, skipping."
+   - **Otherwise**:
+     - Check if branch already exists: `git branch --list feature/e##-s##-slug`.
+     - **Branch exists**: Switch to it (`git checkout feature/e##-s##-slug`). Inform user: "Branch already exists, switching to it."
+     - **Branch does not exist**: `git checkout main && git pull && git checkout -b feature/e##-s##-slug`. Skip pull if no remote.
 
 6. **Create story file** (idempotent):
    - Check if `docs/implementation-artifacts/{key}.md` already exists.
@@ -109,6 +157,7 @@ When invoked with a story ID (e.g., `E01-S03`):
 
     | Item             | Status                                    |
     | ---------------- | ----------------------------------------- |
+    | Worktree         | [Path to worktree / "Main workspace"]    |
     | Branch           | `feature/e##-s##-slug`                    |
     | Story file       | `docs/implementation-artifacts/{key}.md`  |
     | Sprint status    | Updated to `in-progress`                  |
@@ -131,6 +180,12 @@ When invoked with a story ID (e.g., `E01-S03`):
        |----------|---------|-------------|
        | Review first | `/review-story` → fix → `/finish-story` | UI changes, complex stories, 3+ tasks |
        | Quick ship | `/finish-story` (auto-runs reviews) | Simple changes, config, 1-2 tasks |
+
+    [If worktree was used, add:]
+    4. **After PR is merged**: Clean up the worktree:
+       ```
+       worktree-cleanup {story-key-lower}
+       ```
 
     ---
     ```
@@ -194,4 +249,6 @@ All steps are idempotent — re-running `/start-story` after an interruption saf
 - **Step 8** (ATDD tests): If test file exists, skips suggestion.
 - **Step 11** (plan link): If `## Implementation Plan` section exists, skips.
 - **Step 13** (initial commit): If commit exists, skips.
-- **General cleanup** (if needed): `git checkout main && git branch -D feature/e##-s##-slug`
+- **General cleanup** (if needed):
+  - **Main workspace**: `git checkout main && git branch -D feature/e##-s##-slug`
+  - **Worktree**: `worktree-cleanup {story-key-lower}` (removes worktree and deletes branch)
