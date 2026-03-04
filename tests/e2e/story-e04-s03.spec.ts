@@ -338,21 +338,26 @@ test.describe('Story E04-S03: Automatic Study Session Logging', () => {
     page,
     indexedDB,
   }) => {
+    // Install clock BEFORE page loads (so React timers are mocked)
+    const startTime = Date.now()
+    await page.clock.install({ time: startTime })
+
     // GIVEN an active study session is in progress
     await seedCourseAndReload(page, indexedDB)
     await goToLessonPlayer(page, 'course-study-tracking', 'video-lesson-1')
-    await page.waitForTimeout(500)
+
+    // Use real timeout for page load, then fast-forward for idle detection
+    await page.clock.runFor(500)
 
     // WHEN the user is idle for more than 5 minutes
-    // Fast-forward time using page.clock
-    await page.clock.install({ time: Date.now() })
-    await page.clock.fastForward('00:05:01') // 5 minutes 1 second (hh:mm:ss format)
+    await page.clock.fastForward(5 * 60 * 1000 + 1000) // 5 minutes 1 second in milliseconds
 
-    // Note: The idle detection should pause the session
-    // We can't easily test the Zustand store state from outside,
-    // but we can verify the session was updated with idle time tracking
-    const sessionExists = await page.evaluate(async () => {
-      const maxRetries = 10
+    // Wait for idle detection to trigger pauseSession (using clock time)
+    await page.clock.runFor(2000)
+
+    // THEN idle time should be recorded in the session
+    const idleTimeRecorded = await page.evaluate(async () => {
+      const maxRetries = 20
       const retryDelay = 200
 
       for (let attempt = 0; attempt < maxRetries; attempt++) {
@@ -376,20 +381,36 @@ test.describe('Story E04-S03: Automatic Study Session Logging', () => {
         })
 
         db.close()
-        if (sessions.length > 0) return true
+
+        if (sessions.length === 0) {
+          await new Promise(r => setTimeout(r, retryDelay))
+          continue
+        }
+
+        const session = sessions[sessions.length - 1]
+        // Verify idleTime >= 300 seconds (5 minutes) and is persisted
+        if (session.idleTime !== undefined && session.idleTime >= 300) {
+          return {
+            success: true,
+            idleTime: session.idleTime,
+            duration: session.duration,
+          }
+        }
+
         await new Promise(r => setTimeout(r, retryDelay))
       }
-      return false
+      return { success: false, idleTime: 0, duration: 0 }
     })
 
-    expect(sessionExists).toBe(true)
+    expect(idleTimeRecorded.success).toBe(true)
+    expect(idleTimeRecorded.idleTime).toBeGreaterThanOrEqual(300) // 5 minutes
 
     // Simulate activity to resume
     await page.mouse.move(100, 100)
-    await page.waitForTimeout(100)
+    await page.waitForTimeout(500)
 
-    // Session should still exist and be tracked
-    const sessionStillExists = await page.evaluate(async () => {
+    // AND session resumes correctly (still exists, endTime is undefined = still active)
+    const sessionResumed = await page.evaluate(async () => {
       const db = await new Promise<IDBDatabase>((resolve, reject) => {
         const request = indexedDB.open('ElearningDB')
         request.onsuccess = () => resolve(request.result)
@@ -404,10 +425,20 @@ test.describe('Story E04-S03: Automatic Study Session Logging', () => {
       })
 
       db.close()
-      return sessions.length > 0
+
+      if (sessions.length === 0) return { exists: false, isActive: false }
+
+      const session = sessions[sessions.length - 1]
+      return {
+        exists: true,
+        isActive: session.endTime === undefined,  // Active if no endTime
+        hasIdleTime: session.idleTime >= 300,
+      }
     })
 
-    expect(sessionStillExists).toBe(true)
+    expect(sessionResumed.exists).toBe(true)
+    expect(sessionResumed.isActive).toBe(true)  // Session should still be active after resume
+    expect(sessionResumed.hasIdleTime).toBe(true)  // Idle time should be preserved
   })
 
   test('AC4: displays aggregate total study time across all courses', async ({
@@ -488,6 +519,11 @@ test.describe('Story E04-S03: Automatic Study Session Logging', () => {
     })
 
     expect(totalStudyTime).toBe(3600 + 1800) // 1.5 hours in seconds
+
+    // AND the UI displays the total study time correctly
+    const totalStudyTimeDisplay = await page.getByTestId('total-study-time')
+    await expect(totalStudyTimeDisplay).toBeVisible()
+    await expect(totalStudyTimeDisplay).toHaveText('1.5h')  // 5400 seconds = 1.5 hours
   })
 
   test('AC5: detects and closes orphaned sessions on app load', async ({

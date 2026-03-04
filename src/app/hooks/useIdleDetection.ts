@@ -12,6 +12,25 @@ export function useIdleDetection({ onIdle, onActive, onActivity }: UseIdleDetect
   const isIdleRef = useRef(false)
   const timeoutRef = useRef<ReturnType<typeof setTimeout>>()
 
+  // Store callbacks in refs to avoid re-registering event listeners on every render
+  const onIdleRef = useRef(onIdle)
+  const onActiveRef = useRef(onActive)
+  const onActivityRef = useRef(onActivity)
+
+  // Update refs when callbacks change (doesn't trigger effect re-run)
+  useEffect(() => {
+    onIdleRef.current = onIdle
+  }, [onIdle])
+
+  useEffect(() => {
+    onActiveRef.current = onActive
+  }, [onActive])
+
+  useEffect(() => {
+    onActivityRef.current = onActivity
+  }, [onActivity])
+
+  // Main idle detection effect - only runs once on mount
   useEffect(() => {
     const resetTimer = () => {
       if (timeoutRef.current) {
@@ -21,16 +40,16 @@ export function useIdleDetection({ onIdle, onActive, onActivity }: UseIdleDetect
       // If was idle, mark as active
       if (isIdleRef.current) {
         isIdleRef.current = false
-        onActive()
+        onActiveRef.current()
       }
 
-      onActivity()
+      onActivityRef.current()
 
       // Start new 5min timeout
       timeoutRef.current = setTimeout(() => {
         if (!isIdleRef.current) {
           isIdleRef.current = true
-          onIdle()
+          onIdleRef.current()
         }
       }, IDLE_TIMEOUT_MS)
     }
@@ -51,5 +70,5 @@ export function useIdleDetection({ onIdle, onActive, onActivity }: UseIdleDetect
         window.removeEventListener(event, resetTimer)
       })
     }
-  }, [onIdle, onActive, onActivity])
+  }, [])  // Empty deps - only run once
 }

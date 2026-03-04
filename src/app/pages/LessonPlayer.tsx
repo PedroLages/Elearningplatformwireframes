@@ -79,6 +79,7 @@ export function LessonPlayer() {
     pauseSession,
     resumeSession,
     endSession,
+    heartbeat,
   } = useSessionStore()
 
   const course = allCourses.find(c => c.id === courseId)
@@ -293,6 +294,15 @@ export function LessonPlayer() {
       window.removeEventListener('pagehide', handleBeforeUnload)
     }
   }, [endSession])
+
+  // Periodic heartbeat: persist session state every 30s (ensures orphan recovery has recent data)
+  useEffect(() => {
+    const interval = setInterval(() => {
+      heartbeat()
+    }, 30000)  // 30 seconds
+
+    return () => clearInterval(interval)
+  }, [heartbeat])
 
   // Resume toast — show "Resuming from MM:SS" when restoring a saved position
   const hasShownResumeToast = useRef(false)

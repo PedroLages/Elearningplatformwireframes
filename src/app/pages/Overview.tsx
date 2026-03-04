@@ -95,6 +95,7 @@ export function Overview() {
       label: 'Total Study Time',
       value: `${totalStudyTimeHours}h`,
       icon: Clock,
+      testId: 'total-study-time',
     },
     {
       label: 'Study Notes',

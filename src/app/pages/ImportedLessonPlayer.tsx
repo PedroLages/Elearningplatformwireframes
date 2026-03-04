@@ -23,6 +23,7 @@ export function ImportedLessonPlayer() {
     pauseSession,
     resumeSession,
     endSession,
+    heartbeat,
   } = useSessionStore()
 
   // Idle detection (AC3)
@@ -76,6 +77,15 @@ export function ImportedLessonPlayer() {
       window.removeEventListener('pagehide', handleBeforeUnload)
     }
   }, [endSession])
+
+  // Periodic heartbeat: persist session state every 30s (ensures orphan recovery has recent data)
+  useEffect(() => {
+    const interval = setInterval(() => {
+      heartbeat()
+    }, 30000)  // 30 seconds
+
+    return () => clearInterval(interval)
+  }, [heartbeat])
 
   async function handleLocateFile() {
     try {
