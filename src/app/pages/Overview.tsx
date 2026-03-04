@@ -1,12 +1,9 @@
 import { useState, useEffect } from 'react'
-import { Link } from 'react-router'
 import { BookOpen, CheckCircle, FileText, Clock } from 'lucide-react'
 import { useSessionStore } from '@/stores/useSessionStore'
-import { Card, CardContent } from '@/app/components/ui/card'
-import { Progress } from '@/app/components/ui/progress'
 import { Skeleton } from '@/app/components/ui/skeleton'
-import { EmptyState } from '@/app/components/EmptyState'
 import { AchievementBanner } from '@/app/components/AchievementBanner'
+import { ContinueLearning } from '@/app/components/ContinueLearning'
 import { RecentActivity } from '@/app/components/RecentActivity'
 import { StatsCard } from '@/app/components/StatsCard'
 import { QuickActions } from '@/app/components/QuickActions'
@@ -26,13 +23,6 @@ import {
   getCourseCompletionPercent,
 } from '@/lib/progress'
 import { getActionsPerDay } from '@/lib/studyLog'
-
-function formatCategory(slug: string): string {
-  return slug
-    .split('-')
-    .map(word => word.charAt(0).toUpperCase() + word.slice(1))
-    .join(' ')
-}
 
 export function Overview() {
   const [isLoading, setIsLoading] = useState(true)
@@ -178,6 +168,9 @@ export function Overview() {
         <AchievementBanner completedLessons={completedLessons} />
       </div>
 
+      {/* Continue Learning — first actionable element on dashboard (AC6) */}
+      <ContinueLearning />
+
       {/* Study Streak Calendar */}
       <div className="mb-8">
         <h2 className="text-lg font-semibold mb-4">Study Streak</h2>
@@ -196,60 +189,6 @@ export function Overview() {
 
       {/* Progress Chart */}
       <ProgressChart data={chartData} />
-
-      {/* Continue Studying */}
-      <section className="mb-8">
-        <h2 className="text-lg font-semibold mb-4">Continue Studying</h2>
-        {inProgress.length > 0 ? (
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-            {inProgress.map(course => {
-              const firstLesson = course.modules[0]?.lessons[0]?.id
-              const resumeLesson = course.progress.lastWatchedLesson ?? firstLesson
-              const lessonLink = resumeLesson
-                ? `/courses/${course.id}/${resumeLesson}`
-                : `/courses/${course.id}`
-              return (
-                <Link key={course.id} to={lessonLink}>
-                  <Card className="group hover:shadow-xl hover:scale-[1.01] transition-all duration-200 cursor-pointer rounded-2xl">
-                    <CardContent className="p-4 flex items-center gap-4">
-                      {course.coverImage ? (
-                        <img
-                          src={`${course.coverImage}-320w.webp`}
-                          alt={course.title}
-                          className="w-16 h-16 rounded-lg object-cover"
-                          loading="lazy"
-                        />
-                      ) : (
-                        <div className="w-16 h-16 rounded-lg bg-blue-100 dark:bg-blue-900/30 flex items-center justify-center">
-                          <BookOpen className="w-8 h-8 text-brand" />
-                        </div>
-                      )}
-                      <div className="flex-1 min-w-0">
-                        <h3 className="font-medium truncate">{course.title}</h3>
-                        <p className="text-sm text-muted-foreground">
-                          {formatCategory(course.category)}
-                        </p>
-                        <div className="flex items-center gap-2 mt-2">
-                          <Progress value={course.completionPercent} className="h-2 flex-1" />
-                          <span className="text-sm font-medium">{course.completionPercent}%</span>
-                        </div>
-                      </div>
-                    </CardContent>
-                  </Card>
-                </Link>
-              )
-            })}
-          </div>
-        ) : (
-          <EmptyState
-            icon={BookOpen}
-            title="No courses in progress"
-            description="Start your learning journey today by exploring our course catalog!"
-            actionLabel="Browse Courses"
-            actionHref="/courses"
-          />
-        )}
-      </section>
 
       {/* All Courses */}
       <section>

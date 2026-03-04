@@ -4,9 +4,9 @@ story_name: "Continue Learning Dashboard Action"
 status: in-progress
 started: 2026-03-04
 completed:
-reviewed: false
-review_started:
-review_gates_passed: []
+reviewed: true
+review_started: 2026-03-04
+review_gates_passed: [build, lint, unit-tests, e2e-tests, design-review, code-review, code-review-testing]
 ---
 
 # Story 4.5: Continue Learning Dashboard Action
@@ -69,11 +69,27 @@ so that I can pick up exactly where I left off within one click of launching the
 
 ## Design Review Feedback
 
-[Populated by /review-story — Playwright MCP findings]
+- **H1**: Missing aria-label on recently accessed progress bars (ContinueLearning.tsx:169)
+- **H2**: "Explore All Courses" button touch target below 44px — add `min-h-11` (ContinueLearning.tsx:237)
+- **M1**: Section landmark needs `aria-labelledby` linking to heading (ContinueLearning.tsx:253-254)
+- Report: docs/reviews/design/design-review-2026-03-04-e04-s05.md
 
 ## Code Review Feedback
 
-[Populated by /review-story — adversarial code review findings]
+**Architecture (10 findings: 1 blocker, 3 high, 4 medium, 3 nits)**
+- **B1**: Implementation files not committed — ContinueLearning.tsx untracked, Overview.tsx unstaged
+- **H1**: No `prefers-reduced-motion` guard on `hover:scale` animations
+- **H2**: Redundant `getAllProgress()` calls (7+ per render)
+- **H3**: `getResolvedSessions()` needs `useMemo`
+- Report: docs/reviews/code/code-review-2026-03-04-e04-s05.md
+
+**Testing (11 findings: 0 blockers, 5 high, 2 medium, 4 nits)**
+- **H1**: AC2 — Video position resumption not tested (implementation + test gap)
+- **H2**: AC5 — Tests silent-skip, not explicit "unavailable" message
+- **H3**: AC3 — Recently accessed row not asserted
+- **H4**: AC6 — "First actionable element" prominence not verified
+- **H5**: Performance threshold inflated (1500ms vs NFR17's 1000ms)
+- Report: docs/reviews/code/code-review-testing-2026-03-04-e04-s05.md
 
 ## Implementation Plan
 

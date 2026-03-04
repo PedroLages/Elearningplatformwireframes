@@ -165,6 +165,16 @@
 - NEW: `findCourseAndLesson` return type not explicitly declared -- TypeScript infers it but inconsistent with codebase conventions
 - Unit tests added for `getAllBookmarks()` (3 tests) -- good coverage of empty, sort order, and cross-course scenarios
 
+### E04-S01: Mark Content Completion Status
+- BLOCKER (RECURRING x7): ENTIRE implementation (store, components, schema, types, ModuleAccordion refactor) exists ONLY in working tree. Committed branch has only story doc, sprint-status, and E2E spec. 7th consecutive story with this pattern.
+- `EntityTable<ContentProgress, 'courseId'>` incorrect for compound key `[courseId+itemId]` -- second type param should match PK
+- `getItemStatus` is a function calling `get()` -- not a Zustand selector. Component uses `useContentProgressStore()` without selector, subscribes to entire store, re-renders on any state change
+- Multiple `db.contentProgress.put()` calls in `setItemStatus` are NOT wrapped in a Dexie transaction -- partial writes possible (item saved but cascade fails)
+- Module-level `StatusIndicator` is a `<button>` nested inside `AccordionTrigger` (also a button) -- nested interactive elements, WCAG violation
+- StatusIndicator button has no min size constraint -- `p-0.5` on `size-4` icon = ~20px, well below 44px WCAG touch target
+- No unit tests for useContentProgressStore, StatusIndicator, or StatusSelector
+- AC2 E2E test does NOT verify IndexedDB persistence (reload + verify) -- only checks immediate UI update
+
 ### E04-S02: Course Completion Percentage
 - BLOCKER (RECURRING x7): ENTIRE implementation (progress.tsx, CourseCard.tsx, CourseDetail.tsx) + E2E test fixes exist ONLY in working tree. Committed branch has only story doc, sprint-status, and original E2E spec.
 - `value` prop destructured from Progress component but `normalizedValue` NOT passed back to Radix `<ProgressPrimitive.Root>` as `value` -- Radix sees `value=null`, sets `data-state="indeterminate"` instead of "loading"/"complete"
@@ -184,7 +194,8 @@
 - E03-S05: 6+ fixes existed only in working tree
 - E03-S07 (Round 1): ENTIRE IMPLEMENTATION existed only in working tree
 - E03-S07 (Round 2): ALL implementation + Round 1 fixes + unit tests STILL only in working tree (6th consecutive occurrence)
-- E04-S02: ENTIRE implementation (progress.tsx, CourseCard.tsx, CourseDetail.tsx) exists only in working tree (7th consecutive occurrence)
+- E04-S01: ENTIRE IMPLEMENTATION exists only in working tree (7th consecutive occurrence)
+- E04-S02: ENTIRE implementation (progress.tsx, CourseCard.tsx, CourseDetail.tsx) exists only in working tree
 - Root cause: Implementation code applied locally but never committed before review/shipping
 
 ## Silent Failure Patterns to Watch
