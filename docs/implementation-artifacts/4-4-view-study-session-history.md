@@ -1,9 +1,9 @@
 ---
 story_id: E04-S04
 story_name: "View Study Session History"
-status: in-progress
+status: done
 started: 2026-03-03
-completed:
+completed: 2026-03-04
 reviewed: true
 review_started: 2026-03-04
 review_gates_passed: [build, lint, unit-tests, e2e-tests, design-review, code-review, code-review-testing]
