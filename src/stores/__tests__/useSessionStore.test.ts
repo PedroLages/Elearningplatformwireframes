@@ -84,6 +84,9 @@ describe('startSession', () => {
       await useSessionStore.getState().startSession('course-2', 'lesson-2', 'pdf')
     })
 
+    // Wait for fire-and-forget endSession persistence to complete
+    await new Promise(resolve => setTimeout(resolve, 100))
+
     const { db } = await import('@/db')
     const sessions = await db.studySessions.toArray()
     expect(sessions).toHaveLength(2)
@@ -94,13 +97,16 @@ describe('startSession', () => {
   })
 
   it('should rollback on persistence failure', async () => {
-    // Mock db.studySessions.add to throw error
+    // Mock db.studySessions.add to throw error on all retries
     const { db } = await import('@/db')
-    vi.spyOn(db.studySessions, 'add').mockRejectedValueOnce(new Error('DB error'))
+    vi.spyOn(db.studySessions, 'add').mockRejectedValue(new Error('DB error'))
 
     await act(async () => {
       await useSessionStore.getState().startSession('course-1', 'lesson-1', 'video')
     })
+
+    // Wait for persistWithRetry (3 retries with exponential backoff: 0ms, 1000ms, 2000ms delays)
+    await new Promise(resolve => setTimeout(resolve, 4000))
 
     const state = useSessionStore.getState()
     expect(state.activeSession).toBeNull()
@@ -115,12 +121,29 @@ describe('endSession', () => {
       await useSessionStore.getState().startSession('course-1', 'lesson-1', 'video')
     })
 
-    // Wait a bit then end session
+    // Wait 100ms
     await new Promise(resolve => setTimeout(resolve, 100))
 
-    await act(async () => {
-      await useSessionStore.getState().endSession()
+    // Manually set lastActivity to 1500ms after activeStartTime (ensuring duration > 0 after Math.floor)
+    act(() => {
+      const state = useSessionStore.getState()
+      const activeStartMs = new Date(state.activeStartTime!).getTime()
+      const laterTime = new Date(activeStartMs + 1500).toISOString()
+
+      useSessionStore.setState({
+        activeSession: {
+          ...state.activeSession!,
+          lastActivity: laterTime
+        }
+      })
     })
+
+    act(() => {
+      useSessionStore.getState().endSession()
+    })
+
+    // Wait for fire-and-forget persistence to complete
+    await new Promise(resolve => setTimeout(resolve, 100))
 
     const { db } = await import('@/db')
     const sessions = await db.studySessions.toArray()
@@ -153,23 +176,24 @@ describe('endSession', () => {
     expect(state.lastHeartbeat).toBeNull()
   })
 
-  it('should rollback on persistence failure', async () => {
+  it('should clear state even on persistence failure (fire-and-forget)', async () => {
     await act(async () => {
       await useSessionStore.getState().startSession('course-1', 'lesson-1', 'video')
     })
 
-    const activeSession = useSessionStore.getState().activeSession
-
     const { db } = await import('@/db')
     vi.spyOn(db.studySessions, 'put').mockRejectedValueOnce(new Error('DB error'))
 
-    await act(async () => {
-      await useSessionStore.getState().endSession()
+    act(() => {
+      useSessionStore.getState().endSession()
     })
 
+    // State should be cleared immediately (synchronous), even though persistence will fail
     const state = useSessionStore.getState()
-    expect(state.activeSession).toEqual(activeSession)
-    expect(state.error).toBe('Failed to end session')
+    expect(state.activeSession).toBeNull()
+    expect(state.activeStartTime).toBeNull()
+    expect(state.lastHeartbeat).toBeNull()
+    expect(state.error).toBeNull() // No error set - fire-and-forget
   })
 })
 
@@ -181,6 +205,20 @@ describe('pauseSession', () => {
 
     // Simulate 100ms of activity
     await new Promise(resolve => setTimeout(resolve, 100))
+
+    // Manually set lastActivity to 1500ms after activeStartTime (ensuring duration > 0 after Math.floor)
+    act(() => {
+      const state = useSessionStore.getState()
+      const activeStartMs = new Date(state.activeStartTime!).getTime()
+      const laterTime = new Date(activeStartMs + 1500).toISOString()
+
+      useSessionStore.setState({
+        activeSession: {
+          ...state.activeSession!,
+          lastActivity: laterTime
+        }
+      })
+    })
 
     await act(async () => {
       await useSessionStore.getState().pauseSession()
@@ -259,23 +297,28 @@ describe('updateLastActivity', () => {
       await useSessionStore.getState().startSession('course-1', 'lesson-1', 'video')
     })
 
+    // Simulate 31 seconds have passed by setting lastHeartbeat to 31s ago
+    const thirtyOneSecondsAgo = Date.now() - 31000
+    useSessionStore.setState({ lastHeartbeat: thirtyOneSecondsAgo })
+
     const initialHeartbeat = useSessionStore.getState().lastHeartbeat
 
-    // First update happens immediately
+    // First update after 30s should update heartbeat
     act(() => {
       useSessionStore.getState().updateLastActivity()
     })
 
     const secondHeartbeat = useSessionStore.getState().lastHeartbeat
     expect(secondHeartbeat).not.toBe(initialHeartbeat)
+    expect(secondHeartbeat).toBeGreaterThan(initialHeartbeat!)
 
-    // Second update within 30s should not trigger re-render
+    // Second update within 30s should not trigger state update (throttled)
     act(() => {
       useSessionStore.getState().updateLastActivity()
     })
 
     const thirdHeartbeat = useSessionStore.getState().lastHeartbeat
-    expect(thirdHeartbeat).toBe(secondHeartbeat) // No change
+    expect(thirdHeartbeat).toBe(secondHeartbeat) // No change - throttled
   })
 })
 
