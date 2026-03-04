@@ -23,22 +23,23 @@ function formatDuration(seconds: number): string {
 }
 
 function formatTime(timestamp: string | number): string {
-  const date = typeof timestamp === 'number' ? new Date(timestamp) : new Date(timestamp)
+  const date = new Date(timestamp)
   return date.toLocaleTimeString('en-US', { hour: 'numeric', minute: '2-digit', hour12: true })
 }
 
 function formatDate(timestamp: string | number): string {
-  const date = typeof timestamp === 'number' ? new Date(timestamp) : new Date(timestamp)
+  const date = new Date(timestamp)
   return date.toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' })
 }
 
 function toDate(timestamp: string | number): Date {
-  return typeof timestamp === 'number' ? new Date(timestamp) : new Date(timestamp)
+  return new Date(timestamp)
 }
 
 export function SessionHistory() {
   const [sessions, setSessions] = useState<DisplaySession[]>([])
   const [isLoading, setIsLoading] = useState(true)
+  const [loadError, setLoadError] = useState<string | null>(null)
   const [courseFilter, setCourseFilter] = useState('')
   const [startDate, setStartDate] = useState('')
   const [endDate, setEndDate] = useState('')
@@ -49,37 +50,48 @@ export function SessionHistory() {
   useEffect(() => {
     async function load() {
       setIsLoading(true)
+      setLoadError(null)
       try {
         const allSessions = await db.studySessions.toArray() as DisplaySession[]
 
         // Only show completed sessions (with endTime)
         const completed = allSessions.filter(s => s.endTime != null)
 
-        // Build lookup maps for name resolution (for sessions without denormalized fields)
-        const courses = await db.importedCourses.toArray()
-        const videos = await db.importedVideos.toArray()
+        // Collect unique courseIds referenced by sessions
+        const courseIds = [...new Set(completed.map(s => s.courseId))]
+
+        // Only fetch courses and videos referenced by sessions
+        const courses = courseIds.length > 0
+          ? await db.importedCourses.where('id').anyOf(courseIds).toArray()
+          : []
+        const videoIds = completed.flatMap(s => s.videosWatched ?? [])
+        const videos = videoIds.length > 0
+          ? await db.importedVideos.where('id').anyOf(videoIds).toArray()
+          : []
+
         const courseMap = new Map<string, ImportedCourse>(courses.map(c => [c.id, c]))
         const videoMap = new Map<string, ImportedVideo>(videos.map(v => [v.id, v]))
 
-        // Resolve display names where missing
-        for (const session of completed) {
-          if (!session.courseTitle) {
-            const course = courseMap.get(session.courseId)
-            if (course) session.courseTitle = course.name
-          }
-          if (!session.contentSummary && session.videosWatched?.length) {
-            session.contentSummary = session.videosWatched
-              .map(vid => videoMap.get(vid)?.filename ?? vid)
-              .join(', ')
-          }
-        }
+        // Create enriched copies (don't mutate Dexie results)
+        const enriched = completed.map(session => {
+          const courseTitle = session.courseTitle || courseMap.get(session.courseId)?.name
+          const contentSummary = session.contentSummary || (
+            (session.videosWatched?.length ?? 0) > 0
+              ? session.videosWatched!
+                  .map(vid => videoMap.get(vid)?.filename ?? vid)
+                  .join(', ')
+              : undefined
+          )
+          return { ...session, courseTitle, contentSummary }
+        })
 
         // Sort reverse chronological
-        completed.sort((a, b) => toDate(b.startTime).getTime() - toDate(a.startTime).getTime())
+        enriched.sort((a, b) => toDate(b.startTime).getTime() - toDate(a.startTime).getTime())
 
-        setSessions(completed)
+        setSessions(enriched)
       } catch (error) {
         console.error('[SessionHistory] Failed to load sessions:', error)
+        setLoadError('Failed to load study sessions. Please try refreshing the page.')
       } finally {
         setIsLoading(false)
       }
@@ -123,9 +135,12 @@ export function SessionHistory() {
   // Paginated slice
   const visibleSessions = filteredSessions.slice(0, visibleCount)
   const hasMore = visibleCount < filteredSessions.length
+  const hasActiveFilters = !!(courseFilter || startDate || endDate)
 
-  const handleClearFilter = useCallback(() => {
+  const handleClearFilters = useCallback(() => {
     setCourseFilter('')
+    setStartDate('')
+    setEndDate('')
   }, [])
 
   const handleShowMore = useCallback(() => {
@@ -141,6 +156,17 @@ export function SessionHistory() {
     return (
       <div className="flex h-full items-center justify-center">
         <div className="text-muted-foreground text-sm">Loading...</div>
+      </div>
+    )
+  }
+
+  if (loadError) {
+    return (
+      <div className="space-y-6">
+        <h1 className="text-2xl font-bold">Study Session History</h1>
+        <div className="rounded-[24px] border border-destructive/50 bg-destructive/10 p-8 text-center">
+          <p className="text-sm text-destructive">{loadError}</p>
+        </div>
       </div>
     )
   }
@@ -180,13 +206,13 @@ export function SessionHistory() {
               </select>
             </div>
 
-            {courseFilter && (
+            {hasActiveFilters && (
               <button
-                onClick={handleClearFilter}
+                onClick={handleClearFilters}
                 className="flex items-center gap-1 rounded-lg border border-border px-3 py-2 text-sm hover:bg-accent"
               >
-                <X className="h-3 w-3" />
-                Clear filter
+                <X className="size-3" />
+                Clear filters
               </button>
             )}
 
@@ -223,50 +249,53 @@ export function SessionHistory() {
               <div
                 key={session.id}
                 data-testid="session-entry"
-                role="button"
-                tabIndex={0}
-                onClick={() => setExpandedId(prev => (prev === session.id ? null : session.id))}
-                onKeyDown={e => { if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); setExpandedId(prev => (prev === session.id ? null : session.id)) } }}
-                className="cursor-pointer rounded-[24px] border border-border bg-card p-4 transition-colors hover:bg-accent/50"
+                className="rounded-[24px] border border-border bg-card transition-colors hover:bg-accent/50"
               >
-                <div className="flex w-full items-center justify-between text-left">
-                  <div className="flex flex-col gap-1 sm:flex-row sm:items-center sm:gap-4">
-                    <span className="text-sm text-muted-foreground">
-                      {formatDate(session.startTime)}
-                    </span>
-                    <span className="font-semibold">
-                      {session.courseTitle || session.courseId}
-                    </span>
-                    <span className="text-sm font-medium text-brand">
-                      {formatDuration(session.duration)}
-                    </span>
+                {/* Clickable header — native button for a11y */}
+                <button
+                  onClick={() => setExpandedId(prev => (prev === session.id ? null : session.id))}
+                  aria-expanded={expandedId === session.id}
+                  className="w-full cursor-pointer p-4 text-left"
+                >
+                  <div className="flex w-full items-center justify-between">
+                    <div className="flex flex-col gap-1 sm:flex-row sm:items-center sm:gap-4">
+                      <span className="text-sm text-muted-foreground" data-testid="session-date">
+                        {formatDate(session.startTime)}
+                      </span>
+                      <span className="font-semibold">
+                        {session.courseTitle || session.courseId}
+                      </span>
+                      <span className="text-sm font-medium text-brand">
+                        {formatDuration(session.duration)}
+                      </span>
+                    </div>
+                    {expandedId === session.id ? (
+                      <ChevronUp className="size-4 text-muted-foreground" />
+                    ) : (
+                      <ChevronDown className="size-4 text-muted-foreground" />
+                    )}
                   </div>
-                  {expandedId === session.id ? (
-                    <ChevronUp className="h-4 w-4 text-muted-foreground" />
-                  ) : (
-                    <ChevronDown className="h-4 w-4 text-muted-foreground" />
+
+                  {/* Content summary (hidden when expanded to avoid duplicate text) */}
+                  {session.contentSummary && expandedId !== session.id && (
+                    <p className="mt-1 text-sm text-muted-foreground">
+                      {session.contentSummary}
+                    </p>
                   )}
-                </div>
+                </button>
 
-                {/* Content summary (hidden when expanded to avoid duplicate text) */}
-                {session.contentSummary && expandedId !== session.id && (
-                  <p className="mt-1 text-sm text-muted-foreground">
-                    {session.contentSummary}
-                  </p>
-                )}
-
-                {/* Expanded details */}
+                {/* Expanded details — outside the button to avoid nested interactive elements */}
                 {expandedId === session.id && (
-                  <div className="mt-4 border-t border-border pt-4 space-y-3">
+                  <div className="border-t border-border px-4 pb-4 pt-4 space-y-3">
                     <div className="flex gap-6 text-sm">
                       <div>
                         <span className="text-muted-foreground">Start: </span>
-                        <span>{formatTime(session.startTime)}</span>
+                        <span data-testid="session-start-time">{formatTime(session.startTime)}</span>
                       </div>
                       {session.endTime && (
                         <div>
                           <span className="text-muted-foreground">End: </span>
-                          <span>{formatTime(session.endTime)}</span>
+                          <span data-testid="session-end-time">{formatTime(session.endTime)}</span>
                         </div>
                       )}
                     </div>
@@ -289,11 +318,11 @@ export function SessionHistory() {
                     )}
 
                     {/* Videos watched (from real sessions without contentItems) */}
-                    {!session.contentItems && session.videosWatched?.length > 0 && (
+                    {!session.contentItems && (session.videosWatched?.length ?? 0) > 0 && (
                       <div className="space-y-1">
                         <h4 className="text-sm font-medium">Videos Watched</h4>
                         <ul className="space-y-1">
-                          {session.videosWatched.map(vid => (
+                          {session.videosWatched!.map(vid => (
                             <li key={vid} className="text-sm text-muted-foreground">
                               {vid}
                             </li>
@@ -304,7 +333,6 @@ export function SessionHistory() {
 
                     <Link
                       to={`/courses/${session.courseId}`}
-                      onClick={e => e.stopPropagation()}
                       className="inline-flex items-center text-sm font-medium text-brand hover:underline"
                     >
                       Resume Course
@@ -313,6 +341,19 @@ export function SessionHistory() {
                 )}
               </div>
             ))}
+
+            {/* Filtered empty state */}
+            {filteredSessions.length === 0 && hasActiveFilters && (
+              <div className="rounded-[24px] border border-border bg-card p-8 text-center">
+                <p className="text-muted-foreground">No sessions match your current filters.</p>
+                <button
+                  onClick={handleClearFilters}
+                  className="mt-4 rounded-xl border border-border px-4 py-2 text-sm font-medium hover:bg-accent"
+                >
+                  Clear all filters
+                </button>
+              </div>
+            )}
           </div>
 
           {/* Show more */}

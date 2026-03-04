@@ -10,11 +10,48 @@
  */
 import { test, expect } from '../support/fixtures'
 
+/** Reusable helper to seed study sessions into IndexedDB */
+async function seedStudySessions(
+  page: import('@playwright/test').Page,
+  sessions: Record<string, unknown>[],
+) {
+  await page.evaluate(
+    async ({ dbName, storeName, data }) => {
+      return new Promise<void>((resolve, reject) => {
+        const request = indexedDB.open(dbName)
+        request.onsuccess = () => {
+          const db = request.result
+          const tx = db.transaction(storeName, 'readwrite')
+          const store = tx.objectStore(storeName)
+          for (const item of data) {
+            store.put(item)
+          }
+          tx.oncomplete = () => {
+            db.close()
+            resolve()
+          }
+          tx.onerror = () => {
+            db.close()
+            reject(tx.error)
+          }
+        }
+        request.onerror = () => reject(request.error)
+      })
+    },
+    { dbName: 'ElearningDB', storeName: 'studySessions', data: sessions },
+  )
+}
+
 test.describe('E04-S04: View Study Session History', () => {
   test.beforeEach(async ({ page, indexedDB }) => {
-    // Navigate to home to initialize Dexie database
+    // Seed sidebar state to prevent tablet overlay blocking interactions
+    await page.addInitScript(() => {
+      localStorage.setItem('eduvi-sidebar-v1', 'false')
+    })
+    // Clear study sessions before each test for isolation
     await page.goto('/')
     await page.waitForLoadState('domcontentloaded')
+    await indexedDB.clearStore('studySessions')
   })
 
   /**
@@ -26,9 +63,7 @@ test.describe('E04-S04: View Study Session History', () => {
    */
   test('should display study sessions in reverse chronological order', async ({
     page,
-    indexedDB,
   }) => {
-    // Seed study session data
     const sessions = [
       {
         id: 'session-1',
@@ -59,32 +94,7 @@ test.describe('E04-S04: View Study Session History', () => {
       },
     ]
 
-    await indexedDB.clearStore('studySessions')
-    await page.evaluate(
-      async ({ dbName, storeName, data }) => {
-        return new Promise<void>((resolve, reject) => {
-          const request = indexedDB.open(dbName)
-          request.onsuccess = () => {
-            const db = request.result
-            const tx = db.transaction(storeName, 'readwrite')
-            const store = tx.objectStore(storeName)
-            for (const item of data) {
-              store.put(item)
-            }
-            tx.oncomplete = () => {
-              db.close()
-              resolve()
-            }
-            tx.onerror = () => {
-              db.close()
-              reject(tx.error)
-            }
-          }
-          request.onerror = () => reject(request.error)
-        })
-      },
-      { dbName: 'ElearningDB', storeName: 'studySessions', data: sessions },
-    )
+    await seedStudySessions(page, sessions)
 
     // Navigate to session history page
     await page.goto('/session-history')
@@ -101,12 +111,15 @@ test.describe('E04-S04: View Study Session History', () => {
     await expect(firstEntry).toContainText('React Fundamentals')
     await expect(firstEntry).toContainText('1h 0m') // 60 minutes
     await expect(firstEntry).toContainText('useEffect, Custom Hooks')
+    // Verify date is displayed (AC1 requires date on each entry)
+    await expect(firstEntry.locator('[data-testid="session-date"]')).toContainText('Mar 3, 2026')
 
     // Last entry should be oldest (March 1)
     const lastEntry = sessionEntries.last()
     await expect(lastEntry).toContainText('React Fundamentals')
     await expect(lastEntry).toContainText('1h 30m') // 90 minutes
     await expect(lastEntry).toContainText('Introduction to Hooks, useState Basics')
+    await expect(lastEntry.locator('[data-testid="session-date"]')).toContainText('Mar 1, 2026')
   })
 
   /**
@@ -116,8 +129,7 @@ test.describe('E04-S04: View Study Session History', () => {
    * Then only sessions for the selected course are displayed
    * And the filter selection persists until cleared
    */
-  test('should filter sessions by selected course', async ({ page, indexedDB }) => {
-    // Seed study session data
+  test('should filter sessions by selected course', async ({ page }) => {
     const sessions = [
       {
         id: 'session-1',
@@ -139,32 +151,7 @@ test.describe('E04-S04: View Study Session History', () => {
       },
     ]
 
-    await indexedDB.clearStore('studySessions')
-    await page.evaluate(
-      async ({ dbName, storeName, data }) => {
-        return new Promise<void>((resolve, reject) => {
-          const request = indexedDB.open(dbName)
-          request.onsuccess = () => {
-            const db = request.result
-            const tx = db.transaction(storeName, 'readwrite')
-            const store = tx.objectStore(storeName)
-            for (const item of data) {
-              store.put(item)
-            }
-            tx.oncomplete = () => {
-              db.close()
-              resolve()
-            }
-            tx.onerror = () => {
-              db.close()
-              reject(tx.error)
-            }
-          }
-          request.onerror = () => reject(request.error)
-        })
-      },
-      { dbName: 'ElearningDB', storeName: 'studySessions', data: sessions },
-    )
+    await seedStudySessions(page, sessions)
 
     await page.goto('/session-history')
 
@@ -179,8 +166,8 @@ test.describe('E04-S04: View Study Session History', () => {
     await expect(sessionEntries).toHaveCount(1)
     await expect(sessionEntries.first()).toContainText('React Fundamentals')
 
-    // Clear filter
-    await page.getByRole('button', { name: 'Clear filter' }).click()
+    // Clear filter (now "Clear filters" clears all)
+    await page.getByRole('button', { name: 'Clear filters' }).click()
 
     // Verify all sessions are visible again
     await expect(page.locator('[data-testid="session-entry"]')).toHaveCount(2)
@@ -193,8 +180,7 @@ test.describe('E04-S04: View Study Session History', () => {
    * Then only sessions within the selected start and end dates are displayed
    * And both course and date range filters can be applied simultaneously
    */
-  test('should filter sessions by date range', async ({ page, indexedDB }) => {
-    // Seed study session data across multiple dates
+  test('should filter sessions by date range', async ({ page }) => {
     const sessions = [
       {
         id: 'session-1',
@@ -225,32 +211,7 @@ test.describe('E04-S04: View Study Session History', () => {
       },
     ]
 
-    await indexedDB.clearStore('studySessions')
-    await page.evaluate(
-      async ({ dbName, storeName, data }) => {
-        return new Promise<void>((resolve, reject) => {
-          const request = indexedDB.open(dbName)
-          request.onsuccess = () => {
-            const db = request.result
-            const tx = db.transaction(storeName, 'readwrite')
-            const store = tx.objectStore(storeName)
-            for (const item of data) {
-              store.put(item)
-            }
-            tx.oncomplete = () => {
-              db.close()
-              resolve()
-            }
-            tx.onerror = () => {
-              db.close()
-              reject(tx.error)
-            }
-          }
-          request.onerror = () => reject(request.error)
-        })
-      },
-      { dbName: 'ElearningDB', storeName: 'studySessions', data: sessions },
-    )
+    await seedStudySessions(page, sessions)
 
     await page.goto('/session-history')
 
@@ -285,11 +246,7 @@ test.describe('E04-S04: View Study Session History', () => {
    */
   test('should display empty state when no sessions exist', async ({
     page,
-    indexedDB,
   }) => {
-    // Clear all study sessions
-    await indexedDB.clearStore('studySessions')
-
     await page.goto('/session-history')
 
     // Verify empty state is displayed
@@ -312,64 +269,47 @@ test.describe('E04-S04: View Study Session History', () => {
    * When the session history list exceeds the viewport
    * Then the list is virtualized or paginated to maintain smooth scrolling performance
    */
-  test('should handle large session lists with virtualization', async ({
+  test('should handle large session lists with pagination', async ({
     page,
-    indexedDB,
   }) => {
-    // Seed 100 study sessions
-    const sessions = Array.from({ length: 100 }, (_, i) => ({
+    // Seed 50 study sessions (> PAGE_SIZE of 20)
+    const sessions = Array.from({ length: 50 }, (_, i) => ({
       id: `session-${i}`,
       courseId: 'course-a',
       courseTitle: 'React Fundamentals',
-      startTime: new Date(`2026-03-${String(i % 28 + 1).padStart(2, '0')}T10:00:00`).getTime(),
-      endTime: new Date(`2026-03-${String(i % 28 + 1).padStart(2, '0')}T11:00:00`).getTime(),
+      startTime: new Date('2026-03-01T10:00:00').getTime() + i * 86400000, // each day later
+      endTime: new Date('2026-03-01T11:00:00').getTime() + i * 86400000,
       duration: 3600,
       contentSummary: `Session ${i}`,
     }))
 
-    await indexedDB.clearStore('studySessions')
-    await page.evaluate(
-      async ({ dbName, storeName, data }) => {
-        return new Promise<void>((resolve, reject) => {
-          const request = indexedDB.open(dbName)
-          request.onsuccess = () => {
-            const db = request.result
-            const tx = db.transaction(storeName, 'readwrite')
-            const store = tx.objectStore(storeName)
-            for (const item of data) {
-              store.put(item)
-            }
-            tx.oncomplete = () => {
-              db.close()
-              resolve()
-            }
-            tx.onerror = () => {
-              db.close()
-              reject(tx.error)
-            }
-          }
-          request.onerror = () => reject(request.error)
-        })
-      },
-      { dbName: 'ElearningDB', storeName: 'studySessions', data: sessions },
-    )
+    await seedStudySessions(page, sessions)
 
     await page.goto('/session-history')
 
-    // Verify page loaded without performance issues
+    // Verify page loaded
     await expect(page.getByRole('heading', { name: 'Study Session History' })).toBeVisible()
 
-    // Verify sessions are rendered (either virtualized or paginated)
-    // Note: Exact count depends on implementation (virtualization vs pagination)
+    // Verify only PAGE_SIZE (20) entries are initially rendered
     const sessionEntries = page.locator('[data-testid="session-entry"]')
-    await expect(sessionEntries.first()).toBeVisible()
+    await expect(sessionEntries).toHaveCount(20)
 
-    // Verify smooth scrolling by scrolling to bottom
-    await page.evaluate(() => window.scrollTo(0, document.body.scrollHeight))
-    await page.waitForTimeout(500) // Allow virtualization to render
+    // Verify "Show more" button is visible
+    const showMoreButton = page.getByRole('button', { name: 'Show more' })
+    await expect(showMoreButton).toBeVisible()
 
-    // Verify additional sessions loaded
-    await expect(sessionEntries.last()).toBeVisible()
+    // Click "Show more" to load next page
+    await showMoreButton.click()
+
+    // Verify count increased to 40
+    await expect(sessionEntries).toHaveCount(40)
+
+    // Click "Show more" again to load remaining 10
+    await showMoreButton.click()
+
+    // Verify all 50 entries now visible and "Show more" is gone
+    await expect(sessionEntries).toHaveCount(50)
+    await expect(showMoreButton).not.toBeVisible()
   })
 
   /**
@@ -381,9 +321,7 @@ test.describe('E04-S04: View Study Session History', () => {
    */
   test('should expand session entry to show detailed information', async ({
     page,
-    indexedDB,
   }) => {
-    // Seed a study session with detailed content items
     const sessions = [
       {
         id: 'session-1',
@@ -408,44 +346,19 @@ test.describe('E04-S04: View Study Session History', () => {
       },
     ]
 
-    await indexedDB.clearStore('studySessions')
-    await page.evaluate(
-      async ({ dbName, storeName, data }) => {
-        return new Promise<void>((resolve, reject) => {
-          const request = indexedDB.open(dbName)
-          request.onsuccess = () => {
-            const db = request.result
-            const tx = db.transaction(storeName, 'readwrite')
-            const store = tx.objectStore(storeName)
-            for (const item of data) {
-              store.put(item)
-            }
-            tx.oncomplete = () => {
-              db.close()
-              resolve()
-            }
-            tx.onerror = () => {
-              db.close()
-              reject(tx.error)
-            }
-          }
-          request.onerror = () => reject(request.error)
-        })
-      },
-      { dbName: 'ElearningDB', storeName: 'studySessions', data: sessions },
-    )
+    await seedStudySessions(page, sessions)
 
     await page.goto('/session-history')
 
     // Click on session entry to expand
     const sessionEntry = page.locator('[data-testid="session-entry"]').first()
-    await sessionEntry.click()
+    await sessionEntry.locator('button').click()
 
-    // Verify expanded details are visible
-    await expect(page.getByText('10:00 AM')).toBeVisible() // Start time
-    await expect(page.getByText('11:30 AM')).toBeVisible() // End time
+    // Verify expanded details are visible using data-testid (locale-safe)
+    await expect(page.locator('[data-testid="session-start-time"]')).toBeVisible()
+    await expect(page.locator('[data-testid="session-end-time"]')).toBeVisible()
 
-    // Verify content items with timestamps
+    // Verify content items
     await expect(page.getByText('Introduction to Hooks')).toBeVisible()
     await expect(page.getByText('useState Basics')).toBeVisible()
 
@@ -453,5 +366,9 @@ test.describe('E04-S04: View Study Session History', () => {
     const resumeLink = page.getByRole('link', { name: 'Resume Course' })
     await expect(resumeLink).toBeVisible()
     await expect(resumeLink).toHaveAttribute('href', /\/courses\/course-a/)
+
+    // Verify clicking again collapses the entry
+    await sessionEntry.locator('button').click()
+    await expect(page.locator('[data-testid="session-start-time"]')).not.toBeVisible()
   })
 })

@@ -4,9 +4,9 @@ story_name: "View Study Session History"
 status: in-progress
 started: 2026-03-03
 completed:
-reviewed: false
-review_started:
-review_gates_passed: []
+reviewed: true
+review_started: 2026-03-04
+review_gates_passed: [build, lint, unit-tests, e2e-tests, design-review, code-review, code-review-testing]
 ---
 
 # Story 4.4: View Study Session History
@@ -94,11 +94,30 @@ See [plan](plans/e04-s04-session-history.md) for implementation approach.
 
 ## Design Review Feedback
 
-[Populated by /review-story — Playwright MCP findings]
+**Reviewed 2026-03-04** — 3 medium findings, 2 nits. No blockers.
+- Medium: No empty state when filters return zero results
+- Medium: "Clear filter" only resets course dropdown, not dates
+- Medium: Session cards use `div[role="button"]` instead of native `<button>`
+Full report: `docs/reviews/design/design-review-2026-03-04-e04-s04.md`
 
 ## Code Review Feedback
 
-[Populated by /review-story — adversarial code review findings]
+**Reviewed 2026-03-04** — 1 blocker, 5 high, 5 medium, 3 nits.
+- Blocker: Type-unsafe `videosWatched?.length > 0` comparison (undefined > 0)
+- High: Missing `aria-expanded` on expandable entries
+- High: Nested interactive elements (Link inside role="button")
+- High: No error state for DB failures (misleading empty state)
+- High: Direct mutation of Dexie query results
+- High: Full table scan of all courses/videos on load
+Full report: `docs/reviews/code/code-review-2026-03-04-e04-s04.md`
+
+**Test Coverage Reviewed 2026-03-04** — 1/6 ACs fully covered, 5 partial. 5 high, 4 medium, 3 nits.
+- High: Schema mismatch — tests seed numeric timestamps, type uses ISO strings
+- High: Locale/timezone-dependent time assertions
+- High: Missing sidebar localStorage seed for tablet viewports
+- High: AC5 pagination test doesn't verify DOM count
+- High: AC1 test doesn't assert date field
+Full report: `docs/reviews/code/code-review-testing-2026-03-04-e04-s04.md`
 
 ## Challenges and Lessons Learned
 
