@@ -268,11 +268,8 @@ export function LessonPlayer() {
     const sessionType = videoResource ? 'video' : primaryPdf ? 'pdf' : 'mixed'
     startSession(courseId, lessonId, sessionType)
 
-    // Cleanup: end session on unmount
-    return () => {
-      endSession()
-    }
-  }, [courseId, lessonId, startSession, endSession, videoResource, primaryPdf])
+    // Note: No cleanup needed - endSession handled by visibility/unload handlers
+  }, [courseId, lessonId, startSession, videoResource, primaryPdf])
 
   // AC2: End session on navigation away / tab hidden
   useEffect(() => {
