@@ -1,10 +1,10 @@
 ---
 story_id: E04-S03
 story_name: "Automatic Study Session Logging"
-status: in-progress
+status: done
 started: 2026-03-03
-completed:
-reviewed: in-progress    # false | in-progress | true
+completed: 2026-03-04
+reviewed: true    # false | in-progress | true
 review_started: 2026-03-04  # YYYY-MM-DD — set when /review-story begins
 review_gates_passed: [build, lint, unit-tests, e2e-tests, design-review, code-review, code-review-testing]  # tracks completed gates: [build, lint, unit-tests, e2e-tests, design-review, code-review, code-review-testing]
 ---
