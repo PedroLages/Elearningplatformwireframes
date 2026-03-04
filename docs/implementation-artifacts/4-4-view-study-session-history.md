@@ -82,7 +82,7 @@ so that I can reflect on my learning patterns and verify my study activity.
 
 ## Implementation Plan
 
-See [zippy-tickling-sutherland.md](../../.claude/plans/zippy-tickling-sutherland.md) for the detailed implementation approach.
+See [plan](plans/e04-s04-session-history.md) for implementation approach.
 
 ## Implementation Notes
 
