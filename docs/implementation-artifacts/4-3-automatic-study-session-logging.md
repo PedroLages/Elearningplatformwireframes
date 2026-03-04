@@ -102,4 +102,4 @@ so that I can understand my study habits without manual effort and see my total 
 
 ## Implementation Plan
 
-See [partitioned-mixing-blum.md](/Users/pedro/.claude/plans/partitioned-mixing-blum.md) for detailed implementation approach.
+See [plan](plans/partitioned-mixing-blum.md) for implementation approach.
