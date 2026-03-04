@@ -141,6 +141,17 @@ export interface ImportedPdf {
   fileHandle: FileSystemFileHandle
 }
 
+// --- Content Completion Status (Story 4.1) ---
+
+export type CompletionStatus = 'not-started' | 'in-progress' | 'completed'
+
+export interface ContentProgress {
+  courseId: string
+  itemId: string // lesson or module ID
+  status: CompletionStatus
+  updatedAt: string // ISO 8601
+}
+
 // --- Video Progress & Bookmarks (Story 2.1) ---
 
 export interface VideoProgress {

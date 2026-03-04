@@ -1,6 +1,6 @@
-import { useState, useEffect } from 'react'
+import { useState, useEffect, useCallback } from 'react'
 import { Link } from 'react-router'
-import { CheckCircle2, Circle, Video, FileText } from 'lucide-react'
+import { Video, FileText } from 'lucide-react'
 import { cn } from '@/app/components/ui/utils'
 import {
   Accordion,
@@ -9,12 +9,19 @@ import {
   AccordionTrigger,
 } from '@/app/components/ui/accordion'
 import { Badge } from '@/app/components/ui/badge'
-import type { Module } from '@/data/types'
+import {
+  Popover,
+  PopoverContent,
+  PopoverTrigger,
+} from '@/app/components/ui/popover'
+import type { CompletionStatus, Module } from '@/data/types'
+import { StatusIndicator } from './StatusIndicator'
+import { StatusSelector } from './StatusSelector'
+import { useContentProgressStore } from '@/stores/useContentProgressStore'
 
 interface ModuleAccordionProps {
   modules: Module[]
   courseId: string
-  completedLessons: string[]
   activeLessonId?: string
   compact?: boolean
 }
@@ -31,23 +38,42 @@ function formatDuration(seconds: number): string {
 export function ModuleAccordion({
   modules,
   courseId,
-  completedLessons,
   activeLessonId,
   compact,
 }: ModuleAccordionProps) {
-  // Controlled accordion — auto-expand module containing the active lesson
+  const statusMap = useContentProgressStore(state => state.statusMap)
+  const setItemStatus = useContentProgressStore(state => state.setItemStatus)
+  const loadCourseProgress = useContentProgressStore(state => state.loadCourseProgress)
+
+  const getStatus = (itemId: string): CompletionStatus =>
+    statusMap[`${courseId}:${itemId}`] ?? 'not-started'
+
   const [openModules, setOpenModules] = useState<string[]>(() => {
     if (!activeLessonId) return []
     return modules.filter(m => m.lessons.some(l => l.id === activeLessonId)).map(m => m.id)
   })
+  const [openPopover, setOpenPopover] = useState<string | null>(null)
 
-  // Re-expand when active lesson changes (cross-module navigation via Next button)
+  // Load progress from IndexedDB on mount
+  useEffect(() => {
+    loadCourseProgress(courseId)
+  }, [courseId, loadCourseProgress])
+
+  // Re-expand when active lesson changes
   useEffect(() => {
     if (!activeLessonId) return
     const activeModuleId = modules.find(m => m.lessons.some(l => l.id === activeLessonId))?.id
     if (!activeModuleId) return
     setOpenModules(prev => (prev.includes(activeModuleId) ? prev : [...prev, activeModuleId]))
   }, [activeLessonId, modules])
+
+  const handleStatusChange = useCallback(
+    (itemId: string, status: CompletionStatus) => {
+      setItemStatus(courseId, itemId, status, modules)
+      setOpenPopover(null)
+    },
+    [courseId, modules, setItemStatus]
+  )
 
   return (
     <Accordion
@@ -57,7 +83,10 @@ export function ModuleAccordion({
       className="space-y-3"
     >
       {modules.map(module => {
-        const completedInModule = module.lessons.filter(l => completedLessons.includes(l.id)).length
+        const moduleStatus = getStatus(module.id)
+        const completedInModule = module.lessons.filter(
+          l => getStatus(l.id) === 'completed'
+        ).length
 
         return (
           <AccordionItem
@@ -66,24 +95,31 @@ export function ModuleAccordion({
             className="rounded-[24px] border border-border bg-card px-5 shadow-sm"
           >
             <AccordionTrigger className="hover:no-underline">
-              <div className="flex flex-col items-start gap-1">
-                <div className="flex items-center gap-2">
-                  <span className="font-semibold text-sm">{module.title}</span>
-                  {module.lessons.length > 0 && (
-                    <Badge variant="secondary" className="text-xs">
-                      {completedInModule}/{module.lessons.length}
-                    </Badge>
+              <div className="flex items-center gap-2">
+                <StatusIndicator
+                  status={moduleStatus}
+                  itemId={module.id}
+                  mode="display"
+                />
+                <div className="flex flex-col items-start gap-1">
+                  <div className="flex items-center gap-2">
+                    <span className="font-semibold text-sm">{module.title}</span>
+                    {module.lessons.length > 0 && (
+                      <Badge variant="secondary" className="text-xs">
+                        {completedInModule}/{module.lessons.length}
+                      </Badge>
+                    )}
+                  </div>
+                  {!compact && module.description && (
+                    <span className="text-xs text-muted-foreground">{module.description}</span>
                   )}
                 </div>
-                {!compact && module.description && (
-                  <span className="text-xs text-muted-foreground">{module.description}</span>
-                )}
               </div>
             </AccordionTrigger>
             <AccordionContent>
               <ul className="space-y-1">
                 {module.lessons.map(lesson => {
-                  const isComplete = completedLessons.includes(lesson.id)
+                  const lessonStatus = getStatus(lesson.id)
                   const isActive = lesson.id === activeLessonId
                   const hasVideo = lesson.resources.some(r => r.type === 'video')
                   const hasPdf = lesson.resources.some(r => r.type === 'pdf')
@@ -94,8 +130,7 @@ export function ModuleAccordion({
 
                   return (
                     <li key={lesson.id}>
-                      <Link
-                        to={`/courses/${courseId}/${lesson.id}`}
+                      <div
                         className={cn(
                           'flex items-center gap-3 rounded-xl px-3 py-2.5 transition-colors',
                           isActive
@@ -103,20 +138,49 @@ export function ModuleAccordion({
                             : 'hover:bg-accent'
                         )}
                       >
-                        {isComplete ? (
-                          <CheckCircle2 className="size-5 text-green-500 shrink-0" />
-                        ) : (
-                          <Circle className="size-5 text-muted-foreground/40 shrink-0" />
-                        )}
-                        <div className="flex-1 min-w-0">
-                          <p className="text-sm font-medium truncate">{lesson.title}</p>
-                          {duration && <p className="text-xs text-muted-foreground">{duration}</p>}
-                        </div>
-                        <div className="flex items-center gap-1.5 shrink-0">
-                          {hasVideo && <Video className="size-4 text-blue-400" />}
-                          {hasPdf && <FileText className="size-4 text-red-400" />}
-                        </div>
-                      </Link>
+                        <Popover
+                          open={openPopover === lesson.id}
+                          onOpenChange={open =>
+                            setOpenPopover(open ? lesson.id : null)
+                          }
+                        >
+                          <PopoverTrigger asChild>
+                            <StatusIndicator
+                              status={lessonStatus}
+                              itemId={lesson.id}
+                            />
+                          </PopoverTrigger>
+                          <PopoverContent
+                            className="w-auto p-2"
+                            align="start"
+                            side="right"
+                            onOpenAutoFocus={e => e.preventDefault()}
+                          >
+                            <StatusSelector
+                              currentStatus={lessonStatus}
+                              onSelect={status =>
+                                handleStatusChange(lesson.id, status)
+                              }
+                            />
+                          </PopoverContent>
+                        </Popover>
+
+                        <Link
+                          to={`/courses/${courseId}/${lesson.id}`}
+                          className="flex flex-1 items-center gap-3 min-w-0"
+                        >
+                          <div className="flex-1 min-w-0">
+                            <p className="text-sm font-medium truncate">{lesson.title}</p>
+                            {duration && (
+                              <p className="text-xs text-muted-foreground">{duration}</p>
+                            )}
+                          </div>
+                          <div className="flex items-center gap-1.5 shrink-0">
+                            {hasVideo && <Video className="size-4 text-blue-400" />}
+                            {hasPdf && <FileText className="size-4 text-red-400" />}
+                          </div>
+                        </Link>
+                      </div>
                     </li>
                   )
                 })}

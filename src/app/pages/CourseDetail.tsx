@@ -146,7 +146,6 @@ export function CourseDetail() {
           <ModuleAccordion
             modules={course.modules}
             courseId={course.id}
-            completedLessons={progress.completedLessons}
           />
         </TabsContent>
 
