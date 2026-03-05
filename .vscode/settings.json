@@ -1,0 +1,23 @@
+{
+  "github-actions.workflows.pinned.workflows": [],
+  "files.watcherExclude": {
+    "**/.claude/**": true,
+    "**/.claude/worktrees/**": true,
+    "**/.playwright-mcp/**": true,
+    "**/.lighthouseci/**": true,
+    "**/coverage/**": true,
+    "**/test-results.json/**": true
+  },
+  "files.exclude": {
+    "**/.claude/worktrees": true
+  },
+  "search.exclude": {
+    "**/.claude/worktrees": true,
+    "**/.playwright-mcp": true,
+    "**/test-results.json": true
+  },
+  "files.watcherOptions": {
+    "usePolling": false,
+    "followSymlinks": false
+  }
+}

@@ -33,9 +33,10 @@ export function Overview() {
     return () => clearTimeout(timer)
   }, [])
 
-  const inProgress = getCoursesInProgress(allCourses)
-  const completed = getCompletedCourses(allCourses)
-  const completedLessons = getTotalCompletedLessons()
+  const allProgress = getAllProgress()
+  const inProgress = getCoursesInProgress(allCourses, allProgress)
+  const completed = getCompletedCourses(allCourses, allProgress)
+  const completedLessons = getTotalCompletedLessons(allProgress)
   const [studyNotes, setStudyNotes] = useState(0)
 
   useEffect(() => {
@@ -58,7 +59,6 @@ export function Overview() {
   const chartData = getActionsPerDay(14) // Last 14 days
 
   // Get last watched course/lesson for Quick Actions
-  const allProgress = getAllProgress()
   const lastWatchedEntry = Object.entries(allProgress)
     .filter(([_, p]) => p.lastWatchedLesson)
     .sort(

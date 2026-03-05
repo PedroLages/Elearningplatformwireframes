@@ -1,3 +1,5 @@
+import { toLocalDateString } from './dateUtils'
+
 const STORAGE_KEY = 'study-log'
 
 export interface StudyAction {
@@ -47,11 +49,11 @@ export function getActionsPerDay(days = 30): { date: string; count: number }[] {
   for (let i = 0; i < days; i++) {
     const d = new Date(now)
     d.setDate(d.getDate() - i)
-    counts[d.toISOString().split('T')[0]] = 0
+    counts[toLocalDateString(d)] = 0
   }
 
   for (const action of log) {
-    const date = action.timestamp.split('T')[0]
+    const date = toLocalDateString(new Date(action.timestamp))
     if (date in counts) {
       counts[date]++
     }
@@ -109,7 +111,7 @@ function getStudyDays(): string[] {
 
   for (const action of log) {
     if (action.type === 'lesson_complete') {
-      const date = action.timestamp.split('T')[0]
+      const date = toLocalDateString(new Date(action.timestamp))
       studyDays.add(date)
     }
   }
@@ -124,8 +126,8 @@ export function getCurrentStreak(): number {
   const studyDays = getStudyDays()
   if (studyDays.length === 0) return 0
 
-  const today = new Date().toISOString().split('T')[0]
-  const yesterday = new Date(Date.now() - 86400000).toISOString().split('T')[0]
+  const today = toLocalDateString()
+  const yesterday = toLocalDateString(new Date(Date.now() - 86400000))
 
   // Check if user is in pause mode
   const pause = getStreakPauseStatus()
@@ -159,7 +161,7 @@ function calculateStreakFromDate(startDate: string, studyDays: string[]): number
   const currentDate = new Date(startDate)
 
   while (true) {
-    const dateStr = currentDate.toISOString().split('T')[0]
+    const dateStr = toLocalDateString(currentDate)
     if (studyDays.includes(dateStr)) {
       streak++
       currentDate.setDate(currentDate.getDate() - 1)
@@ -222,10 +224,10 @@ export function getStudyActivity(
   for (let i = days - 1; i >= 0; i--) {
     const d = new Date(now)
     d.setDate(d.getDate() - i)
-    const dateStr = d.toISOString().split('T')[0]
+    const dateStr = toLocalDateString(d)
 
     const lessonsCompleted = log.filter(
-      a => a.type === 'lesson_complete' && a.timestamp.split('T')[0] === dateStr
+      a => a.type === 'lesson_complete' && toLocalDateString(new Date(a.timestamp)) === dateStr
     ).length
 
     activity.push({

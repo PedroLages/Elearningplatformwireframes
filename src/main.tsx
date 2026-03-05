@@ -6,6 +6,7 @@ import { migrateBookmarksFromLocalStorage } from '@/lib/bookmarks'
 import { buildCourseLookup, initializeSearchIndex } from '@/lib/noteSearch'
 import { allCourses } from '@/data/courses'
 import { toast } from 'sonner'
+import { initPerformanceMonitoring } from '@/lib/performanceMonitoring'
 
 // Fire-and-forget: migrate any legacy localStorage bookmarks to IndexedDB
 migrateBookmarksFromLocalStorage()
@@ -25,3 +26,6 @@ db.open()
   })
 
 createRoot(document.getElementById('root')!).render(<App />)
+
+// Start Web Vitals performance monitoring (LCP, FID, CLS, FCP, TTFB, INP)
+initPerformanceMonitoring()

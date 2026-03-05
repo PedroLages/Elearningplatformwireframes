@@ -8,7 +8,6 @@ import { Button } from '@/app/components/ui/button'
 import { allCourses } from '@/data/courses'
 import {
   getAllProgress,
-  getCourseCompletionPercent,
   getNotStartedCourses,
 } from '@/lib/progress'
 import type { Course } from '@/data/types'
@@ -64,10 +63,9 @@ function resolveSessionData(
 
     const lessonTitle =
       findLessonTitle(course, progress.lastWatchedLesson!) ?? 'Unknown Lesson'
-    const completionPercent = getCourseCompletionPercent(
-      course.id,
-      course.totalLessons
-    )
+    const completionPercent = course.totalLessons > 0
+      ? Math.round((progress.completedLessons.length / course.totalLessons) * 100)
+      : 0
     const resumeLink = `/courses/${course.id}/${progress.lastWatchedLesson}?t=${progress.lastVideoPosition ?? 0}`
 
     resolved.push({
@@ -228,8 +226,10 @@ function DeletedContentBanner({ count }: { count: number }) {
 }
 
 function DiscoveryState() {
-  const notStarted = getNotStartedCourses(allCourses)
-  const suggested = notStarted.slice(0, 3)
+  const suggested = useMemo(
+    () => getNotStartedCourses(allCourses).slice(0, 3),
+    []
+  )
 
   return (
     <div className="text-center py-8">
@@ -287,10 +287,9 @@ function DiscoveryState() {
 }
 
 export function ContinueLearning() {
-  const allProgress = getAllProgress()
   const { resolved: sessions, deleted } = useMemo(
-    () => resolveSessionData(allProgress),
-    [allProgress]
+    () => resolveSessionData(getAllProgress()),
+    []
   )
   const heroSession = sessions[0]
   const otherSessions = sessions.slice(1)

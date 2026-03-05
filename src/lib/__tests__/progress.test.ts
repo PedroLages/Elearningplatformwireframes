@@ -17,6 +17,7 @@ import {
   getTotalCompletedLessons,
   getTotalStudyNotes,
   getRecentActivity,
+  invalidateProgressCache,
 } from '@/lib/progress'
 import type { Course } from '@/data/types'
 
@@ -84,6 +85,7 @@ function makeCourse(overrides: Partial<Course> = {}): Course {
 describe('progress', () => {
   beforeEach(async () => {
     localStorage.clear()
+    invalidateProgressCache()
     await Dexie.delete('ElearningDB')
     vi.resetModules()
   })

@@ -4,6 +4,11 @@ import { ThemeProvider } from 'next-themes'
 import { Toaster } from '@/app/components/ui/sonner'
 import { router } from './routes'
 import { useSessionStore } from '@/stores/useSessionStore'
+import { ErrorBoundary } from '@/app/components/ErrorBoundary'
+import { initErrorTracking } from '@/lib/errorTracking'
+
+// Register global error handlers (window.onerror, unhandledrejection)
+initErrorTracking()
 
 export default function App() {
   const { recoverOrphanedSessions } = useSessionStore()
@@ -14,9 +19,11 @@ export default function App() {
   }, [recoverOrphanedSessions])
 
   return (
-    <ThemeProvider attribute="class" defaultTheme="system" enableSystem>
-      <RouterProvider router={router} />
-      <Toaster />
-    </ThemeProvider>
+    <ErrorBoundary>
+      <ThemeProvider attribute="class" defaultTheme="system" enableSystem>
+        <RouterProvider router={router} />
+        <Toaster />
+      </ThemeProvider>
+    </ErrorBoundary>
   )
 }
