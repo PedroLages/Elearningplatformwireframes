@@ -2,6 +2,7 @@ import { create } from 'zustand'
 import { db } from '@/db'
 import type { CompletionStatus, ContentProgress, Module } from '@/data/types'
 import { persistWithRetry } from '@/lib/persistWithRetry'
+import { markLessonComplete, markLessonIncomplete } from '@/lib/progress'
 
 interface ContentProgressState {
   /** Map of `courseId:itemId` → status for fast lookups */
@@ -103,6 +104,13 @@ export const useContentProgressStore = create<ContentProgressState>((set, get) =
     // Optimistic update
     set({ statusMap: newMap, error: null })
 
+    // Bridge: sync with localStorage progress for progress bar consistency
+    if (status === 'completed') {
+      markLessonComplete(courseId, itemId)
+    } else {
+      markLessonIncomplete(courseId, itemId)
+    }
+
     try {
       await persistWithRetry(async () => {
         await db.transaction('rw', db.contentProgress, async () => {
@@ -119,8 +127,13 @@ export const useContentProgressStore = create<ContentProgressState>((set, get) =
         })
       })
     } catch (error) {
-      // Rollback on failure
+      // Rollback on failure (both Zustand and localStorage)
       set({ statusMap: previousMap, error: 'Failed to save progress' })
+      if (status === 'completed') {
+        markLessonIncomplete(courseId, itemId)
+      } else {
+        markLessonComplete(courseId, itemId)
+      }
       console.error('[ContentProgressStore] Failed to persist:', error)
     }
   },

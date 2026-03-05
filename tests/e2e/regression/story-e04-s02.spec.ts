@@ -33,32 +33,31 @@ test.describe('E04-S02: Course Completion Percentage', () => {
     await expect(progressText).toBeVisible()
   })
 
-  test.skip('AC2: Progress bar updates in real-time when completion status changes', async ({
+  test('AC2: Progress bar updates in real-time when completion status changes', async ({
     page,
   }) => {
-    // SKIPPED: This test requires E04-S01 (completion status UI) to be implemented.
-    // The test body was previously guarded with if ((await contentItem.count()) > 0)
-    // which always evaluated false, causing the test to vacuously pass with zero assertions.
-    // Once E04-S01 is complete, remove .skip() and verify the test works correctly.
-
-    // Navigate to a specific course detail page directly
+    // Navigate to course detail page
     await page.goto('/courses/confidence-reboot')
     await page.waitForLoadState('domcontentloaded')
 
-    // Get initial progress value from the course detail page's progress sidebar
+    // Get initial progress value from the progress sidebar
     const progressSidebar = page.locator('.bg-muted').filter({ hasText: 'Your Progress' })
     const progressBar = progressSidebar.locator('[role="progressbar"]')
     const initialValue = await progressBar.getAttribute('aria-valuenow')
 
-    // Mark a content item as completed
-    const contentItem = page.locator('[data-testid*="content-status"]').first()
-    await contentItem.click()
-    const completedOption = page.getByRole('button', { name: /completed/i })
-    await completedOption.click()
+    // Expand the first module to reveal lesson status indicators
+    await page.getByText('Mission Briefing').click()
+
+    // Mark the first lesson as completed via status indicator (E04-S01 UI)
+    const statusIndicator = page.getByTestId('status-indicator-cr-00-welcome')
+    await statusIndicator.click()
+    await page.getByTestId('status-selector').getByText('Completed').click()
 
     // Verify progress bar updated without page refresh
-    const newValue = await progressBar.getAttribute('aria-valuenow')
-    expect(newValue).not.toBe(initialValue)
+    await expect.poll(
+      async () => await progressBar.getAttribute('aria-valuenow'),
+      { timeout: 5000 },
+    ).not.toBe(initialValue)
 
     // Verify smooth animation (progress indicator should have transform transition)
     const progressIndicator = progressBar.locator('[data-slot="progress-indicator"]')
@@ -110,38 +109,44 @@ test.describe('E04-S02: Course Completion Percentage', () => {
     page,
     localStorage,
   }) => {
-    // Navigate to courses
-    await goToCourses(page)
+    // Seed a 100%-complete course (confidence-reboot has 18 totalLessons)
+    const allLessonIds = [
+      'cr-00-welcome', 'cr-01-workspace', 'cr-02-limiting-beliefs',
+      'cr-03-confidence-masterclass', 'cr-04-composure', 'cr-05-nightly-audio',
+      'cr-06-behavior-inventory', 'cr-07-tracker', 'cr-08-limiting-beliefs-deep',
+      'cr-09-alpha-leader', 'cr-10-comfort-vs-anxiety', 'cr-11-phase-three-instructions',
+      'cr-12-imprinting-switch', 'cr-13-entrainment-level-1', 'cr-14-entrainment-level-2',
+      'cr-15-entrainment-level-3', 'cr-16-conference-room', 'cr-17-first-meeting',
+    ]
 
-    // Seed sidebar localStorage to prevent tablet overlay blocking pointer events
+    await page.goto('/')
     await localStorage.seed('eduvi-sidebar-v1', 'false')
+    await localStorage.seed('course-progress', JSON.stringify({
+      'confidence-reboot': {
+        courseId: 'confidence-reboot',
+        completedLessons: allLessonIds,
+        notes: {},
+        startedAt: '2026-01-01T00:00:00.000Z',
+        lastAccessedAt: '2026-03-01T00:00:00.000Z',
+      },
+    }))
 
-    // This test will pass once a course reaches 100% completion
-    // For now, we'll verify the structure exists
-    const courseCards = page.locator('[class*="card"]')
-    const count = await courseCards.count()
+    // Navigate to courses page
+    await goToCourses(page)
+    await page.waitForLoadState('networkidle')
 
-    // Check each card for completion state
-    for (let i = 0; i < count; i++) {
-      const card = courseCards.nth(i)
-      const progressBar = card.locator('[role="progressbar"]')
+    // Navigate to the completed course's detail page
+    await page.goto('/courses/confidence-reboot')
+    await page.waitForLoadState('domcontentloaded')
 
-      if ((await progressBar.count()) > 0) {
-        const ariaValue = await progressBar.getAttribute('aria-valuenow')
+    // Verify progress bar shows 100%
+    const progressSidebar = page.locator('.bg-muted').filter({ hasText: 'Your Progress' })
+    const progressBar = progressSidebar.locator('[role="progressbar"]')
+    await expect(progressBar).toHaveAttribute('aria-valuenow', '100')
 
-        // If this course is 100% complete
-        if (ariaValue === '100') {
-          // Verify full/completed visual state
-          await expect(progressBar).toHaveAttribute('aria-valuenow', '100')
-
-          // Verify completion badge is visible
-          const completionBadge = card.locator(
-            '[data-testid="completion-badge"], [class*="badge"]',
-          )
-          await expect(completionBadge).toBeVisible()
-        }
-      }
-    }
+    // Verify completion badge is visible
+    const completionBadge = page.locator('[data-testid="completion-badge"]')
+    await expect(completionBadge).toBeVisible()
   })
 
   test('AC5: Course library displays consistent progress bars on all course cards', async ({

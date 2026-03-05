@@ -5,7 +5,7 @@
 
 import { useState, useEffect } from 'react'
 import { api, ApiClientError } from '@/lib/api'
-import type { Course, UserProfile } from '@/types/api'
+import type { Course, CourseDetail, ProgressUpdateResponse, UserProfile } from '@/types/api'
 import { Button } from '@/app/components/ui/button'
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/app/components/ui/card'
 import { Badge } from '@/app/components/ui/badge'
@@ -95,7 +95,7 @@ export function CoursesExample() {
  * Example 2: Fetching course details with error handling
  */
 export function CourseDetailExample({ courseId }: { courseId: string }) {
-  const [course, setCourse] = useState<any>(null)
+  const [course, setCourse] = useState<CourseDetail | null>(null)
   const [loading, setLoading] = useState(false)
   const [error, setError] = useState<string | null>(null)
 
@@ -173,7 +173,7 @@ export function CourseDetailExample({ courseId }: { courseId: string }) {
  */
 export function ProgressUpdateExample({ lessonId = 'lesson-1', courseId = '1' }) {
   const [updating, setUpdating] = useState(false)
-  const [result, setResult] = useState<any>(null)
+  const [result, setResult] = useState<ProgressUpdateResponse | null>(null)
   const [error, setError] = useState<string | null>(null)
 
   const updateProgress = async (completed: boolean) => {

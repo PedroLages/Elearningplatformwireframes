@@ -128,10 +128,20 @@ describe('setItemStatus', () => {
       await useContentProgressStore.getState().setItemStatus('c1', 'les-1', 'in-progress', mockModules)
     })
 
-    // Should rollback to previous state
+    // Should rollback Zustand state to previous value
     const status = useContentProgressStore.getState().getItemStatus('c1', 'les-1')
     expect(status).toBe('completed')
     expect(useContentProgressStore.getState().error).toBe('Failed to save progress')
+
+    // Should rollback localStorage progress bridge (lesson should still be in completedLessons)
+    const progressRaw = localStorage.getItem('course-progress')
+    if (progressRaw) {
+      const allProgress = JSON.parse(progressRaw)
+      const courseProgress = allProgress['c1']
+      if (courseProgress) {
+        expect(courseProgress.completedLessons).toContain('les-1')
+      }
+    }
 
     // Restore original
     vi.mocked(db.contentProgress.put).mockImplementation(originalPut)
