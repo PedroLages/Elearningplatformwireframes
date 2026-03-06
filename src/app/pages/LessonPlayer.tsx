@@ -262,16 +262,6 @@ export function LessonPlayer() {
     titleRef.current?.focus({ preventScroll: true })
   }, [lessonId])
 
-  // AC1: Start session when content loads
-  useEffect(() => {
-    if (!courseId || !lessonId) return
-
-    const sessionType = videoResource ? 'video' : primaryPdf ? 'pdf' : 'mixed'
-    startSession(courseId, lessonId, sessionType)
-
-    // Note: No cleanup needed - endSession handled by visibility/unload handlers
-  }, [courseId, lessonId, startSession, videoResource, primaryPdf])
-
   // AC2: End session on navigation away / tab hidden
   useEffect(() => {
     const handleVisibilityChange = () => {
@@ -335,6 +325,16 @@ export function LessonPlayer() {
   // When no video exists, promote first PDF to primary content
   const primaryPdf = !videoResource && allPdfResources.length > 0 ? allPdfResources[0] : null
   const pdfResources = primaryPdf ? allPdfResources.slice(1) : allPdfResources
+
+  // AC1: Start session when content loads
+  useEffect(() => {
+    if (!courseId || !lessonId) return
+
+    const sessionType = videoResource ? 'video' : primaryPdf ? 'pdf' : 'mixed'
+    startSession(courseId, lessonId, sessionType)
+
+    // Note: No cleanup needed - endSession handled by visibility/unload handlers
+  }, [courseId, lessonId, startSession, videoResource, primaryPdf])
 
   const handlePdfPageChangeRef = useRef<ReturnType<typeof setTimeout>>(undefined)
   const handlePdfPageChange = (page: number) => {

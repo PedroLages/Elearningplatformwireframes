@@ -184,9 +184,6 @@ test.describe('Story E04-S03: Automatic Study Session Logging', () => {
     // WHEN the user navigates to the lesson player
     await goToLessonPlayer(page, 'course-study-tracking', 'video-lesson-1')
 
-    // Wait for session to be created
-    await page.waitForTimeout(500)
-
     // THEN a new study session record is created with metadata
     // Wait with retry for database to be ready
     const sessionExists = await page.evaluate(async () => {
@@ -261,7 +258,6 @@ test.describe('Story E04-S03: Automatic Study Session Logging', () => {
     // GIVEN an active study session is in progress
     await seedCourseAndReload(page, indexedDB)
     await goToLessonPlayer(page, 'course-study-tracking', 'video-lesson-1')
-    await page.waitForTimeout(500)
 
     // WHEN the user navigates away
     await navigateAndWait(page, '/courses')
@@ -407,7 +403,6 @@ test.describe('Story E04-S03: Automatic Study Session Logging', () => {
 
     // Simulate activity to resume
     await page.mouse.move(100, 100)
-    await page.waitForTimeout(500)
 
     // AND session resumes correctly (still exists, endTime is undefined = still active)
     const sessionResumed = await page.evaluate(async () => {
@@ -478,7 +473,6 @@ test.describe('Story E04-S03: Automatic Study Session Logging', () => {
 
     await seedStudySessions(page, sessions)
     await page.reload()
-    await page.waitForTimeout(500)
 
     // WHEN the user views their total study time (Overview page)
     await navigateAndWait(page, '/')
@@ -550,7 +544,6 @@ test.describe('Story E04-S03: Automatic Study Session Logging', () => {
 
     // WHEN the application loads
     await page.reload()
-    await page.waitForTimeout(1000) // Allow cleanup logic to run
 
     // THEN orphaned sessions are closed with last activity timestamp
     const orphanedSessionClosed = await page.evaluate(async () => {

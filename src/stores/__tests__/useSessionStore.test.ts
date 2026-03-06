@@ -2,26 +2,9 @@ import 'fake-indexeddb/auto'
 import { describe, it, expect, beforeEach, vi } from 'vitest'
 import { act } from 'react'
 import Dexie from 'dexie'
-import type { StudySession } from '@/data/types'
+import { createStudySession as makeSession } from '../../../tests/support/fixtures/factories/session-factory'
 
 let useSessionStore: (typeof import('@/stores/useSessionStore'))['useSessionStore']
-
-function makeSession(overrides: Partial<StudySession> = {}): StudySession {
-  const now = new Date().toISOString()
-  return {
-    id: crypto.randomUUID(),
-    courseId: 'course-1',
-    contentItemId: 'lesson-1',
-    startTime: now,
-    endTime: undefined,
-    duration: 0,
-    idleTime: 0,
-    videosWatched: [],
-    lastActivity: now,
-    sessionType: 'video',
-    ...overrides,
-  }
-}
 
 beforeEach(async () => {
   await Dexie.delete('ElearningDB')

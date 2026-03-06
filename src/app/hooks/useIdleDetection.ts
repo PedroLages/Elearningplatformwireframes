@@ -10,7 +10,7 @@ interface UseIdleDetectionOptions {
 
 export function useIdleDetection({ onIdle, onActive, onActivity }: UseIdleDetectionOptions) {
   const isIdleRef = useRef(false)
-  const timeoutRef = useRef<ReturnType<typeof setTimeout>>()
+  const timeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null)
 
   // Store callbacks in refs to avoid re-registering event listeners on every render
   const onIdleRef = useRef(onIdle)

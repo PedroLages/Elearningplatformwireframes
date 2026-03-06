@@ -89,6 +89,7 @@ import {
   TooltipTrigger,
 } from '@/app/components/ui/tooltip'
 import { cn } from '@/app/components/ui/utils'
+import { InteractiveButton } from '@/app/components/ui/interactive-button'
 import { formatTimestamp } from '@/lib/format'
 import { FrameCaptureExtension } from './frame-capture'
 import type { CapturedFrame } from '@/lib/frame-capture'
@@ -1068,19 +1069,15 @@ function ToolbarButton({
   children: React.ReactNode
 } & React.ButtonHTMLAttributes<HTMLButtonElement>) {
   return (
-    <button
+    <InteractiveButton
+      variant="ghost"
+      size="icon"
       type="button"
       onClick={onClick}
-      aria-pressed={active}
-      className={cn(
-        'inline-flex items-center justify-center size-11 rounded-md text-sm transition-colors cursor-pointer',
-        'hover:bg-accent hover:text-accent-foreground',
-        'focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-1',
-        active && 'bg-accent text-accent-foreground'
-      )}
+      active={active}
       {...props}
     >
       {children}
-    </button>
+    </InteractiveButton>
   )
 }

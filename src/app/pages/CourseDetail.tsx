@@ -18,10 +18,14 @@ import { CourseNotesTab } from '@/app/components/notes/CourseNotesTab'
 import { categoryLabels, categoryColors } from '@/app/components/figma/CourseCard'
 import { allCourses } from '@/data/courses'
 import { getProgress, getCourseCompletionPercent } from '@/lib/progress'
+import { useContentProgressStore } from '@/stores/useContentProgressStore'
 
 export function CourseDetail() {
   const { courseId } = useParams<{ courseId: string }>()
   const course = allCourses.find(c => c.id === courseId)
+  // Subscribe to statusMap changes to trigger re-render when content status updates
+  // This ensures the progress bar reflects changes made via StatusSelector
+  useContentProgressStore(s => s.statusMap)
 
   if (!course) {
     return (

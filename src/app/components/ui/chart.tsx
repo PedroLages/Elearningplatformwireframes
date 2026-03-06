@@ -5,6 +5,17 @@ import * as RechartsPrimitive from 'recharts'
 
 import { cn } from './utils'
 
+// Recharts tooltip payload item shape
+interface ChartPayloadItem {
+  dataKey?: string | number
+  name?: string
+  value?: string | number
+  color?: string
+  fill?: string
+  payload?: Record<string, string | number | boolean | null | undefined>
+  [key: string]: unknown
+}
+
 // Format: { THEME_NAME: CSS_SELECTOR }
 const THEMES = { light: '', dark: '.dark' } as const
 
@@ -112,10 +123,10 @@ function ChartTooltipContent({
   labelKey,
 }: React.ComponentProps<'div'> & {
   active?: boolean
-  payload?: ReadonlyArray<Record<string, any>>
+  payload?: ReadonlyArray<ChartPayloadItem>
   label?: string | number
-  labelFormatter?: (label: any, payload: ReadonlyArray<Record<string, any>>) => React.ReactNode
-  formatter?: (value: any, name: any, item: any, index: number, payload: any[]) => React.ReactNode
+  labelFormatter?: (label: string | number, payload: ReadonlyArray<ChartPayloadItem>) => React.ReactNode
+  formatter?: (value: string | number, name: string, item: ChartPayloadItem, index: number, payload: ChartPayloadItem[]) => React.ReactNode
   hideLabel?: boolean
   hideIndicator?: boolean
   indicator?: 'line' | 'dot' | 'dashed'
@@ -141,7 +152,7 @@ function ChartTooltipContent({
 
     if (labelFormatter) {
       return (
-        <div className={cn('font-medium', labelClassName)}>{labelFormatter(value, payload)}</div>
+        <div className={cn('font-medium', labelClassName)}>{labelFormatter(String(value ?? ''), payload)}</div>
       )
     }
 
@@ -170,7 +181,7 @@ function ChartTooltipContent({
         {payload.map((item, index) => {
           const key = `${nameKey || item.name || item.dataKey || 'value'}`
           const itemConfig = getPayloadConfigFromPayload(config, item, key)
-          const indicatorColor = color || item.payload.fill || item.color
+          const indicatorColor = color || item.payload?.fill || item.color
 
           return (
             <div
@@ -181,7 +192,7 @@ function ChartTooltipContent({
               )}
             >
               {formatter && item?.value !== undefined && item.name ? (
-                formatter(item.value, item.name, item, index, item.payload)
+                formatter(item.value, item.name, item, index, payload as ChartPayloadItem[])
               ) : (
                 <>
                   {itemConfig?.icon ? (

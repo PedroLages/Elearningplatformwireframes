@@ -165,6 +165,16 @@
 - NEW: `findCourseAndLesson` return type not explicitly declared -- TypeScript infers it but inconsistent with codebase conventions
 - Unit tests added for `getAllBookmarks()` (3 tests) -- good coverage of empty, sort order, and cross-course scenarios
 
+### E04-S01: Mark Content Completion Status
+- BLOCKER (RECURRING x7): ENTIRE implementation (store, components, schema, types, ModuleAccordion refactor) exists ONLY in working tree. Committed branch has only story doc, sprint-status, and E2E spec. 7th consecutive story with this pattern.
+- `EntityTable<ContentProgress, 'courseId'>` incorrect for compound key `[courseId+itemId]` -- second type param should match PK
+- `getItemStatus` is a function calling `get()` -- not a Zustand selector. Component uses `useContentProgressStore()` without selector, subscribes to entire store, re-renders on any state change
+- Multiple `db.contentProgress.put()` calls in `setItemStatus` are NOT wrapped in a Dexie transaction -- partial writes possible (item saved but cascade fails)
+- Module-level `StatusIndicator` is a `<button>` nested inside `AccordionTrigger` (also a button) -- nested interactive elements, WCAG violation
+- StatusIndicator button has no min size constraint -- `p-0.5` on `size-4` icon = ~20px, well below 44px WCAG touch target
+- No unit tests for useContentProgressStore, StatusIndicator, or StatusSelector
+- AC2 E2E test does NOT verify IndexedDB persistence (reload + verify) -- only checks immediate UI update
+
 ### E04-S02: Course Completion Percentage
 - BLOCKER (RECURRING x7): ENTIRE implementation (progress.tsx, CourseCard.tsx, CourseDetail.tsx) + E2E test fixes exist ONLY in working tree. Committed branch has only story doc, sprint-status, and original E2E spec.
 - `value` prop destructured from Progress component but `normalizedValue` NOT passed back to Radix `<ProgressPrimitive.Root>` as `value` -- Radix sees `value=null`, sets `data-state="indeterminate"` instead of "loading"/"complete"
@@ -178,14 +188,27 @@
 - AC4 E2E test loops through cards looking for 100% -- if none exist, passes vacuously with no assertions
 - No unit tests for Progress component (value normalization, showLabel, labelFormat)
 
+### E05-S01: Daily Study Streak Counter (Round 3)
+- BLOCKER (RECURRING x8): Core fixes exist ONLY in working tree. Committed studyLog.ts missing: event dispatch, parse-once delegation, DST-safe Math.round, yesterday via setDate, pauseStatus in StreakSnapshot, import alias fix
+- Committed `logStudyAction` does NOT dispatch `study-log-updated` event -- AC2 (live increment) broken in committed code
+- Committed `getCurrentStreak` still uses `Math.floor` (DST bug) and `Date.now() - 86400000` for yesterday
+- Committed `getStreakSnapshot` does not include `pauseStatus` in interface or return value
+- Committed studyLog.ts has duplicate functions (old `getStudyDays`/`getCurrentStreak`/`getLongestStreak`/`getStudyActivity` AND new parse-once helpers)
+- E2E AC2 test manually dispatches `study-log-updated` event, masking the fact that `logStudyAction` doesn't fire it
+- `_progressCache` in progress.ts returns mutable reference -- callers mutating the returned object corrupt the cache
+- ErrorBoundary uses hardcoded `bg-[#FAF5EE]`, `bg-white`, `h-16 w-16` instead of theme tokens and `size-*`
+- `initErrorTracking` assigns `window.onerror`/`window.onunhandledrejection` directly (overrides, doesn't addEventListener)
+
 ## Recurring Anti-Pattern: Uncommitted Fixes
 - E03-S02: Blocker fixes (focus trap, ARIA attrs) existed only in working tree
 - E03-S03: `urlTransform` override for video:// protocol existed only in working tree
 - E03-S05: 6+ fixes existed only in working tree
 - E03-S07 (Round 1): ENTIRE IMPLEMENTATION existed only in working tree
 - E03-S07 (Round 2): ALL implementation + Round 1 fixes + unit tests STILL only in working tree (6th consecutive occurrence)
-- E04-S02: ENTIRE implementation (progress.tsx, CourseCard.tsx, CourseDetail.tsx) exists only in working tree (7th consecutive occurrence)
-- Root cause: Implementation code applied locally but never committed before review/shipping
+- E04-S01: ENTIRE IMPLEMENTATION exists only in working tree (7th consecutive occurrence)
+- E04-S02: ENTIRE implementation (progress.tsx, CourseCard.tsx, CourseDetail.tsx) exists only in working tree
+- E05-S01: Core streak fixes (event dispatch, DST fix, parse-once delegation, pauseStatus) exist only in working tree (8th occurrence)
+- Root cause: Review findings are applied locally but never committed before shipping
 
 ## Silent Failure Patterns to Watch
 

@@ -290,7 +290,7 @@ test.describe('E04-S04: View Study Session History', () => {
     // Verify page loaded
     await expect(page.getByRole('heading', { name: 'Study Session History' })).toBeVisible()
 
-    // Verify only PAGE_SIZE (20) entries are initially rendered
+    // Verify DOM is bounded: only PAGE_SIZE (20) of 50 entries rendered initially
     const sessionEntries = page.locator('[data-testid="session-entry"]')
     await expect(sessionEntries).toHaveCount(20)
 

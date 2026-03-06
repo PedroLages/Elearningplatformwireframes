@@ -8,6 +8,9 @@ const MINUTES_PER_LESSON = 15
 const MIGRATION_VERSION_KEY = 'notes-migration-version'
 const CURRENT_MIGRATION_VERSION = 1
 
+// Module-level cache: avoids repeated localStorage.getItem + JSON.parse per render cycle
+let _progressCache: Record<string, CourseProgress> | null = null
+
 export interface CourseProgress {
   courseId: string
   completedLessons: string[]
@@ -95,6 +98,8 @@ function extractTagsFromContent(content: string): string[] {
 }
 
 export function getAllProgress(): Record<string, CourseProgress> {
+  if (_progressCache) return _progressCache
+
   try {
     const raw = localStorage.getItem(STORAGE_KEY)
     if (!raw) return {}
@@ -112,6 +117,7 @@ export function getAllProgress(): Record<string, CourseProgress> {
       return migrated
     }
 
+    _progressCache = data
     return data
   } catch (error) {
     console.error('[Progress] Error loading progress:', error)
@@ -119,7 +125,12 @@ export function getAllProgress(): Record<string, CourseProgress> {
   }
 }
 
+export function invalidateProgressCache() {
+  _progressCache = null
+}
+
 function saveAllProgress(data: Record<string, CourseProgress>) {
+  _progressCache = null
   localStorage.setItem(STORAGE_KEY, JSON.stringify(data))
 }
 
@@ -358,9 +369,10 @@ export function isLessonComplete(courseId: string, lessonId: string): boolean {
 }
 
 export function getCoursesInProgress(
-  courses: Course[]
+  courses: Course[],
+  allProgress?: Record<string, CourseProgress>
 ): (Course & { progress: CourseProgress; completionPercent: number })[] {
-  const all = getAllProgress()
+  const all = allProgress ?? getAllProgress()
   return courses
     .filter(c => {
       const p = all[c.id]
@@ -385,8 +397,8 @@ export function getCoursesInProgress(
     )
 }
 
-export function getCompletedCourses(courses: Course[]): Course[] {
-  const all = getAllProgress()
+export function getCompletedCourses(courses: Course[], allProgress?: Record<string, CourseProgress>): Course[] {
+  const all = allProgress ?? getAllProgress()
   return courses.filter(c => {
     const p = all[c.id]
     if (!p) return false
@@ -395,16 +407,16 @@ export function getCompletedCourses(courses: Course[]): Course[] {
   })
 }
 
-export function getNotStartedCourses(courses: Course[]): Course[] {
-  const all = getAllProgress()
+export function getNotStartedCourses(courses: Course[], allProgress?: Record<string, CourseProgress>): Course[] {
+  const all = allProgress ?? getAllProgress()
   return courses.filter(c => {
     const p = all[c.id]
     return !p || p.completedLessons.length === 0
   })
 }
 
-export function getTotalCompletedLessons(): number {
-  const all = getAllProgress()
+export function getTotalCompletedLessons(allProgress?: Record<string, CourseProgress>): number {
+  const all = allProgress ?? getAllProgress()
   return Object.values(all).reduce((sum, p) => sum + p.completedLessons.length, 0)
 }
 

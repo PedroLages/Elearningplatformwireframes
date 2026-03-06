@@ -3,9 +3,9 @@ import { renderHook } from '@testing-library/react'
 import { useIdleDetection } from '../useIdleDetection'
 
 describe('useIdleDetection', () => {
-  let onIdle: ReturnType<typeof vi.fn>
-  let onActive: ReturnType<typeof vi.fn>
-  let onActivity: ReturnType<typeof vi.fn>
+  let onIdle: ReturnType<typeof vi.fn<() => void>>
+  let onActive: ReturnType<typeof vi.fn<() => void>>
+  let onActivity: ReturnType<typeof vi.fn<() => void>>
 
   beforeEach(() => {
     vi.useFakeTimers()

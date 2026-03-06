@@ -3,6 +3,7 @@ import { BubbleMenu } from '@tiptap/react/menus'
 import { Bold, Italic, Underline as UnderlineIcon, Highlighter, Link2, Palette } from 'lucide-react'
 import { Popover, PopoverContent, PopoverTrigger } from '@/app/components/ui/popover'
 import { cn } from '@/app/components/ui/utils'
+import { InteractiveButton } from '@/app/components/ui/interactive-button'
 
 const TEXT_COLORS = [
   { label: 'Default', value: null, swatch: 'bg-foreground' },
@@ -120,19 +121,15 @@ function BubbleButton({
   children: React.ReactNode
 } & React.ButtonHTMLAttributes<HTMLButtonElement>) {
   return (
-    <button
+    <InteractiveButton
+      variant="ghost"
+      size="icon"
       type="button"
       onClick={onClick}
-      aria-pressed={active}
-      className={cn(
-        'inline-flex items-center justify-center size-11 rounded-md text-sm transition-colors cursor-pointer',
-        'hover:bg-accent hover:text-accent-foreground',
-        'focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-1',
-        active && 'bg-accent text-accent-foreground'
-      )}
+      active={active}
       {...props}
     >
       {children}
-    </button>
+    </InteractiveButton>
   )
 }

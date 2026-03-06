@@ -5,6 +5,14 @@ import {
   getStudyLogForCourse,
   getActionsPerDay,
   getRecentActions,
+  getCurrentStreak,
+  getLongestStreak,
+  getStudyActivity,
+  getStreakSnapshot,
+  setStreakPause,
+  getStreakPauseStatus,
+  clearStreakPause,
+  toLocalDateString,
 } from '@/lib/studyLog'
 import type { StudyAction } from '@/lib/studyLog'
 
@@ -104,6 +112,14 @@ describe('studyLog', () => {
       logStudyAction(makeAction())
       const log = getStudyLog()
       expect(log).toHaveLength(1)
+    })
+
+    it('dispatches study-log-updated event', () => {
+      const handler = vi.fn()
+      window.addEventListener('study-log-updated', handler)
+      logStudyAction(makeAction())
+      expect(handler).toHaveBeenCalledOnce()
+      window.removeEventListener('study-log-updated', handler)
     })
   })
 
@@ -250,6 +266,213 @@ describe('studyLog', () => {
 
     it('returns empty array when no actions', () => {
       expect(getRecentActions()).toEqual([])
+    })
+  })
+
+  // ── Helper: seed study days relative to FIXED_NOW ──
+
+  function seedStudyDays(daysAgo: number[]) {
+    for (const d of daysAgo) {
+      const ts = new Date(FIXED_NOW)
+      ts.setDate(ts.getDate() - d)
+      ts.setHours(12, 0, 0, 0)
+      logStudyAction(makeAction({ timestamp: ts.toISOString() }))
+    }
+  }
+
+  // ── toLocalDateString ──
+
+  describe('toLocalDateString', () => {
+    it('formats a date as YYYY-MM-DD', () => {
+      const result = toLocalDateString(new Date(2026, 0, 15, 12, 0, 0))
+      expect(result).toBe('2026-01-15')
+    })
+
+    it('defaults to current date', () => {
+      const result = toLocalDateString()
+      expect(result).toMatch(/^\d{4}-\d{2}-\d{2}$/)
+    })
+  })
+
+  // ── getCurrentStreak ──
+
+  describe('getCurrentStreak', () => {
+    it('returns 0 with no activity', () => {
+      expect(getCurrentStreak()).toBe(0)
+    })
+
+    it('returns 1 when studied today only', () => {
+      seedStudyDays([0])
+      expect(getCurrentStreak()).toBe(1)
+    })
+
+    it('returns 1 when studied yesterday only', () => {
+      seedStudyDays([1])
+      expect(getCurrentStreak()).toBe(1)
+    })
+
+    it('returns 0 when last study was 2+ days ago', () => {
+      seedStudyDays([2])
+      expect(getCurrentStreak()).toBe(0)
+    })
+
+    it('counts consecutive days from today', () => {
+      seedStudyDays([0, 1, 2])
+      expect(getCurrentStreak()).toBe(3)
+    })
+
+    it('counts consecutive days from yesterday', () => {
+      seedStudyDays([1, 2, 3])
+      expect(getCurrentStreak()).toBe(3)
+    })
+
+    it('breaks on gap', () => {
+      seedStudyDays([0, 1, 3]) // gap at day 2
+      expect(getCurrentStreak()).toBe(2)
+    })
+
+    it('ignores non-lesson_complete actions', () => {
+      logStudyAction(makeAction({ type: 'video_progress' }))
+      expect(getCurrentStreak()).toBe(0)
+    })
+
+    it('preserves streak during active pause', () => {
+      seedStudyDays([1, 2, 3])
+      setStreakPause(7)
+      expect(getCurrentStreak()).toBe(3)
+    })
+
+    it('returns 0 after expired pause with no recent study', () => {
+      seedStudyDays([10, 11, 12])
+      // Set pause that started 8 days ago for 7 days (expired)
+      const expiredStart = new Date(FIXED_NOW)
+      expiredStart.setDate(expiredStart.getDate() - 8)
+      localStorage.setItem(
+        'study-streak-pause',
+        JSON.stringify({ enabled: true, startDate: expiredStart.toISOString(), days: 7 })
+      )
+      expect(getCurrentStreak()).toBe(0)
+    })
+  })
+
+  // ── getLongestStreak ──
+
+  describe('getLongestStreak', () => {
+    it('returns 0 with no activity', () => {
+      expect(getLongestStreak()).toBe(0)
+    })
+
+    it('returns 1 for a single study day', () => {
+      seedStudyDays([0])
+      expect(getLongestStreak()).toBe(1)
+    })
+
+    it('counts consecutive days', () => {
+      seedStudyDays([0, 1, 2, 3, 4])
+      expect(getLongestStreak()).toBe(5)
+    })
+
+    it('finds longest across gaps', () => {
+      seedStudyDays([0, 1, 2, 5, 6]) // streak of 3, then streak of 2
+      expect(getLongestStreak()).toBe(3)
+    })
+
+    it('persists longest in localStorage', () => {
+      seedStudyDays([0, 1, 2])
+      getLongestStreak()
+      const stored = parseInt(localStorage.getItem('study-longest-streak') || '0')
+      expect(stored).toBe(3)
+    })
+
+    it('returns stored value if higher than computed', () => {
+      localStorage.setItem('study-longest-streak', '10')
+      seedStudyDays([0, 1])
+      expect(getLongestStreak()).toBe(10)
+    })
+
+    it('updates stored value when computed is higher', () => {
+      localStorage.setItem('study-longest-streak', '2')
+      seedStudyDays([0, 1, 2, 3, 4])
+      expect(getLongestStreak()).toBe(5)
+      expect(localStorage.getItem('study-longest-streak')).toBe('5')
+    })
+  })
+
+  // ── getStudyActivity ──
+
+  describe('getStudyActivity', () => {
+    it('returns correct number of days', () => {
+      const activity = getStudyActivity(7)
+      expect(activity).toHaveLength(7)
+    })
+
+    it('marks active days correctly', () => {
+      seedStudyDays([0])
+      const activity = getStudyActivity(7)
+      const today = activity[activity.length - 1]
+      expect(today.hasActivity).toBe(true)
+      expect(today.lessonCount).toBe(1)
+    })
+
+    it('marks inactive days correctly', () => {
+      const activity = getStudyActivity(7)
+      expect(activity.every(d => !d.hasActivity)).toBe(true)
+    })
+
+    it('only counts lesson_complete actions', () => {
+      logStudyAction(makeAction({ type: 'video_progress' }))
+      const activity = getStudyActivity(7)
+      expect(activity.every(d => !d.hasActivity)).toBe(true)
+    })
+  })
+
+  // ── streak pause ──
+
+  describe('streak pause', () => {
+    it('returns null when no pause set', () => {
+      expect(getStreakPauseStatus()).toBeNull()
+    })
+
+    it('sets and retrieves pause', () => {
+      setStreakPause(7)
+      const status = getStreakPauseStatus()
+      expect(status).not.toBeNull()
+      expect(status!.enabled).toBe(true)
+      expect(status!.days).toBe(7)
+    })
+
+    it('clears pause', () => {
+      setStreakPause(7)
+      clearStreakPause()
+      expect(getStreakPauseStatus()).toBeNull()
+    })
+  })
+
+  // ── getStreakSnapshot ──
+
+  describe('getStreakSnapshot', () => {
+    it('returns zeros for empty log', () => {
+      const snap = getStreakSnapshot(7)
+      expect(snap.currentStreak).toBe(0)
+      expect(snap.longestStreak).toBe(0)
+      expect(snap.activity).toHaveLength(7)
+      expect(snap.activity.every(d => !d.hasActivity)).toBe(true)
+    })
+
+    it('matches individual function results', () => {
+      seedStudyDays([0, 1, 2])
+      const snap = getStreakSnapshot(7)
+      expect(snap.currentStreak).toBe(getCurrentStreak())
+      expect(snap.longestStreak).toBe(getLongestStreak())
+      expect(snap.activity).toHaveLength(7)
+    })
+
+    it('is parse-once consistent (same data regardless of call order)', () => {
+      seedStudyDays([0, 1, 2, 5, 6])
+      const snap1 = getStreakSnapshot(30)
+      const snap2 = getStreakSnapshot(30)
+      expect(snap1.currentStreak).toBe(snap2.currentStreak)
+      expect(snap1.longestStreak).toBe(snap2.longestStreak)
     })
   })
 })
