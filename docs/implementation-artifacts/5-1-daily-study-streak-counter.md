@@ -53,5 +53,10 @@ so that I feel motivated to maintain consistent study habits.
 
 ## Challenges and Lessons Learned
 
-- Round 1 review found 8 issues including a blocker (missing event dispatch for AC2). All resolved in round 2.
-- DST-safe date arithmetic requires `setDate(getDate() - 1)` instead of `Date.now() - 86400000`.
+- **3 review rounds needed.** Round 1 found 13 issues (4 high, 6 medium, 3 nits). Round 2 fixed all 8 critical findings but surfaced 5 new ones. Round 3 confirmed 0 blockers. Lesson: budget for at least 2 review cycles on date-heavy features.
+- **`toISOString()` is a timezone trap.** `.toISOString().split('T')[0]` returns UTC date, not local. Near-midnight users in western timezones got wrong streak counts. Fixed with `toLocaleDateString('sv-SE')` which returns `YYYY-MM-DD` in local time.
+- **DST breaks millisecond arithmetic.** `Date.now() - 86400000` skips or doubles a day across DST transitions. Use `setDate(getDate() - 1)` and `Math.round()` on day diffs to absorb the hour shift.
+- **Parse-once pattern paid off.** Initial implementation parsed localStorage 3x per render. Consolidating into `getStreakSnapshot()` eliminated redundant reads and made the API simpler to test.
+- **CustomEvent for cross-component updates.** `logStudyAction()` dispatching `study-log-updated` allowed the streak counter to update live without prop drilling or a store. Round 1 missed this entirely — the event was never dispatched.
+- **Dead code accumulates fast.** `StudyStreak.tsx` and `studyStreak.ts` became orphans after the new component was built. Review caught them; delete aggressively.
+- **Branch naming mismatch.** E05-S01 was implemented on the `e04-s05` branch because a worktree wasn't used. This caused force-push complications. Use `/start-story` for each new story to get a clean branch.
