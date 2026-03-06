@@ -51,7 +51,7 @@ describe('StatusSelector', () => {
 
   it('should use text-blue-600 for in-progress option', () => {
     render(<StatusSelector currentStatus="not-started" onSelect={vi.fn()} />)
-    const container = screen.getByTestId('status-selector')
+    screen.getByTestId('status-selector')
     const inProgressButton = screen.getByText('In Progress').closest('button')
     const iconSpan = inProgressButton?.querySelector('span.text-blue-600')
     expect(iconSpan).toBeTruthy()

@@ -40,7 +40,7 @@ describe('Progress', () => {
 
     it('handles fractional values correctly', () => {
       render(<Progress value={33.7} showLabel />)
-      const progressBar = screen.getByRole('progressbar')
+      screen.getByRole('progressbar')
       // Math.min/max preserves decimals, but display should round
       expect(screen.getByText('33.7% complete')).toBeInTheDocument()
     })
