@@ -1,12 +1,12 @@
 ---
 story_id: E05-S02
 story_name: "Streak Pause & Freeze Days"
-status: in-progress
+status: done
 started: 2026-03-06
-completed:
-reviewed: false
-review_started:
-review_gates_passed: []
+completed: 2026-03-06
+reviewed: true
+review_started: 2026-03-06
+review_gates_passed: [build, lint, unit-tests, e2e-tests, design-review, code-review, code-review-testing]
 ---
 
 # Story 5.2: Streak Pause & Freeze Days
@@ -86,11 +86,19 @@ So that I can take planned rest days without losing my streak progress.
 
 ## Design Review Feedback
 
-[Populated by /review-story — Playwright MCP findings]
+Report: [design-review-2026-03-06-e05-s02.md](../reviews/design/design-review-2026-03-06-e05-s02.md)
+
+**Re-review #3:** All previous high findings fixed. Mobile overflow resolved, heatmap cells use div+role="img", theme tokens applied.
+**0 high.** **2 medium:** Dialog focus restore race with Radix; --primary token renders near-black vs blue-600.
 
 ## Code Review Feedback
 
-[Populated by /review-story — adversarial code review findings]
+Report: [code-review-2026-03-06-e05-s02.md](../reviews/code/code-review-2026-03-06-e05-s02.md)
+Test coverage: [code-review-testing-2026-03-06-e05-s02.md](../reviews/code/code-review-testing-2026-03-06-e05-s02.md)
+
+**Re-review #3:** All previous high fixes verified correct. No blockers (uncommitted code expected per workflow).
+**High (warnings):** getLongestStreak() standalone doesn't pass freeze days; calculateStreakFromDate no safety bound; clearStreakPause() side effect in getter.
+**Test coverage:** 5/7 ACs covered, 2 partial (AC2 24h reset, AC4 "distinctly" UI).
 
 ## Implementation Plan
 

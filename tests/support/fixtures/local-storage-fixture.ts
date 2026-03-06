@@ -19,6 +19,7 @@ const STORAGE_KEYS = [
   'video-bookmarks',
   'study-streak-pause',
   'study-longest-streak',
+  'study-streak-freeze-days',
   'notes-migration-version',
 ] as const
 

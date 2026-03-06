@@ -107,6 +107,33 @@ test.describe('Streak Pause & Freeze Days (E05-S02)', () => {
     await expect(streakValue).toHaveText('2')
   })
 
+  test('AC2: streak does not reset on resume when last study was yesterday', async ({ page, localStorage }) => {
+    await page.goto('/')
+    // Seed: studied yesterday only (no study today)
+    await localStorage.seed('study-log', [makeStreakEntry(1)])
+    // Seed active pause
+    await localStorage.seed('study-streak-pause', {
+      enabled: true,
+      startDate: new Date().toISOString(),
+      days: 99999,
+    })
+    await page.reload()
+    await page.waitForLoadState('domcontentloaded')
+
+    // Verify paused with streak=1
+    await expect(page.getByTestId('streak-paused-indicator')).toBeVisible()
+    await expect(page.getByTestId('current-streak-value')).toHaveText('1')
+
+    // Click resume
+    await page.getByTestId('streak-pause-toggle').click()
+
+    // Paused indicator should disappear
+    await expect(page.getByTestId('streak-paused-indicator')).not.toBeVisible()
+
+    // Streak should still be 1 (yesterday's study, 24h window resets from now)
+    await expect(page.getByTestId('current-streak-value')).toHaveText('1')
+  })
+
   // ── AC3: Freeze day configuration ──
 
   test('AC3: freeze day selector allows selecting days of the week', async ({ page }) => {
@@ -127,6 +154,35 @@ test.describe('Streak Pause & Freeze Days (E05-S02)', () => {
 
     // Selected day should be visually indicated
     await expect(dayOptions.nth(6)).toHaveAttribute('data-selected', 'true')
+  })
+
+  test('AC3: saving freeze days persists selection across dialog re-open', async ({ page }) => {
+    await page.goto('/')
+    await page.waitForLoadState('domcontentloaded')
+
+    const freezeSettingsButton = page.getByTestId('freeze-days-settings')
+    await freezeSettingsButton.click()
+
+    const dayOptions = page.getByTestId('freeze-day-option')
+
+    // Select Saturday (index 6) and Monday (index 1)
+    await dayOptions.nth(6).click()
+    await dayOptions.nth(1).click()
+    await expect(dayOptions.nth(6)).toHaveAttribute('data-selected', 'true')
+    await expect(dayOptions.nth(1)).toHaveAttribute('data-selected', 'true')
+
+    // Save
+    await page.getByRole('button', { name: 'Save' }).click()
+
+    // Re-open dialog
+    await freezeSettingsButton.click()
+
+    // Previously selected days should still be selected
+    const reopenedOptions = page.getByTestId('freeze-day-option')
+    await expect(reopenedOptions.nth(6)).toHaveAttribute('data-selected', 'true')
+    await expect(reopenedOptions.nth(1)).toHaveAttribute('data-selected', 'true')
+    // Unselected day should remain unselected
+    await expect(reopenedOptions.nth(3)).toHaveAttribute('data-selected', 'false')
   })
 
   // ── AC4: Freeze days prevent streak reset ──

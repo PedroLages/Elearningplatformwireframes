@@ -1,9 +1,12 @@
-import { Fragment, useState, useCallback, useEffect, useMemo } from 'react'
-import { motion } from 'motion/react'
-import { Flame, Award, Pause } from 'lucide-react'
+import { Fragment, useState, useCallback, useEffect, useMemo, useRef } from 'react'
+import { motion, useReducedMotion } from 'motion/react'
+import { Flame, Award, Pause, Play, Snowflake } from 'lucide-react'
 import {
   getStreakSnapshot,
   setStreakPause,
+  clearStreakPause,
+  setFreezeDays,
+  INDEFINITE_PAUSE_DAYS,
   type StreakSnapshot,
 } from '@/lib/studyLog'
 import { cn } from '@/app/components/ui/utils'
@@ -17,8 +20,6 @@ import {
 } from '@/app/components/ui/dialog'
 import { Alert, AlertTitle } from '@/app/components/ui/alert'
 import { Button } from '@/app/components/ui/button'
-import { Input } from '@/app/components/ui/input'
-import { Label } from '@/app/components/ui/label'
 import {
   Tooltip,
   TooltipContent,
@@ -38,13 +39,14 @@ interface WeekDay {
   weekIndex: number
   hasActivity: boolean
   lessonCount: number
+  isFreezeDay: boolean
   isToday: boolean
   monthLabel?: string // set on the first day of a new month in that column
 }
 
 /** Organize flat activity data into a weekly grid structure */
 function buildWeekGrid(
-  activity: Array<{ date: string; hasActivity: boolean; lessonCount: number }>,
+  activity: Array<{ date: string; hasActivity: boolean; lessonCount: number; isFreezeDay: boolean }>,
   todayStr: string
 ): { grid: WeekDay[][]; monthLabels: { label: string; colStart: number }[] } {
   if (activity.length === 0) return { grid: [], monthLabels: [] }
@@ -93,8 +95,10 @@ function buildWeekGrid(
 const DAY_LABELS = ['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat']
 
 export function StudyStreakCalendar({ weeks = 16, className }: StudyStreakCalendarProps) {
-  const [pauseDialogOpen, setPauseDialogOpen] = useState(false)
-  const [pauseDays, setPauseDays] = useState('7')
+  const freezeTriggerRef = useRef<HTMLButtonElement>(null)
+  const [freezeDialogOpen, setFreezeDialogOpen] = useState(false)
+  const [selectedFreezeDays, setSelectedFreezeDays] = useState<number[]>([])
+  const [freezeValidation, setFreezeValidation] = useState(false)
 
   // Request enough days to fill the weeks + partial first week
   const totalDays = weeks * 7 + 6
@@ -109,7 +113,7 @@ export function StudyStreakCalendar({ weeks = 16, className }: StudyStreakCalend
     return () => window.removeEventListener('study-log-updated', refreshSnapshot)
   }, [refreshSnapshot])
 
-  const { currentStreak, longestStreak, activity, pauseStatus } = snapshot
+  const { currentStreak, longestStreak, activity, pauseStatus, freezeDays } = snapshot
 
   const todayStr = useMemo(() => {
     const d = new Date()
@@ -123,13 +127,39 @@ export function StudyStreakCalendar({ weeks = 16, className }: StudyStreakCalend
 
   const totalWeeks = grid[0]?.length ?? 0
 
-  const handlePauseStreak = () => {
-    const d = parseInt(pauseDays, 10)
-    if (!isNaN(d) && d > 0 && d <= 365) {
-      setStreakPause(d)
-      setPauseDialogOpen(false)
-      refreshSnapshot()
+  const prefersReducedMotion = useReducedMotion()
+  const isPaused = pauseStatus?.enabled ?? false
+
+  const handlePauseToggle = () => {
+    if (isPaused) {
+      clearStreakPause()
+    } else {
+      setStreakPause(INDEFINITE_PAUSE_DAYS)
     }
+    refreshSnapshot()
+  }
+
+  const handleOpenFreezeSettings = () => {
+    setSelectedFreezeDays([...freezeDays])
+    setFreezeValidation(false)
+    setFreezeDialogOpen(true)
+  }
+
+  const handleToggleFreezeDay = (dayIndex: number) => {
+    setFreezeValidation(false)
+    if (selectedFreezeDays.includes(dayIndex)) {
+      setSelectedFreezeDays(prev => prev.filter(d => d !== dayIndex))
+    } else if (selectedFreezeDays.length >= 3) {
+      setFreezeValidation(true)
+    } else {
+      setSelectedFreezeDays(prev => [...prev, dayIndex])
+    }
+  }
+
+  const handleSaveFreezeDays = () => {
+    setFreezeDays(selectedFreezeDays)
+    setFreezeDialogOpen(false)
+    refreshSnapshot()
   }
 
   return (
@@ -140,7 +170,7 @@ export function StudyStreakCalendar({ weeks = 16, className }: StudyStreakCalend
         <div className="bg-gradient-to-br from-orange-50 to-orange-100 dark:from-orange-900/20 dark:to-orange-800/20 rounded-[24px] p-4 border border-orange-200 dark:border-orange-800">
           <div className="flex items-center gap-2 mb-2">
             <motion.div
-              animate={{ scale: [1, 1.15, 1] }}
+              animate={prefersReducedMotion ? {} : { scale: [1, 1.15, 1] }}
               transition={{ repeat: Infinity, duration: 2, ease: 'easeInOut' }}
             >
               <Flame className="size-5 text-orange-500" aria-hidden="true" />
@@ -155,10 +185,10 @@ export function StudyStreakCalendar({ weeks = 16, className }: StudyStreakCalend
           <div className="text-xs text-orange-700 dark:text-orange-300 mt-1">
             {currentStreak === 1 ? 'day' : 'days'} in a row
           </div>
-          {pauseStatus && pauseStatus.enabled && (
-            <Alert className="mt-2 border-orange-200 bg-orange-50/50 py-2 px-3 text-xs text-orange-600 dark:border-orange-800 dark:bg-orange-900/30 dark:text-orange-400 [&>svg]:size-3">
+          {isPaused && (
+            <Alert data-testid="streak-paused-indicator" className="mt-2 border-orange-200 bg-orange-50/50 py-2 px-3 text-xs text-orange-600 dark:border-orange-800 dark:bg-orange-900/30 dark:text-orange-400 [&>svg]:size-3">
               <Pause className="size-3" aria-hidden="true" />
-              <AlertTitle className="text-xs font-normal">Vacation mode active</AlertTitle>
+              <AlertTitle className="text-xs font-normal">Streak paused</AlertTitle>
             </Alert>
           )}
         </div>
@@ -178,17 +208,41 @@ export function StudyStreakCalendar({ weeks = 16, className }: StudyStreakCalend
 
       {/* Calendar Heatmap */}
       <div className="bg-card rounded-[24px] p-5 border border-border">
-        <div className="flex items-center justify-between mb-4">
+        <div className="flex flex-wrap items-center justify-between gap-y-2 mb-4">
           <h3 className="text-sm font-semibold">Activity</h3>
-          <Button
-            variant="outline"
-            size="sm"
-            onClick={() => setPauseDialogOpen(true)}
-            className="text-xs min-h-[44px]"
-          >
-            <Pause className="size-3 mr-1" aria-hidden="true" />
-            Pause Streak
-          </Button>
+          <div className="flex items-center gap-2">
+            <Button
+              ref={freezeTriggerRef}
+              data-testid="freeze-days-settings"
+              variant="outline"
+              size="sm"
+              onClick={handleOpenFreezeSettings}
+              className="text-xs min-h-[44px]"
+            >
+              <Snowflake className="size-3 mr-1" aria-hidden="true" />
+              Freeze Days{freezeDays.length > 0 && ` (${freezeDays.length})`}
+            </Button>
+            <Button
+              data-testid="streak-pause-toggle"
+              variant="outline"
+              size="sm"
+              onClick={handlePauseToggle}
+              aria-pressed={isPaused}
+              className="text-xs min-h-[44px]"
+            >
+              {isPaused ? (
+                <>
+                  <Play className="size-3 mr-1" aria-hidden="true" />
+                  Resume Streak
+                </>
+              ) : (
+                <>
+                  <Pause className="size-3 mr-1" aria-hidden="true" />
+                  Pause Streak
+                </>
+              )}
+            </Button>
+          </div>
         </div>
 
         {/* GitHub-style Weekly Heatmap Grid */}
@@ -238,10 +292,11 @@ export function StudyStreakCalendar({ weeks = 16, className }: StudyStreakCalend
                     return (
                       <Tooltip key={day.date}>
                         <TooltipTrigger asChild>
-                          <button
-                            type="button"
+                          <div
+                            tabIndex={0}
+                            role="img"
                             className={cn(
-                              'aspect-square w-full rounded-[4px] cursor-default motion-safe:transition-[transform,box-shadow] motion-safe:duration-150',
+                              'aspect-square w-full rounded-[4px] motion-safe:transition-[transform,box-shadow] motion-safe:duration-150',
                               'motion-safe:hover:scale-110 motion-safe:hover:shadow-md',
                               'focus-visible:outline-2 focus-visible:outline-offset-1 focus-visible:outline-ring',
                               day.isToday && 'ring-2 ring-orange-500 dark:ring-orange-400 ring-offset-1 ring-offset-card',
@@ -251,14 +306,18 @@ export function StudyStreakCalendar({ weeks = 16, className }: StudyStreakCalend
                                   : day.lessonCount >= 2
                                     ? 'bg-amber-400 dark:bg-amber-300'
                                     : 'bg-amber-200 dark:bg-amber-200/70'
-                                : 'bg-orange-50 dark:bg-muted/30'
+                                : day.isFreezeDay
+                                  ? 'bg-accent dark:bg-accent/30'
+                                  : 'bg-orange-50 dark:bg-muted/30'
                             )}
                             aria-label={
                               day.hasActivity
                                 ? `${formattedDate}: ${day.lessonCount} lesson${
                                     day.lessonCount > 1 ? 's' : ''
                                   } completed`
-                                : `${formattedDate}: No activity`
+                                : day.isFreezeDay
+                                  ? `${formattedDate}: Rest day`
+                                  : `${formattedDate}: No activity`
                             }
                           />
                         </TooltipTrigger>
@@ -268,7 +327,9 @@ export function StudyStreakCalendar({ weeks = 16, className }: StudyStreakCalend
                             <div className="text-muted-foreground">
                               {day.hasActivity
                                 ? `${day.lessonCount} lesson${day.lessonCount > 1 ? 's' : ''} completed`
-                                : 'No activity'}
+                                : day.isFreezeDay
+                                  ? 'Rest day'
+                                  : 'No activity'}
                             </div>
                           </div>
                         </TooltipContent>
@@ -291,6 +352,13 @@ export function StudyStreakCalendar({ weeks = 16, className }: StudyStreakCalend
             <div className="size-3 rounded-[3px] bg-orange-500 dark:bg-orange-400" />
           </div>
           <span>More</span>
+          {/* Freeze day indicator */}
+          {freezeDays.length > 0 && (
+            <span className="flex items-center gap-1.5">
+              <div className="size-3 rounded-[3px] bg-accent dark:bg-accent/30" />
+              Rest
+            </span>
+          )}
           {/* Today indicator */}
           <span className="ml-auto flex items-center gap-1.5">
             <div className="size-3 rounded-[3px] ring-2 ring-orange-500 dark:ring-orange-400 ring-offset-1 ring-offset-card" />
@@ -299,42 +367,59 @@ export function StudyStreakCalendar({ weeks = 16, className }: StudyStreakCalend
         </div>
       </div>
 
-      {/* Pause Streak Dialog */}
-      <Dialog open={pauseDialogOpen} onOpenChange={setPauseDialogOpen}>
+      {/* Freeze Days Settings Dialog */}
+      <Dialog open={freezeDialogOpen} onOpenChange={(open) => {
+        setFreezeDialogOpen(open)
+        if (!open) freezeTriggerRef.current?.focus()
+      }}>
         <DialogContent>
           <DialogHeader>
-            <DialogTitle>Pause Your Streak</DialogTitle>
+            <DialogTitle>Freeze Days</DialogTitle>
             <DialogDescription>
-              Going on vacation or taking a break? Pause your streak to prevent it from resetting
-              while you're away.
+              Choose up to 3 rest days per week. Your streak won't reset on these days even if you don't study.
             </DialogDescription>
           </DialogHeader>
 
           <div className="py-4">
-            <Label htmlFor="pause-days">Number of days to pause</Label>
-            <Input
-              id="pause-days"
-              name="pause-days"
-              type="number"
-              autoComplete="off"
-              min="1"
-              max="365"
-              value={pauseDays}
-              onChange={e => setPauseDays(e.target.value)}
-              className="mt-2"
-              placeholder="e.g., 7"
-            />
-            <p className="text-xs text-muted-foreground mt-2">
-              Your streak will be protected for up to {pauseDays}{' '}
-              {parseInt(pauseDays, 10) === 1 ? 'day' : 'days'}.
+            <div className="flex flex-wrap gap-2">
+              {DAY_LABELS.map((label, idx) => {
+                const isSelected = selectedFreezeDays.includes(idx)
+                return (
+                  <button
+                    key={label}
+                    type="button"
+                    data-testid="freeze-day-option"
+                    data-selected={isSelected}
+                    aria-pressed={isSelected}
+                    onClick={() => handleToggleFreezeDay(idx)}
+                    className={cn(
+                      'min-h-[44px] min-w-[44px] px-3 py-2 rounded-xl border text-sm font-medium transition-colors',
+                      'focus-visible:outline-2 focus-visible:outline-offset-1 focus-visible:outline-ring',
+                      isSelected
+                        ? 'bg-primary text-primary-foreground border-primary'
+                        : 'bg-card text-foreground border-border hover:bg-muted'
+                    )}
+                  >
+                    {label}
+                  </button>
+                )
+              })}
+            </div>
+            {freezeValidation && (
+              <p data-testid="freeze-days-validation" role="alert" className="text-sm text-destructive mt-3">
+                Maximum 3 freeze days allowed per week.
+              </p>
+            )}
+            <p className="text-xs text-muted-foreground mt-3">
+              {selectedFreezeDays.length}/3 days selected
             </p>
           </div>
 
           <DialogFooter>
-            <Button variant="outline" onClick={() => setPauseDialogOpen(false)}>
+            <Button variant="outline" onClick={() => setFreezeDialogOpen(false)}>
               Cancel
             </Button>
-            <Button onClick={handlePauseStreak}>Activate Pause</Button>
+            <Button onClick={handleSaveFreezeDays}>Save</Button>
           </DialogFooter>
         </DialogContent>
       </Dialog>
