@@ -32,8 +32,7 @@ export function AnimatedCounter({
     if (!ref.current || isNaN(numericValue) || hasAnimated.current) return
 
     const prefersReducedMotion =
-      typeof window !== 'undefined' &&
-      window.matchMedia('(prefers-reduced-motion: reduce)').matches
+      typeof window !== 'undefined' && window.matchMedia('(prefers-reduced-motion: reduce)').matches
 
     if (prefersReducedMotion) {
       ref.current.textContent = stringValue
@@ -45,12 +44,10 @@ export function AnimatedCounter({
     const controls = animate(0, numericValue, {
       duration,
       ease: [0.16, 1, 0.3, 1],
-      onUpdate: (latest) => {
+      onUpdate: latest => {
         if (!ref.current) return
         // Use fixed decimals if the original value has them
-        const formatted = stringValue.includes('.')
-          ? latest.toFixed(1)
-          : String(Math.round(latest))
+        const formatted = stringValue.includes('.') ? latest.toFixed(1) : String(Math.round(latest))
         ref.current.textContent = formatted + suffix
       },
     })

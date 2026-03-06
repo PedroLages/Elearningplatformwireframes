@@ -151,100 +151,98 @@ export function Overview() {
 
   return (
     <MotionConfig reducedMotion="user">
-    <motion.div
-      initial="hidden"
-      animate="visible"
-      variants={staggerContainer}
-      className="space-y-12 pb-12"
-    >
-      {/* ── Hero Zone ── */}
-      <motion.section variants={fadeUp} className="space-y-6">
-        <div>
-          <p className="text-sm text-muted-foreground tracking-wide uppercase font-medium">
-            {getGreeting()}
-          </p>
-          <h1 className="text-3xl lg:text-4xl mt-1">
-            Your Learning Studio
-          </h1>
-        </div>
-        <ContinueLearning />
-      </motion.section>
+      <motion.div
+        initial="hidden"
+        animate="visible"
+        variants={staggerContainer}
+        className="space-y-12 pb-12"
+      >
+        {/* ── Hero Zone ── */}
+        <motion.section variants={fadeUp} className="space-y-6">
+          <div>
+            <p className="text-sm text-muted-foreground tracking-wide uppercase font-medium">
+              {getGreeting()}
+            </p>
+            <h1 className="text-3xl lg:text-4xl mt-1">Your Learning Studio</h1>
+          </div>
+          <ContinueLearning />
+        </motion.section>
 
-      {/* ── Metrics Strip ── */}
-      <motion.section variants={fadeUp}>
-        <div className="grid grid-cols-1 lg:grid-cols-[1fr_auto] gap-6 items-start">
-          <div
-            data-testid="stats-grid"
-            className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-5 gap-3"
-          >
-            {statsCards.map(stat => (
-              <StatsCard key={stat.label} {...stat} />
+        {/* ── Metrics Strip ── */}
+        <motion.section variants={fadeUp}>
+          <div className="grid grid-cols-1 lg:grid-cols-[1fr_auto] gap-6 items-start">
+            <div
+              data-testid="stats-grid"
+              className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-5 gap-3"
+            >
+              {statsCards.map(stat => (
+                <StatsCard key={stat.label} {...stat} />
+              ))}
+            </div>
+            <AchievementBanner completedLessons={completedLessons} />
+          </div>
+        </motion.section>
+
+        {/* ── Engagement Zone ── */}
+        <motion.section
+          initial={{ opacity: 0, y: 20 }}
+          whileInView={{ opacity: 1, y: 0 }}
+          viewport={{ once: true, margin: '-50px' }}
+          transition={{ duration: 0.5, ease: [0.16, 1, 0.3, 1] }}
+          className="grid grid-cols-1 lg:grid-cols-[3fr_2fr] gap-6"
+        >
+          <div>
+            <h2 className="text-xl mb-4">Study Streak</h2>
+            <StudyStreakCalendar weeks={26} />
+          </div>
+          <RecentActivity activities={recentActivity} />
+        </motion.section>
+
+        {/* ── Insight + Action Zone ── */}
+        <motion.section
+          initial={{ opacity: 0, y: 20 }}
+          whileInView={{ opacity: 1, y: 0 }}
+          viewport={{ once: true, margin: '-50px' }}
+          transition={{ duration: 0.5, ease: [0.16, 1, 0.3, 1] }}
+          className="grid grid-cols-1 lg:grid-cols-[3fr_2fr] gap-6"
+        >
+          <ProgressChart data={chartData} />
+          <QuickActions
+            studyNotes={studyNotes}
+            lastWatchedCourse={lastWatchedCourse}
+            lastWatchedLesson={lastWatchedLesson}
+          />
+        </motion.section>
+
+        {/* ── Course Gallery ── */}
+        <motion.section
+          initial={{ opacity: 0, y: 20 }}
+          whileInView={{ opacity: 1, y: 0 }}
+          viewport={{ once: true, margin: '-50px' }}
+          transition={{ duration: 0.5, ease: [0.16, 1, 0.3, 1] }}
+        >
+          <div className="flex items-baseline justify-between mb-6">
+            <h2 className="text-xl">Your Library</h2>
+            <Link
+              to="/courses"
+              className="text-sm text-brand hover:text-brand-hover flex items-center gap-1 motion-safe:transition-colors"
+            >
+              View all
+              <ArrowRight className="size-3.5" aria-hidden="true" />
+            </Link>
+          </div>
+          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-5">
+            {allCourses.map(course => (
+              <CourseCard
+                key={course.id}
+                course={course}
+                variant="overview"
+                completionPercent={getCourseCompletionPercent(course.id, course.totalLessons)}
+              />
             ))}
           </div>
-          <AchievementBanner completedLessons={completedLessons} />
-        </div>
-      </motion.section>
-
-      {/* ── Engagement Zone ── */}
-      <motion.section
-        initial={{ opacity: 0, y: 20 }}
-        whileInView={{ opacity: 1, y: 0 }}
-        viewport={{ once: true, margin: '-50px' }}
-        transition={{ duration: 0.5, ease: [0.16, 1, 0.3, 1] }}
-        className="grid grid-cols-1 lg:grid-cols-[3fr_2fr] gap-6"
-      >
-        <div>
-          <h2 className="text-xl mb-4">Study Streak</h2>
-          <StudyStreakCalendar weeks={26} />
-        </div>
-        <RecentActivity activities={recentActivity} />
-      </motion.section>
-
-      {/* ── Insight + Action Zone ── */}
-      <motion.section
-        initial={{ opacity: 0, y: 20 }}
-        whileInView={{ opacity: 1, y: 0 }}
-        viewport={{ once: true, margin: '-50px' }}
-        transition={{ duration: 0.5, ease: [0.16, 1, 0.3, 1] }}
-        className="grid grid-cols-1 lg:grid-cols-[3fr_2fr] gap-6"
-      >
-        <ProgressChart data={chartData} />
-        <QuickActions
-          studyNotes={studyNotes}
-          lastWatchedCourse={lastWatchedCourse}
-          lastWatchedLesson={lastWatchedLesson}
-        />
-      </motion.section>
-
-      {/* ── Course Gallery ── */}
-      <motion.section
-        initial={{ opacity: 0, y: 20 }}
-        whileInView={{ opacity: 1, y: 0 }}
-        viewport={{ once: true, margin: '-50px' }}
-        transition={{ duration: 0.5, ease: [0.16, 1, 0.3, 1] }}
-      >
-        <div className="flex items-baseline justify-between mb-6">
-          <h2 className="text-xl">Your Library</h2>
-          <Link
-            to="/courses"
-            className="text-sm text-brand hover:text-brand-hover flex items-center gap-1 motion-safe:transition-colors"
-          >
-            View all
-            <ArrowRight className="size-3.5" aria-hidden="true" />
-          </Link>
-        </div>
-        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-5">
-          {allCourses.map(course => (
-            <CourseCard
-              key={course.id}
-              course={course}
-              variant="overview"
-              completionPercent={getCourseCompletionPercent(course.id, course.totalLessons)}
-            />
-          ))}
-        </div>
-      </motion.section>
-    </motion.div>
+        </motion.section>
+      </motion.div>
     </MotionConfig>
   )
 }

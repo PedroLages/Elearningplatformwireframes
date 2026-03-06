@@ -6,10 +6,7 @@ import { Card, CardContent } from '@/app/components/ui/card'
 import { Progress } from '@/app/components/ui/progress'
 import { Button } from '@/app/components/ui/button'
 import { allCourses } from '@/data/courses'
-import {
-  getAllProgress,
-  getNotStartedCourses,
-} from '@/lib/progress'
+import { getAllProgress, getNotStartedCourses } from '@/lib/progress'
 import type { Course } from '@/data/types'
 import type { CourseProgress } from '@/lib/progress'
 
@@ -40,32 +37,26 @@ interface SessionResult {
   deleted: DeletedSession[]
 }
 
-function resolveSessionData(
-  allProgress: Record<string, CourseProgress>
-): SessionResult {
+function resolveSessionData(allProgress: Record<string, CourseProgress>): SessionResult {
   const resolved: ResolvedSession[] = []
   const deleted: DeletedSession[] = []
 
   const sorted = Object.values(allProgress)
-    .filter((p) => p.lastWatchedLesson)
-    .sort(
-      (a, b) =>
-        new Date(b.lastAccessedAt).getTime() -
-        new Date(a.lastAccessedAt).getTime()
-    )
+    .filter(p => p.lastWatchedLesson)
+    .sort((a, b) => new Date(b.lastAccessedAt).getTime() - new Date(a.lastAccessedAt).getTime())
 
   for (const progress of sorted) {
-    const course = allCourses.find((c) => c.id === progress.courseId)
+    const course = allCourses.find(c => c.id === progress.courseId)
     if (!course) {
       deleted.push({ courseId: progress.courseId, progress })
       continue
     }
 
-    const lessonTitle =
-      findLessonTitle(course, progress.lastWatchedLesson!) ?? 'Unknown Lesson'
-    const completionPercent = course.totalLessons > 0
-      ? Math.round((progress.completedLessons.length / course.totalLessons) * 100)
-      : 0
+    const lessonTitle = findLessonTitle(course, progress.lastWatchedLesson!) ?? 'Unknown Lesson'
+    const completionPercent =
+      course.totalLessons > 0
+        ? Math.round((progress.completedLessons.length / course.totalLessons) * 100)
+        : 0
     const resumeLink = `/courses/${course.id}/${progress.lastWatchedLesson}?t=${progress.lastVideoPosition ?? 0}`
 
     resolved.push({
@@ -115,9 +106,8 @@ function HeroCard({ session }: { session: ResolvedSession }) {
     mouseY.set(0.5)
   }, [mouseX, mouseY])
 
-  const completedLessons = course.totalLessons > 0
-    ? Math.round((completionPercent / 100) * course.totalLessons)
-    : 0
+  const completedLessons =
+    course.totalLessons > 0 ? Math.round((completionPercent / 100) * course.totalLessons) : 0
 
   return (
     <Link
@@ -168,7 +158,9 @@ function HeroCard({ session }: { session: ResolvedSession }) {
         {/* Module/lesson badge — glassmorphism */}
         <div className="absolute top-4 right-4 sm:top-6 sm:right-6 z-10 flex items-center gap-1.5 bg-white/10 backdrop-blur-md border border-white/20 shadow-lg text-white/90 text-xs font-medium px-3 py-1.5 rounded-full">
           <Layers className="size-3" aria-hidden="true" />
-          <span className="tabular-nums">{completedLessons}/{course.totalLessons}</span>
+          <span className="tabular-nums">
+            {completedLessons}/{course.totalLessons}
+          </span>
           <span className="hidden sm:inline">lessons</span>
         </div>
 
@@ -220,7 +212,10 @@ function HeroCard({ session }: { session: ResolvedSession }) {
             aria-hidden="true"
           >
             Resume Learning
-            <ArrowRight aria-hidden="true" className="size-4 motion-safe:group-hover:translate-x-1 motion-safe:transition-transform motion-safe:duration-200" />
+            <ArrowRight
+              aria-hidden="true"
+              className="size-4 motion-safe:group-hover:translate-x-1 motion-safe:transition-transform motion-safe:duration-200"
+            />
           </div>
         </div>
       </motion.div>
@@ -228,18 +223,12 @@ function HeroCard({ session }: { session: ResolvedSession }) {
   )
 }
 
-function RecentlyAccessedRow({
-  sessions,
-}: {
-  sessions: ResolvedSession[]
-}) {
+function RecentlyAccessedRow({ sessions }: { sessions: ResolvedSession[] }) {
   if (sessions.length === 0) return null
 
   return (
     <div className="mt-4" data-testid="recently-accessed-row">
-      <h3 className="text-sm font-medium text-muted-foreground mb-3">
-        Recently Accessed
-      </h3>
+      <h3 className="text-sm font-medium text-muted-foreground mb-3">Recently Accessed</h3>
       <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
         {sessions.map(({ course, completionPercent, resumeLink }) => (
           <Link key={course.id} to={resumeLink}>
@@ -260,18 +249,14 @@ function RecentlyAccessedRow({
                   </div>
                 )}
                 <div className="flex-1 min-w-0">
-                  <h4 className="font-medium truncate text-sm">
-                    {course.title}
-                  </h4>
+                  <h4 className="font-medium truncate text-sm">{course.title}</h4>
                   <div className="flex items-center gap-2 mt-1.5">
                     <Progress
                       value={completionPercent}
                       className="h-1.5 flex-1"
                       aria-label={`${course.title}: ${completionPercent}% complete`}
                     />
-                    <span className="text-xs font-medium tabular-nums">
-                      {completionPercent}%
-                    </span>
+                    <span className="text-xs font-medium tabular-nums">{completionPercent}%</span>
                   </div>
                 </div>
               </CardContent>
@@ -289,7 +274,10 @@ function DeletedContentBanner({ count }: { count: number }) {
       data-testid="content-unavailable-message"
       className="flex items-center gap-3 rounded-2xl border border-amber-200 dark:border-amber-800 bg-amber-50 dark:bg-amber-950/30 p-4 mb-4"
     >
-      <AlertCircle aria-hidden="true" className="size-5 text-amber-600 dark:text-amber-400 flex-shrink-0" />
+      <AlertCircle
+        aria-hidden="true"
+        className="size-5 text-amber-600 dark:text-amber-400 flex-shrink-0"
+      />
       <div className="flex-1 min-w-0">
         <p className="text-sm font-medium text-amber-800 dark:text-amber-200">
           {count === 1
@@ -308,26 +296,21 @@ function DeletedContentBanner({ count }: { count: number }) {
 }
 
 function DiscoveryState() {
-  const suggested = useMemo(
-    () => getNotStartedCourses(allCourses).slice(0, 3),
-    []
-  )
+  const suggested = useMemo(() => getNotStartedCourses(allCourses).slice(0, 3), [])
 
   return (
     <div className="text-center py-8">
       <div className="size-16 rounded-full bg-blue-100 dark:bg-blue-900/30 flex items-center justify-center mx-auto mb-4">
         <BookOpen aria-hidden="true" className="size-8 text-brand" />
       </div>
-      <h3 className="text-lg font-semibold mb-2">
-        Start Your Learning Journey
-      </h3>
+      <h3 className="text-lg font-semibold mb-2">Start Your Learning Journey</h3>
       <p className="text-muted-foreground mb-6 max-w-sm mx-auto">
         Begin with one of these recommended courses
       </p>
 
       {suggested.length > 0 && (
         <div className="grid grid-cols-1 sm:grid-cols-3 gap-4 mb-6 max-w-2xl mx-auto">
-          {suggested.map((course) => (
+          {suggested.map(course => (
             <Link
               key={course.id}
               to={`/courses/${course.id}`}
@@ -371,18 +354,12 @@ function DiscoveryState() {
 }
 
 export function ContinueLearning() {
-  const { resolved: sessions, deleted } = useMemo(
-    () => resolveSessionData(getAllProgress()),
-    []
-  )
+  const { resolved: sessions, deleted } = useMemo(() => resolveSessionData(getAllProgress()), [])
   const heroSession = sessions[0]
   const otherSessions = sessions.slice(1)
 
   return (
-    <div
-      data-testid="continue-learning-section"
-      aria-labelledby="continue-learning-heading"
-    >
+    <div data-testid="continue-learning-section" aria-labelledby="continue-learning-heading">
       <h2 id="continue-learning-heading" className="sr-only">
         Continue Learning
       </h2>

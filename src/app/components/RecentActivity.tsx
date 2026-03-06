@@ -36,9 +36,7 @@ export function RecentActivity({ activities }: RecentActivityProps) {
               {/* Timeline indicator */}
               <div className="flex flex-col items-center self-stretch">
                 <div className="size-2.5 rounded-full bg-brand flex-shrink-0 mt-1.5" />
-                {index < activities.length - 1 && (
-                  <div className="w-px flex-1 bg-border mt-1" />
-                )}
+                {index < activities.length - 1 && <div className="w-px flex-1 bg-border mt-1" />}
               </div>
 
               {/* Course thumbnail */}

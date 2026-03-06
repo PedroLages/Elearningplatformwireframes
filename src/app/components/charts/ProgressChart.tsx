@@ -51,8 +51,9 @@ export function ProgressChart({ data }: ProgressChartProps) {
               content={
                 <ChartTooltipContent
                   labelFormatter={(value, payload) => {
-                    if (payload && payload[0]?.payload?.fullDate) {
-                      return format(new Date(payload[0].payload.fullDate), 'MMMM dd, yyyy')
+                    const fullDate = payload?.[0]?.payload?.fullDate
+                    if (typeof fullDate === 'string' || typeof fullDate === 'number') {
+                      return format(new Date(fullDate), 'MMMM dd, yyyy')
                     }
                     return value
                   }}

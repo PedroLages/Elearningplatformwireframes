@@ -74,7 +74,10 @@ export function StatsCard({
       <div className="relative">
         <div className="flex items-start justify-between mb-1">
           <p className="text-xs text-muted-foreground uppercase tracking-wider">{label}</p>
-          <Icon className="size-4 text-brand opacity-60 group-hover:opacity-100 motion-safe:transition-opacity" aria-hidden="true" />
+          <Icon
+            className="size-4 text-brand opacity-60 group-hover:opacity-100 motion-safe:transition-opacity"
+            aria-hidden="true"
+          />
         </div>
 
         <AnimatedCounter

@@ -116,8 +116,8 @@ describe('endSession', () => {
       useSessionStore.setState({
         activeSession: {
           ...state.activeSession!,
-          lastActivity: laterTime
-        }
+          lastActivity: laterTime,
+        },
       })
     })
 
@@ -198,8 +198,8 @@ describe('pauseSession', () => {
       useSessionStore.setState({
         activeSession: {
           ...state.activeSession!,
-          lastActivity: laterTime
-        }
+          lastActivity: laterTime,
+        },
       })
     })
 

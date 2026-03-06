@@ -104,16 +104,17 @@ export function AchievementBanner({ completedLessons }: AchievementBannerProps) 
                 className="text-amber-500 motion-safe:transition-[stroke-dashoffset] motion-safe:duration-700"
               />
             </svg>
-            <Trophy className="absolute inset-0 m-auto size-5 text-amber-600 dark:text-amber-400" aria-hidden="true" />
+            <Trophy
+              className="absolute inset-0 m-auto size-5 text-amber-600 dark:text-amber-400"
+              aria-hidden="true"
+            />
           </div>
 
           <div className="min-w-0">
             <p className="text-sm font-semibold text-amber-900 dark:text-amber-200">
               {completedLessons} {completedLessons === 1 ? 'lesson' : 'lessons'}
             </p>
-            <p className="text-xs text-amber-700 dark:text-amber-400 mt-0.5">
-              {milestone.message}
-            </p>
+            <p className="text-xs text-amber-700 dark:text-amber-400 mt-0.5">{milestone.message}</p>
           </div>
         </div>
       </CardContent>
