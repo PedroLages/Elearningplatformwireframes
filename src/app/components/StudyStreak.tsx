@@ -1,4 +1,5 @@
 import { Card, CardContent } from '@/app/components/ui/card'
+import { cn } from '@/app/components/ui/utils'
 import { Flame } from 'lucide-react'
 
 interface StudyStreakProps {
@@ -16,9 +17,9 @@ export function StudyStreak({ current, longest }: StudyStreakProps) {
   }
 
   const getFlameSize = () => {
-    if (current >= 30) return 'w-12 h-12'
-    if (current >= 7) return 'w-10 h-10'
-    return 'w-8 h-8'
+    if (current >= 30) return 'size-12'
+    if (current >= 7) return 'size-10'
+    return 'size-8'
   }
 
   return (
@@ -26,13 +27,13 @@ export function StudyStreak({ current, longest }: StudyStreakProps) {
       <CardContent className="p-4">
         <div className="flex items-center gap-4">
           <div
-            className={`flex items-center justify-center transition-all duration-300 ${getFlameSize()}`}
+            className={cn('flex items-center justify-center transition-all duration-300', getFlameSize())}
           >
-            <Flame className="w-full h-full text-orange-500" />
+            <Flame className="size-full text-orange-500" />
           </div>
           <div className="flex-1">
             <p className="text-sm font-semibold text-muted-foreground">Study Streak</p>
-            <p className="text-3xl font-bold text-orange-600 dark:text-orange-500">
+            <p className="text-3xl font-bold text-orange-700 dark:text-orange-400">
               {current} {current === 1 ? 'day' : 'days'}
             </p>
             <p className="text-xs text-muted-foreground mt-1">{getMessage()}</p>

@@ -1,12 +1,12 @@
-import { useState } from 'react'
+import { useState, useCallback, useEffect } from 'react'
 import { Flame, Award, Pause } from 'lucide-react'
 import {
-  getCurrentStreak,
-  getLongestStreak,
-  getStudyActivity,
+  getStreakSnapshot,
   setStreakPause,
   getStreakPauseStatus,
+  type StreakSnapshot,
 } from '@/lib/studyLog'
+import { cn } from '@/app/components/ui/utils'
 import {
   Dialog,
   DialogContent,
@@ -34,19 +34,27 @@ interface StudyStreakCalendarProps {
 export function StudyStreakCalendar({ days = 30, className }: StudyStreakCalendarProps) {
   const [pauseDialogOpen, setPauseDialogOpen] = useState(false)
   const [pauseDays, setPauseDays] = useState('7')
+  const [snapshot, setSnapshot] = useState<StreakSnapshot>(() => getStreakSnapshot(days))
 
-  const currentStreak = getCurrentStreak()
-  const longestStreak = getLongestStreak()
-  const activity = getStudyActivity(days)
+  // Re-read data when study-log-updated fires (no page reload needed)
+  const refreshSnapshot = useCallback(() => {
+    setSnapshot(getStreakSnapshot(days))
+  }, [days])
+
+  useEffect(() => {
+    window.addEventListener('study-log-updated', refreshSnapshot)
+    return () => window.removeEventListener('study-log-updated', refreshSnapshot)
+  }, [refreshSnapshot])
+
+  const { currentStreak, longestStreak, activity } = snapshot
   const pauseStatus = getStreakPauseStatus()
 
   const handlePauseStreak = () => {
-    const days = parseInt(pauseDays, 10)
-    if (!isNaN(days) && days > 0 && days <= 365) {
-      setStreakPause(days)
+    const d = parseInt(pauseDays, 10)
+    if (!isNaN(d) && d > 0 && d <= 365) {
+      setStreakPause(d)
       setPauseDialogOpen(false)
-      // Force re-render by triggering a state update in parent
-      window.location.reload()
+      refreshSnapshot()
     }
   }
 
@@ -55,14 +63,14 @@ export function StudyStreakCalendar({ days = 30, className }: StudyStreakCalenda
       {/* Streak Stats */}
       <div className="grid grid-cols-2 gap-4 mb-6">
         {/* Current Streak */}
-        <div className="bg-gradient-to-br from-orange-50 to-orange-100 dark:from-orange-900/20 dark:to-orange-800/20 rounded-2xl p-4 border border-orange-200 dark:border-orange-800">
+        <div className="bg-gradient-to-br from-orange-50 to-orange-100 dark:from-orange-900/20 dark:to-orange-800/20 rounded-[24px] p-4 border border-orange-200 dark:border-orange-800">
           <div className="flex items-center gap-2 mb-2">
-            <Flame className="h-5 w-5 text-orange-500" aria-hidden="true" />
+            <Flame className="size-5 text-orange-500" aria-hidden="true" />
             <span className="text-sm font-medium text-orange-900 dark:text-orange-100">
               Current Streak
             </span>
           </div>
-          <div className="text-3xl font-bold text-orange-600 dark:text-orange-400">
+          <div data-testid="current-streak-value" className="text-3xl font-bold text-orange-600 dark:text-orange-400">
             {currentStreak}
           </div>
           <div className="text-xs text-orange-700 dark:text-orange-300 mt-1">
@@ -70,16 +78,16 @@ export function StudyStreakCalendar({ days = 30, className }: StudyStreakCalenda
           </div>
           {pauseStatus && pauseStatus.enabled && (
             <Alert className="mt-2 border-orange-200 bg-orange-50/50 py-2 px-3 text-xs text-orange-600 dark:border-orange-800 dark:bg-orange-900/30 dark:text-orange-400 [&>svg]:size-3">
-              <Pause className="h-3 w-3" aria-hidden="true" />
+              <Pause className="size-3" aria-hidden="true" />
               <AlertTitle className="text-xs font-normal">Vacation mode active</AlertTitle>
             </Alert>
           )}
         </div>
 
         {/* Longest Streak */}
-        <div className="bg-gradient-to-br from-blue-50 to-blue-100 dark:from-blue-900/20 dark:to-blue-800/20 rounded-2xl p-4 border border-blue-200 dark:border-blue-800">
+        <div className="bg-gradient-to-br from-blue-50 to-blue-100 dark:from-blue-900/20 dark:to-blue-800/20 rounded-[24px] p-4 border border-blue-200 dark:border-blue-800">
           <div className="flex items-center gap-2 mb-2">
-            <Award className="h-5 w-5 text-blue-500" aria-hidden="true" />
+            <Award className="size-5 text-blue-500" aria-hidden="true" />
             <span className="text-sm font-medium text-blue-900 dark:text-blue-100">
               Longest Streak
             </span>
@@ -90,7 +98,7 @@ export function StudyStreakCalendar({ days = 30, className }: StudyStreakCalenda
       </div>
 
       {/* Calendar Heatmap */}
-      <div className="bg-card rounded-2xl p-5 border border-border">
+      <div className="bg-card rounded-[24px] p-5 border border-border">
         <div className="flex items-center justify-between mb-4">
           <h3 className="text-sm font-semibold">Last {days} Days</h3>
           <Button
@@ -99,16 +107,20 @@ export function StudyStreakCalendar({ days = 30, className }: StudyStreakCalenda
             onClick={() => setPauseDialogOpen(true)}
             className="text-xs min-h-[44px]"
           >
-            <Pause className="h-3 w-3 mr-1" />
+            <Pause className="size-3 mr-1" />
             Pause Streak
           </Button>
         </div>
 
         {/* Calendar Grid */}
-        <div className="grid grid-cols-10 gap-1.5">
+        <div
+          role="group"
+          aria-label="Study activity calendar"
+          className="grid grid-cols-6 sm:grid-cols-10 gap-1.5"
+        >
           <TooltipProvider>
             {activity.map(day => {
-              const date = new Date(day.date)
+              const date = new Date(day.date + 'T00:00:00')
               const formattedDate = date.toLocaleDateString('en-US', {
                 month: 'short',
                 day: 'numeric',
@@ -117,20 +129,20 @@ export function StudyStreakCalendar({ days = 30, className }: StudyStreakCalenda
               return (
                 <Tooltip key={day.date}>
                   <TooltipTrigger asChild>
-                    <div
-                      className={`
-                        aspect-square rounded-md cursor-default transition-all
-                        ${
-                          day.hasActivity
-                            ? day.lessonCount >= 3
-                              ? 'bg-green-600 dark:bg-green-500'
-                              : day.lessonCount >= 2
-                                ? 'bg-green-500 dark:bg-green-400'
-                                : 'bg-green-400 dark:bg-green-300'
-                            : 'bg-muted dark:bg-muted/50'
-                        }
-                        hover:scale-110 hover:shadow-md
-                      `}
+                    <button
+                      type="button"
+                      className={cn(
+                        'aspect-square rounded-md cursor-default transition-all min-h-[44px] min-w-[44px]',
+                        'hover:scale-110 hover:shadow-md',
+                        'focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-ring',
+                        day.hasActivity
+                          ? day.lessonCount >= 3
+                            ? 'bg-green-600 dark:bg-green-500'
+                            : day.lessonCount >= 2
+                              ? 'bg-green-500 dark:bg-green-400'
+                              : 'bg-green-400 dark:bg-green-300'
+                          : 'bg-muted dark:bg-muted/50'
+                      )}
                       aria-label={
                         day.hasActivity
                           ? `${formattedDate}: ${day.lessonCount} lesson${
@@ -160,10 +172,10 @@ export function StudyStreakCalendar({ days = 30, className }: StudyStreakCalenda
         <div className="flex items-center gap-4 mt-4 text-xs text-muted-foreground">
           <span>Less</span>
           <div className="flex gap-1">
-            <div className="w-4 h-4 rounded-sm bg-muted dark:bg-muted/50" />
-            <div className="w-4 h-4 rounded-sm bg-green-400 dark:bg-green-300" />
-            <div className="w-4 h-4 rounded-sm bg-green-500 dark:bg-green-400" />
-            <div className="w-4 h-4 rounded-sm bg-green-600 dark:bg-green-500" />
+            <div className="size-4 rounded-sm bg-muted dark:bg-muted/50" />
+            <div className="size-4 rounded-sm bg-green-400 dark:bg-green-300" />
+            <div className="size-4 rounded-sm bg-green-500 dark:bg-green-400" />
+            <div className="size-4 rounded-sm bg-green-600 dark:bg-green-500" />
           </div>
           <span>More</span>
         </div>

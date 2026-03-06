@@ -1,5 +1,8 @@
 import { toLocalDateString } from './dateUtils'
 
+// Re-export for convenience (tests, consumers)
+export { toLocalDateString }
+
 const STORAGE_KEY = 'study-log'
 
 export interface StudyAction {
@@ -21,6 +24,15 @@ function getLog(): StudyAction[] {
 
 function saveLog(log: StudyAction[]) {
   localStorage.setItem(STORAGE_KEY, JSON.stringify(log))
+}
+
+/**
+ * Parse a YYYY-MM-DD string into a Date in the local timezone.
+ * Avoids the UTC-midnight pitfall of `new Date("2026-03-05")`.
+ */
+function parseLocalDate(dateStr: string): Date {
+  const [y, m, d] = dateStr.split('-').map(Number)
+  return new Date(y, m - 1, d)
 }
 
 export function logStudyAction(action: StudyAction) {
@@ -158,7 +170,7 @@ export function getCurrentStreak(): number {
  */
 function calculateStreakFromDate(startDate: string, studyDays: string[]): number {
   let streak = 0
-  const currentDate = new Date(startDate)
+  const currentDate = parseLocalDate(startDate)
 
   while (true) {
     const dateStr = toLocalDateString(currentDate)
@@ -184,9 +196,9 @@ export function getLongestStreak(): number {
   let currentStreak = 1
 
   for (let i = 1; i < studyDays.length; i++) {
-    const prevDate = new Date(studyDays[i - 1])
-    const currDate = new Date(studyDays[i])
-    const dayDiff = Math.floor((currDate.getTime() - prevDate.getTime()) / 86400000)
+    const prevDate = parseLocalDate(studyDays[i - 1])
+    const currDate = parseLocalDate(studyDays[i])
+    const dayDiff = Math.round((currDate.getTime() - prevDate.getTime()) / 86400000)
 
     if (dayDiff === 1) {
       currentStreak++
@@ -238,4 +250,111 @@ export function getStudyActivity(
   }
 
   return activity
+}
+
+// ── Internal helpers for parse-once pattern ──
+
+function studyDaysFromLog(log: StudyAction[]): string[] {
+  const days = new Set<string>()
+  for (const a of log) {
+    if (a.type === 'lesson_complete') {
+      days.add(toLocalDateString(new Date(a.timestamp)))
+    }
+  }
+  return Array.from(days).sort()
+}
+
+function currentStreakFromDays(studyDays: string[]): number {
+  if (studyDays.length === 0) return 0
+
+  const today = toLocalDateString()
+  const yesterday = toLocalDateString(new Date(Date.now() - 86400000))
+
+  const pause = getStreakPauseStatus()
+  if (pause && pause.enabled) {
+    const pauseStart = new Date(pause.startDate)
+    const daysSincePause = Math.floor((Date.now() - pauseStart.getTime()) / 86400000)
+    if (daysSincePause < pause.days) {
+      return calculateStreakFromDate(yesterday, studyDays)
+    } else {
+      clearStreakPause()
+    }
+  }
+
+  if (!studyDays.includes(today) && !studyDays.includes(yesterday)) return 0
+  const startDate = studyDays.includes(today) ? today : yesterday
+  return calculateStreakFromDate(startDate, studyDays)
+}
+
+function longestStreakFromDays(studyDays: string[]): number {
+  if (studyDays.length === 0) return 0
+
+  let maxStreak = 0
+  let cur = 1
+
+  for (let i = 1; i < studyDays.length; i++) {
+    const prev = parseLocalDate(studyDays[i - 1])
+    const curr = parseLocalDate(studyDays[i])
+    const diff = Math.round((curr.getTime() - prev.getTime()) / 86400000)
+    if (diff === 1) {
+      cur++
+    } else {
+      maxStreak = Math.max(maxStreak, cur)
+      cur = 1
+    }
+  }
+  maxStreak = Math.max(maxStreak, cur)
+
+  const storedLongest = parseInt(localStorage.getItem(LONGEST_STREAK_KEY) || '0')
+  if (maxStreak > storedLongest) {
+    localStorage.setItem(LONGEST_STREAK_KEY, maxStreak.toString())
+  }
+  return Math.max(maxStreak, storedLongest)
+}
+
+function activityFromLog(
+  log: StudyAction[],
+  days: number
+): Array<{ date: string; hasActivity: boolean; lessonCount: number }> {
+  const now = new Date()
+  const result: Array<{ date: string; hasActivity: boolean; lessonCount: number }> = []
+
+  for (let i = days - 1; i >= 0; i--) {
+    const d = new Date(now)
+    d.setDate(d.getDate() - i)
+    const dateStr = toLocalDateString(d)
+
+    const lessonsCompleted = log.filter(
+      a => a.type === 'lesson_complete' && toLocalDateString(new Date(a.timestamp)) === dateStr
+    ).length
+
+    result.push({
+      date: dateStr,
+      hasActivity: lessonsCompleted > 0,
+      lessonCount: lessonsCompleted,
+    })
+  }
+
+  return result
+}
+
+/**
+ * Parse localStorage once and derive all streak data.
+ * Use this instead of calling getCurrentStreak + getLongestStreak + getStudyActivity separately.
+ */
+export interface StreakSnapshot {
+  currentStreak: number
+  longestStreak: number
+  activity: Array<{ date: string; hasActivity: boolean; lessonCount: number }>
+}
+
+export function getStreakSnapshot(activityDays = 30): StreakSnapshot {
+  const log = getLog()
+  const days = studyDaysFromLog(log)
+
+  return {
+    currentStreak: currentStreakFromDays(days),
+    longestStreak: longestStreakFromDays(days),
+    activity: activityFromLog(log, activityDays),
+  }
 }
