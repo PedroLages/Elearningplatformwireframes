@@ -1,4 +1,4 @@
-# generated: 2026-03-01
+# generated: 2026-03-07
 # project: Elearningplatformwireframes
 # project_key: NOKEY
 # tracking_system: file-system
@@ -33,14 +33,15 @@
 # - SM typically creates next story after previous one is 'done' to incorporate learnings
 # - Dev moves story to 'review', then runs code-review (fresh context, different LLM recommended)
 #
-# REFRESH NOTES (2026-03-01):
+# REFRESH NOTES (2026-03-07):
 # ===========================
-# - Epics renumbered to match current epics.md (previously 8 epics, now 11)
-# - Epics 1-3: Implementation story IDs preserved (may differ from epics.md titles)
-# - Epics 4-11: Fresh IDs from current epics.md
-# - Deferred stories added to completed epics (1-5, 2-10)
+# - Epics 1-4: done, all stories completed, retrospectives done
+# - Epic 5: in-progress (5-1 through 5-4 done, 5-5 and 5-6 remain)
+# - Epic 9 split into Epic 9 (infrastructure) + Epic 9B (AI features) per updated epics.md
+# - Implementation-only stories preserved (2-6..2-9, 3-0, 3-8..3-14)
+# - Deferred stories retained: 1-5 (file detection), 2-10 (captions)
 
-generated: 2026-03-01
+generated: 2026-03-07
 project: Elearningplatformwireframes
 project_key: NOKEY
 tracking_system: file-system
@@ -150,17 +151,25 @@ development_status:
   epic-8-retrospective: optional
 
   # ──────────────────────────────────────────────────
-  # Epic 9: AI-Powered Learning Assistant
+  # Epic 9: AI Infrastructure & Platform
   # ──────────────────────────────────────────────────
   epic-9: backlog
-  9-1-ai-provider-configuration-and-security: backlog
-  9-2-ai-video-summary: backlog
-  9-3-chat-style-qa-from-notes: backlog
-  9-4-ai-learning-path-generation: backlog
-  9-5-knowledge-gap-detection: backlog
-  9-6-ai-note-organization: backlog
-  9-7-ai-feature-analytics-and-auto-analysis: backlog
+  9-1-ai-infrastructure-and-3-tier-provider-setup: backlog
+  9-2-web-worker-architecture-and-memory-management: backlog
+  9-3-embedding-pipeline-and-vector-store: backlog
   epic-9-retrospective: optional
+
+  # ──────────────────────────────────────────────────
+  # Epic 9B: AI-Powered Learning Features
+  # ──────────────────────────────────────────────────
+  epic-9b: backlog
+  9b-1-ai-video-summary: backlog
+  9b-2-chat-style-qa-from-notes-rag: backlog
+  9b-3-ai-learning-path-generation: backlog
+  9b-4-knowledge-gap-detection: backlog
+  9b-5-ai-note-organization-and-cross-course-links: backlog
+  9b-6-ai-feature-analytics-and-auto-analysis: backlog
+  epic-9b-retrospective: optional
 
   # ──────────────────────────────────────────────────
   # Epic 10: Onboarding & First-Use Experience

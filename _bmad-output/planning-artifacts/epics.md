@@ -2,8 +2,11 @@
 stepsCompleted: ['step-01-validate-prerequisites', 'step-02-design-epics', 'step-03-create-stories', 'step-04-final-validation']
 inputDocuments:
   - 'docs/planning-artifacts/prd.md'
-  - 'docs/planning-artifacts/architecture.md'
-  - 'docs/planning-artifacts/ux-design-specification.md'
+  - '_bmad-output/planning-artifacts/architecture.md'
+  - '_bmad-output/planning-artifacts/ux-design-specification.md'
+updateMode: 'incremental'
+updateDate: '2026-03-07'
+updateReason: 'Architecture updated to local-first AI (WebLLM/whisper.cpp/3-tier fallback); UX updated with spaced repetition components, activity heatmap, onboarding system, streak freeze mechanic'
 ---
 
 # Elearningplatformwireframes - Epic Breakdown
@@ -325,12 +328,12 @@ FR44: Epic 8 - Track course completion rates over time
 FR45: Epic 2 - View and manage bookmarked lessons
 FR46: Epic 8 - Retention insights (completed vs abandoned courses)
 FR47: Epic 8 - 3-5 actionable insights from study patterns
-FR48: Epic 9 - AI-generated video summary (100-300 words)
-FR49: Epic 9 - Chat-style Q&A from user's note corpus
-FR50: Epic 9 - AI-generated learning path with prerequisite ordering
-FR51: Epic 9 - Identify under-noted/skipped topics, suggest revisits
-FR52: Epic 9 - AI auto-tag, categorize, link related notes
-FR53: Epic 9 - "Related Concepts" panel (shared tags/topical overlap)
+FR48: Epic 9B - AI-generated video summary (100-300 words)
+FR49: Epic 9B - Chat-style Q&A from user's note corpus
+FR50: Epic 9B - AI-generated learning path with prerequisite ordering
+FR51: Epic 9B - Identify under-noted/skipped topics, suggest revisits
+FR52: Epic 9B - AI auto-tag, categorize, link related notes
+FR53: Epic 9B - "Related Concepts" panel (shared tags/topical overlap)
 FR76: Epic 3 - Insert video timestamp via keyboard shortcut
 FR77: Epic 3 - Side-by-side video+notes (desktop) / stacked (mobile)
 FR78: Epic 8 - Learning velocity metrics (completion rate, acceleration)
@@ -349,14 +352,14 @@ FR90: Epic 5 - Set daily/weekly study goals with dashboard progress
 FR91: Epic 5 - Configure streak freeze days (1-3 per week)
 FR92: Epic 11 - Interleaved review mode across courses
 FR93: Epic 8 - Learning activity heatmap (12 months)
-FR94: Epic 9 - AI feature usage statistics
+FR94: Epic 9B - AI feature usage statistics
 FR95: Epic 4 - Resume last session from "Continue Learning" action
 FR96: Epic 10 - Onboarding prompts for first-time use
-FR97: Epic 9 - Proactive AI note link suggestions
+FR97: Epic 9B - Proactive AI note link suggestions
 FR98: Epic 5 - Streak milestone toast notifications (7/30/60/100 days)
-FR99: Epic 9 - Auto-trigger AI analysis on course import
+FR99: Epic 9B - Auto-trigger AI analysis on course import
 FR100: Epic 11 - Per-course study reminders
-FR101: Epic 5 - Weekly adherence percentage on dashboard/analytics
+FR101: Epic 5 (primary) - Weekly adherence percentage: Epic 5 implements calculation + dashboard widget; Epic 8 displays it in analytics views
 
 ## Epic List
 
@@ -416,12 +419,21 @@ Users can view comprehensive study analytics (time breakdowns, completion rates,
 **FRs covered:** FR43, FR44, FR46, FR47, FR78, FR93, FR101
 **Phase:** 2-3 (Intelligence → AI & Analytics)
 
-### Epic 9: AI-Powered Learning Assistant
+### Epic 9: AI Infrastructure & Platform
 
-Users can get AI-generated video summaries, ask questions answered from their notes, view AI-curated learning paths, receive smart note suggestions, and benefit from automatic content analysis — with AI woven throughout the experience as a study coach.
+Users can configure AI providers (local WebLLM, Ollama, or cloud API) with per-feature consent toggles, benefit from background AI processing via Web Workers without UI freezing, and have their notes automatically indexed for semantic search — establishing the AI foundation that powers all AI features in Epic 9B.
+
+**FRs covered:** *(Infrastructure — enables FR48-FR53, FR94, FR97, FR99 implemented in Epic 9B)*
+**Phase:** 3 (AI & Analytics)
+**Architecture note:** 3-tier AI fallback (WebGPU local → Ollama localhost → Cloud API), 3 Web Workers (LLM, embeddings, transcription), MeMemo HNSW vector store, Web Crypto AES-GCM key encryption, 3GB memory ceiling with auto-downgrade
+
+### Epic 9B: AI-Powered Learning Features
+
+Users can get AI-generated video summaries, ask questions answered from their notes via RAG, view AI-curated learning paths, receive knowledge gap alerts, benefit from AI note organization and cross-course linking, and have new courses auto-analyzed on import — all powered by the AI infrastructure from Epic 9.
 
 **FRs covered:** FR48, FR49, FR50, FR51, FR52, FR53, FR94, FR97, FR99
 **Phase:** 3 (AI & Analytics)
+**Depends on:** Epic 9 (AI Infrastructure)
 
 ### Epic 10: Onboarding & First-Use Experience
 
@@ -1233,23 +1245,31 @@ So that I feel motivated to maintain consistent study habits.
 
 **Given** a learner has completed study sessions on consecutive days
 **When** they view the Overview dashboard
-**Then** a streak counter widget displays the current streak count with a fire emoji
-**And** the counter is visually prominent within the dashboard layout
+**Then** a StreakCounter component displays in one of 5 states: Active (flame icon, current count), At Risk (amber warning, "Study now to keep your streak!"), Frozen (snowflake icon, freeze day indicator), Broken (gray, "Start a new streak"), or Milestone (celebratory, badge display)
+**And** a 7-day dot row shows the current week: filled dots for study days, empty for missed, snowflake for frozen
+**And** the counter uses `aria-label="Study streak: N days"` with `role="status"` and live region updates
+**And** the streak count uses Score typography (700 bold, 2.5rem, tabular-nums)
 
 **Given** a learner completes a study session on a new calendar day
 **When** the session is recorded
 **Then** the streak count increments by one
-**And** a pulse animation plays on the streak counter (respecting prefers-reduced-motion)
+**And** a pulse animation plays on the streak counter (respecting `prefers-reduced-motion`)
+**And** the corresponding dot in the 7-day row fills in
 
 **Given** a learner has not completed any study session for more than 24 hours
 **When** the streak evaluation runs (excluding configured freeze days from Story 5.2)
-**Then** the streak counter resets to zero
+**Then** the streak counter transitions to the "Broken" state (gray styling)
 **And** the previous streak is preserved in history
+**And** the counter shows an encouraging message (e.g., "Start a new streak today!")
+
+**Given** a learner has 22+ hours of inactivity but the streak has not yet broken
+**When** they view the dashboard
+**Then** the streak counter transitions to the "At Risk" state (amber warning styling)
 
 **Given** a learner has a streak of zero
 **When** they complete their first study session
-**Then** the streak counter displays 1
-**And** the fire emoji and pulse animation appear
+**Then** the streak counter transitions to the "Active" state displaying 1
+**And** the flame icon and pulse animation appear
 
 ### Story 5.2: Streak Pause & Freeze Days
 
@@ -1316,12 +1336,12 @@ So that I can hold myself accountable to a consistent study schedule.
 
 **Given** a learner has an active daily study goal
 **When** they view the Overview dashboard
-**Then** a progress widget shows current progress toward today's goal (e.g., "45 / 60 min")
-**And** a visual progress indicator (progress bar or ring) reflects the percentage completed
+**Then** a WeeklyGoalRing component (animated SVG progress ring) shows current progress toward today's goal (e.g., "45 / 60 min")
+**And** the ring state reflects progress: below target (blue), on target (green), exceeded (gold glow)
 
 **Given** a learner has an active weekly study goal
 **When** they view the Overview dashboard
-**Then** the widget shows weekly cumulative progress against the weekly target
+**Then** the WeeklyGoalRing shows weekly cumulative progress (study days / target days) against the weekly target
 
 **Given** a learner has been active for at least one week with a goal configured
 **When** they view the dashboard or analytics
@@ -1570,28 +1590,32 @@ System calculates momentum scores for each course, recommends what to study next
 ### Story 7.1: Momentum Score Calculation & Display
 
 As a learner,
-I want to see a momentum score for each course displayed as a hot, warm, or cold indicator and be able to sort my course list by momentum,
+I want to see a composite momentum score (0-100) for each course with a trend indicator,
 So that I can instantly identify which courses have strong engagement momentum and prioritize my study time accordingly.
 
 **Acceptance Criteria:**
 
 **Given** a course exists in the user's library with recorded study sessions
 **When** the system calculates the momentum score
-**Then** the score is computed as a weighted function of study recency (days since last session, normalized inversely), completion percentage, and study frequency (sessions per week over the past 30 days)
+**Then** the score is computed as a weighted composite: Streak contribution (40%) + Velocity (35%, videos completed per week) + Engagement (25%, session frequency and duration)
 **And** the resulting score is a value between 0 and 100
 
 **Given** a course has a calculated momentum score
 **When** the course card is rendered in the course library
-**Then** a visual indicator is displayed showing hot (score >= 70), warm (score 30-69), or cold (score < 30) using distinct colors and iconography (e.g., flame for hot, sun for warm, snowflake for cold)
+**Then** a MomentumScore component displays the numeric score (0-100) using Score typography (700 bold, tabular-nums)
+**And** a trend arrow indicates direction: rising (↑ green), stable (→ gray), or declining (↓ amber) based on week-over-week comparison
+**And** the component has `aria-label="Momentum score: N, [rising/stable/declining]"`
+**And** a tooltip on hover/focus shows the weight breakdown (Streak 40% + Velocity 35% + Engagement 25%)
+**And** hot (score >= 70), warm (score 30-69), or cold (score < 30) styling is applied using `--color-momentum` design token
 
 **Given** a course has no recorded study sessions
 **When** the momentum score is calculated
-**Then** the score defaults to 0 and the indicator displays as cold
+**Then** the score defaults to 0 with cold styling and no trend arrow
 
 **Given** the course library is displayed
 **When** the user selects "Sort by Momentum" from the sort options
 **Then** courses are ordered from highest to lowest momentum score
-**And** the hot/warm/cold indicator remains visible on each course card in the sorted view
+**And** the MomentumScore component remains visible on each course card in the sorted view
 
 **Given** the user completes a study session for a course
 **When** the session is recorded
@@ -1856,16 +1880,26 @@ So that I can identify patterns that lead to successful completion and maintain 
 
 **Given** the user has study session data spanning at least one month
 **When** the user views the Activity Heatmap section
-**Then** a GitHub-style heatmap grid displays the past 12 months of daily study activity
+**Then** an ActivityHeatmap component renders a GitHub-style 52-week × 7-row SVG grid with month labels and a 5-level color legend using `--color-heatmap-0` through `--color-heatmap-4` design tokens
 **And** each cell represents one day, with color intensity proportional to the total session duration for that day
-**And** the heatmap uses at least 4 intensity levels (no activity, light, moderate, heavy) plus a legend explaining the scale
-**And** hovering over or focusing on a cell shows a tooltip with the date and total study duration
+**And** hovering over or focusing on a cell shows a tooltip with the date, study duration, and notes taken (e.g., "45 min studied, 3 notes taken")
+**And** cells are keyboard-navigable using arrow keys
+**And** the component has `role="img"` with `aria-label="Study activity over the past 12 months"`
+
+**Given** the user views the activity heatmap on different viewports
+**When** the heatmap renders
+**Then** it shows the full 12-month grid at desktop (1024px+), 6-month at tablet (640-1023px), and 3-month at mobile (<640px)
 
 **Given** the user views the activity heatmap
 **When** the heatmap renders
 **Then** intensity levels are differentiated by both color shade and a pattern or opacity variation so they are distinguishable without color perception
 **And** the heatmap includes alt text summarizing the overall activity pattern
 **And** a "View as table" toggle is available showing monthly summary data in an accessible HTML table
+
+**Given** the heatmap is displayed on the Overview page
+**When** the page renders
+**Then** the heatmap is persistently visible as motivational context (never demanding action)
+**And** it appears below the insight cards in the Overview layout
 
 **Given** the user has no study session data
 **When** the Retention Insights and Activity Heatmap sections load
@@ -1881,8 +1915,10 @@ So that I can make informed adjustments to improve my learning outcomes without 
 
 **Given** the user has at least 2 weeks of study session data across multiple courses
 **When** the user navigates to the Reports page and views the Actionable Insights section
-**Then** between 3 and 5 insight cards are displayed, each containing a concise observation and a specific recommendation
+**Then** between 3 and 5 InsightCard components are displayed, each with icon + title + description + CTA button + dismiss action
+**And** cards use variants: priority (amber border), informational (blue border), or celebratory (violet border)
 **And** insights are generated from the user's actual study data, not generic tips
+**And** each card has `role="article"` with a focusable CTA button and `aria-label="Dismiss insight"` on the dismiss action
 
 **Given** the insight generation engine analyzes the user's data
 **When** insights are produced
@@ -1907,54 +1943,150 @@ So that I can make informed adjustments to improve my learning outcomes without 
 
 ---
 
-## Epic 9: AI-Powered Learning Assistant
+## Epic 9 Stories: AI Infrastructure & Platform
 
-Users can get AI-generated video summaries, ask questions answered from their notes, view AI-curated learning paths, receive smart note suggestions, and benefit from automatic content analysis — with AI woven throughout the experience as a study coach.
+Users can configure AI providers (local WebLLM, Ollama, or cloud API) with per-feature consent toggles, benefit from background AI processing via Web Workers without UI freezing, and have their notes automatically indexed for semantic search.
 
-### Story 9.1: AI Provider Configuration & Security
+### Story 9.1: AI Infrastructure & 3-Tier Provider Setup
 
 As a learner,
-I want to configure my preferred AI provider and API key in a secure settings panel,
-So that I can enable AI-powered features while maintaining control over my credentials and data privacy.
+I want the AI system to automatically detect and use the best available AI provider (local WebLLM, Ollama, or cloud API),
+So that I can benefit from AI features with maximum privacy and minimal configuration.
 
 **Acceptance Criteria:**
 
 **Given** I am on the Settings page
 **When** I navigate to the "AI Configuration" section
-**Then** I see a provider selector listing at least 2 AI providers (OpenAI and Anthropic)
-**And** I see a masked API key input field for the selected provider
-**And** I see per-feature consent toggles for AI data transmission
+**Then** I see a 3-tier provider display showing: (1) Local WebLLM (WebGPU status), (2) Ollama (localhost:11434 connection status), (3) Cloud API (provider selector with at least 2 options: OpenAI and Anthropic)
+**And** each tier shows a status badge: "Available", "Unavailable", or "Not Supported"
+**And** I see per-feature consent toggles for each AI capability (summaries, Q&A, note organization, auto-analysis)
+**And** each toggle shows a tier indicator badge ("Processed on your device" for local, "Processed on your network" for Ollama, "Cloud" for remote API)
 
-**Given** I enter a valid API key and select a provider
+**Given** my browser supports WebGPU
+**When** the AI system initializes
+**Then** the system detects WebGPU availability and reports local AI as "Available"
+**And** WebLLM model download status is displayed (not downloaded / downloading / ready)
+**And** the estimated model size is shown (e.g., "~900MB - 2.2GB")
+
+**Given** my browser does not support WebGPU
+**When** the AI system initializes
+**Then** the local AI tier shows "Not Supported — WebGPU required (Chrome/Edge)"
+**And** the system falls back to Ollama or Cloud tiers automatically
+
+**Given** I configure a cloud API key
 **When** I save the configuration
-**Then** the API key is stored securely in encrypted local storage
-**And** the key is never written to source code, build output, console logs, or client-accessible plain-text storage
+**Then** the API key is encrypted using Web Crypto API (AES-GCM with PBKDF2-derived non-extractable CryptoKey)
+**And** the key is never stored in plain text, source code, build output, console logs, or client-accessible storage
 **And** a connection test confirms the provider is reachable with a success indicator
 
 **Given** I enter an invalid or empty API key
 **When** I attempt to save
 **Then** the system displays a validation error and does not persist the invalid key
 
-**Given** no API key is configured or the configured provider is unreachable
+**Given** an AI feature is invoked
+**When** the system selects a provider
+**Then** it uses the highest-priority available tier: WebGPU local → Ollama → Cloud API
+**And** if a higher-priority tier fails, it automatically falls back to the next tier within 2 seconds
+
+**Given** no AI provider is available (no WebGPU, no Ollama, no cloud key)
 **When** I navigate to any page with AI-dependent UI elements
-**Then** those elements display an "AI unavailable" status badge
-**And** the status badge includes a link to the AI Configuration settings
+**Then** those elements display an "AI unavailable" status badge with a link to AI Configuration settings
+**And** all non-AI features remain fully functional
 
-**Given** I have a working AI configuration
-**When** the AI provider becomes unreachable during a session
-**Then** AI-dependent elements transition to "AI unavailable" status within 2 seconds
-**And** non-AI workflows remain fully functional
-
-**Given** I have consent toggles visible in the AI Configuration section
-**When** I disable a specific feature's consent toggle
-**Then** that AI feature no longer transmits any data to the external provider
+**Given** I disable a specific feature's consent toggle
+**When** that AI feature is invoked
+**Then** no data is transmitted to any external provider for that feature
 **And** the feature UI indicates it is disabled due to consent settings
 
-**Given** the AI system makes any API call
+**Given** the AI system makes any API call (Ollama or Cloud)
 **When** the request payload is constructed
 **Then** only the content being analyzed is included — no user metadata, file paths, or personally identifiable information is transmitted
 
-### Story 9.2: AI Video Summary
+### Story 9.2: Web Worker Architecture & Memory Management
+
+As a learner,
+I want AI processing to happen in background threads without freezing the UI,
+So that I can continue studying while AI features process in the background.
+
+**Acceptance Criteria:**
+
+**Given** the AI system is initialized
+**When** an AI feature is invoked for the first time
+**Then** the corresponding Web Worker is lazily instantiated (LLM worker, embeddings worker, or transcription worker)
+**And** worker initialization does not block the main thread or cause visible UI lag
+**And** a loading indicator shows worker startup progress
+
+**Given** the LLM worker is active
+**When** the total memory usage approaches the 3GB ceiling (measured via `performance.measureUserAgentSpecificMemory()`)
+**Then** the memory monitoring service triggers an auto-downgrade: evicts the largest idle model first
+**And** a non-blocking notification informs me that AI capabilities have been temporarily reduced
+**And** the UI continues to function without interruption
+
+**Given** a Web Worker is processing an AI request
+**When** I navigate to a different page or close the panel
+**Then** the worker continues processing in the background
+**And** results are available when I return to the relevant view
+
+**Given** multiple AI features are requested simultaneously
+**When** workers are dispatched
+**Then** each worker type (LLM, embeddings, transcription) operates independently
+**And** typed discriminated union messages (`WorkerRequest` / `WorkerResponse`) ensure type-safe communication
+**And** errors in one worker do not crash other workers
+
+**Given** a worker encounters an unhandled error
+**When** the error is caught
+**Then** the worker posts an error message to the main thread
+**And** the corresponding UI element displays a user-friendly error with retry option
+**And** no unhandled exceptions propagate to the main thread
+
+**Given** the application has been idle for an extended period
+**When** no AI features have been used for 5+ minutes
+**Then** idle workers are terminated to free memory
+**And** workers are re-instantiated on next AI feature use
+
+### Story 9.3: Embedding Pipeline & Vector Store
+
+As a learner,
+I want my notes to be automatically indexed for semantic search,
+So that AI Q&A can find relevant answers even when my question doesn't use the exact same words as my notes.
+
+**Acceptance Criteria:**
+
+**Given** I have notes in my note corpus
+**When** the embedding pipeline initializes (triggered by first AI Q&A use or note save)
+**Then** the embeddings Web Worker processes notes into vector embeddings using Transformers.js
+**And** embeddings are stored in a MeMemo HNSW vector index
+**And** processing happens in the background via `requestIdleCallback()` without blocking UI
+
+**Given** I save a new note or edit an existing note
+**When** the autosave completes
+**Then** the note's embedding is updated in the vector index within 5 seconds
+**And** the updated embedding is immediately available for subsequent AI queries
+
+**Given** the vector index is being built for the first time
+**When** I have a large note corpus (100+ notes)
+**Then** a progress indicator shows indexing progress (e.g., "Indexing notes: 45/120")
+**And** partial results are available for queries even before indexing completes
+
+**Given** an AI Q&A query is submitted
+**When** the RAG pipeline retrieves relevant context
+**Then** the vector store returns the top-K most semantically similar note chunks
+**And** retrieved chunks are passed as context to the LLM with source metadata (note title, course, video timestamp)
+**And** the LLM is instructed with low temperature (0.3) and "respond with 'I don't know' if context is insufficient"
+
+**Given** the embeddings worker encounters memory pressure
+**When** the memory monitor signals the 3GB ceiling is approaching
+**Then** the embedding model (90-200MB) is evicted before the larger LLM model
+**And** the vector index remains in IndexedDB for persistence across sessions
+
+**Given** I delete a note
+**When** the deletion completes
+**Then** the corresponding embedding is removed from the vector index
+**And** subsequent queries no longer return the deleted note as a result
+
+## Epic 9B Stories: AI-Powered Learning Features
+
+### Story 9B.1: AI Video Summary
 
 As a learner,
 I want to generate an AI-powered summary of a video's content displayed alongside the player,
@@ -1965,8 +2097,10 @@ So that I can quickly review key concepts without rewatching the entire video.
 **Given** I am viewing a video in the video player
 **When** I click the "Generate Summary" button
 **Then** a collapsible panel opens alongside the video player
+**And** the system routes the request through the 3-tier AI fallback (WebGPU local → Ollama → Cloud)
 **And** the AI-generated summary streams into the panel in real time
 **And** the summary is between 100 and 300 words
+**And** the panel shows an "AI-generated" label and a tier badge ("Processed on your device" / "Processed on your network" / "Cloud")
 
 **Given** the summary panel is open with a completed summary
 **When** I click the collapse toggle on the panel
@@ -1995,7 +2129,7 @@ So that I can quickly review key concepts without rewatching the entire video.
 **Then** the cached summary is available without regeneration
 **And** a "Regenerate" option is visible to request a fresh summary
 
-### Story 9.3: Chat-Style Q&A from Notes
+### Story 9B.2: Chat-Style Q&A from Notes (RAG)
 
 As a learner,
 I want to ask questions in a chat panel and receive answers sourced from my own notes,
@@ -2005,13 +2139,15 @@ So that I can quickly find information across my study materials without manual 
 
 **Given** I open the AI Q&A chat panel
 **When** the panel loads
-**Then** I see a chat interface with a text input field and a message history area
+**Then** I see a chat-style Sheet interface with a text input field and message history area
 **And** a welcome message explains that answers are generated from my personal note corpus
+**And** a "Processed on your device" badge is visible when using local AI (WebLLM)
+**And** responses are clearly labeled as "AI-generated"
 
 **Given** I type a question and submit it
-**When** the AI processes my query
+**When** the AI processes my query via the RAG pipeline (vector search → context retrieval → LLM generation)
 **Then** the answer streams into the chat in real time
-**And** each answer cites specific source notes by note title
+**And** each answer cites specific source notes by note title with clickable citation links (indigo-colored `[Note Title]` and `[12:34]` timestamp links)
 **And** each citation includes a link to the associated video where the note was taken
 
 **Given** the AI generates a response
@@ -2040,7 +2176,7 @@ So that I can quickly find information across my study materials without manual 
 **Then** only note content and the user's question are transmitted
 **And** no user metadata, file paths, or personally identifiable information is included
 
-### Story 9.4: AI Learning Path Generation
+### Story 9B.3: AI Learning Path Generation
 
 As a learner,
 I want the AI to generate a recommended learning path that orders my courses by inferred prerequisites,
@@ -2079,7 +2215,7 @@ So that I can study topics in the most logical sequence and build knowledge prog
 **Then** the system displays an "AI unavailable" status with retry option
 **And** falls back within 2 seconds without disrupting other page functionality
 
-### Story 9.5: Knowledge Gap Detection
+### Story 9B.4: Knowledge Gap Detection
 
 As a learner,
 I want the system to identify gaps in my study coverage and suggest content to revisit,
@@ -2123,7 +2259,7 @@ So that I can strengthen weak areas and ensure comprehensive understanding.
 **Then** it falls back to rule-based detection (note count ratios and watch percentage thresholds) without AI enrichment
 **And** the fallback activates within 2 seconds
 
-### Story 9.6: AI Note Organization
+### Story 9B.5: AI Note Organization & Cross-Course Links
 
 As a learner,
 I want the AI to auto-tag, categorize, and link my notes across courses while showing me related concepts,
@@ -2168,7 +2304,7 @@ So that my notes are well-organized and I can discover connections between diffe
 **Then** only note content, existing tags, and course context are transmitted
 **And** no user metadata, file paths, or personally identifiable information is included
 
-### Story 9.7: AI Feature Analytics & Auto-Analysis
+### Story 9B.6: AI Feature Analytics & Auto-Analysis
 
 As a learner,
 I want to see usage statistics for AI features and have new courses automatically analyzed on import,
@@ -2224,49 +2360,57 @@ So that I discover the platform's core value immediately without needing documen
 
 **Acceptance Criteria:**
 
-**Given** I am a new user with no courses imported and no onboarding completion flag in local storage
+**Given** I am a new user with no courses imported and no onboarding completion flag in IndexedDB
 **When** I land on the dashboard for the first time
-**Then** an onboarding overlay appears with a welcome message and a progress indicator showing 3 steps
-**And** the first step "Import your first course" is highlighted as active
+**Then** an OnboardingChecklist component appears with a welcome message and a 4-step progress bar
+**And** the steps are: (1) "Import your first course", (2) "Watch a lesson", (3) "Take a note", (4) "Check your dashboard"
+**And** step 1 is highlighted as the active step
+**And** the checklist has `role="list"` with `aria-label="Setup progress: 0 of 4 complete"` and each step is a list item
 
-**Given** the onboarding flow is active on step 1 (Import a course)
+**Given** the onboarding checklist is active on step 1 (Import a course)
 **When** I view the prompt
-**Then** the relevant UI element for course import is visually highlighted with a spotlight/tooltip
+**Then** a ContextualTooltip highlights the course import UI element with progressive reveal
 **And** I see a clear call-to-action directing me to the import workflow
-**And** a "Skip onboarding" option is visible and accessible
+**And** a "Skip setup" option is visible and accessible
+**And** the tooltip has a "Got it" dismiss action
 
 **Given** I have completed step 1 by importing a course
 **When** the import finishes successfully
-**Then** the onboarding advances to step 2 "Start studying"
-**And** the progress indicator updates to show step 2 of 3 as active
-**And** the video player or course content area is highlighted with a guiding tooltip
+**Then** a micro-celebration plays (checkmark animation, respecting `prefers-reduced-motion`)
+**And** the checklist advances to step 2 "Watch a lesson"
+**And** the progress bar updates and aria-label reflects "1 of 4 complete"
+**And** a ContextualTooltip highlights the video player area
 
-**Given** I have completed step 2 by starting a study session (playing a video for at least 5 seconds)
+**Given** I have completed step 2 by watching a video for at least 5 seconds
 **When** the session registers
-**Then** the onboarding advances to step 3 "Create a learning challenge"
-**And** the progress indicator updates to show step 3 of 3 as active
-**And** the challenge creation UI element is highlighted with a guiding tooltip
+**Then** a micro-celebration plays and the checklist advances to step 3 "Take a note"
+**And** the note editor area is highlighted with a ContextualTooltip
 
-**Given** I have completed step 3 by creating a learning challenge
-**When** the challenge is saved
-**Then** a congratulatory message appears confirming onboarding is complete
-**And** the onboarding completion flag is persisted to local storage
-**And** the onboarding overlay dismisses and does not reappear on subsequent visits
+**Given** I have completed step 3 by creating a note
+**When** the note is saved
+**Then** the checklist advances to step 4 "Check your dashboard"
+**And** the dashboard overview area is highlighted
+
+**Given** I have completed step 4 by viewing the dashboard
+**When** I scroll through the overview
+**Then** a congratulatory message appears confirming setup is complete
+**And** the onboarding completion flag is persisted to IndexedDB
+**And** the checklist dismisses and does not reappear on subsequent visits
 
 **Given** the onboarding flow is active on any step
-**When** I click "Skip onboarding"
-**Then** the onboarding overlay dismisses immediately
-**And** the onboarding completion flag is persisted to local storage
+**When** I click "Skip setup"
+**Then** the onboarding checklist dismisses immediately
+**And** the completion flag is persisted to IndexedDB
 **And** the onboarding does not reappear on subsequent visits
 
 **Given** I previously completed or skipped onboarding
 **When** I return to the dashboard
-**Then** no onboarding overlay appears
+**Then** no onboarding checklist appears
 **And** the app loads directly into the normal dashboard view
 
 **Given** the onboarding flow is active
 **When** I interact with the highlighted UI element for the current step
-**Then** the spotlight follows the element correctly even if the layout shifts or scrolls
+**Then** the ContextualTooltip follows the element correctly even if the layout shifts or scrolls
 **And** the rest of the UI remains accessible but visually de-emphasized
 
 ### Story 10.2: Empty State Guidance
@@ -2279,9 +2423,9 @@ So that I always know my next step and can complete core workflows within 2 minu
 
 **Given** I have no courses imported
 **When** I view the dashboard overview
-**Then** an empty state is displayed with the message "Import your first course to get started"
-**And** a prominent call-to-action button links directly to the course import workflow
-**And** the empty state includes a supportive illustration or icon that matches the app's visual style
+**Then** an EmptyState component (per-section variant) is displayed with illustration + heading "Import your first course to get started" + CTA button
+**And** the CTA links directly to the course import workflow
+**And** the empty state uses warm, encouraging copy following the voice guidelines (sentence case, "you/your" not "the user")
 
 **Given** I have no notes recorded
 **When** I view the notes section or notes panel
@@ -2330,23 +2474,28 @@ So that I can retain knowledge more effectively by reviewing material at optimal
 **Acceptance Criteria:**
 
 **Given** a learner has completed reviewing a note
-**When** they rate the note using the 3-grade system (Hard / Good / Easy)
-**Then** the system records the rating and calculates the next review interval based on recall difficulty
-**And** Hard shortens the interval, Good maintains a moderate interval, and Easy extends the interval
+**When** they rate the note using the GradeButtons component (Hard / Good / Easy as a `role="radiogroup"` with `aria-label="Rate your recall"`, keyboard navigable with arrow keys)
+**Then** the system records the rating and calculates the next review interval using the ts-fsrs library (Free Spaced Repetition Scheduler)
+**And** each grade button shows the next review interval preview (e.g., "Hard — 1 day", "Good — 3 days", "Easy — 7 days")
+**And** pressing a grade button shows color-coded flash feedback (red/blue/green) before advancing
+**And** button states include default, hover (color intensifies), pressed (scale down), and disabled (during animation)
 
 **Given** a learner has notes scheduled for spaced review
-**When** they open the review queue
-**Then** notes due for review are displayed sorted by predicted retention percentage, lowest retention first
-**And** each note shows the predicted retention percentage, course name, topic, and time until due
+**When** they navigate to the ReviewQueue page (lazy-loaded route)
+**Then** ReviewCard components display in a card stack with session progress indicator
+**And** each ReviewCard shows the full note content (note-first philosophy, NOT flashcard Q&A), retention prediction badge, course name, and time since last review
+**And** each card has `role="article"` with `aria-label="Review note: [title], retention: N%"`
+**And** notes are sorted by predicted retention percentage (lowest retention first)
 
 **Given** a learner rates a note that was previously reviewed
 **When** the new rating is submitted
-**Then** the system updates the review interval based on the cumulative review history and latest rating
+**Then** the system updates the FSRS parameters based on the cumulative review history and latest rating
 **And** the review queue re-sorts to reflect the updated retention predictions
+**And** a session summary appears after all due cards are reviewed
 
 **Given** a learner has no notes due for review
 **When** they open the review queue
-**Then** the system displays an empty state indicating no reviews are currently due
+**Then** the system displays an EmptyState component indicating no reviews are currently due
 **And** shows the date and time of the next upcoming review
 
 ### Story 11.2: Knowledge Retention Dashboard
@@ -2359,13 +2508,14 @@ So that I can identify weak areas and re-engage before knowledge fades.
 
 **Given** a learner has reviewed notes across multiple topics
 **When** they view the knowledge retention dashboard
-**Then** each topic displays a retention level of strong, fading, or weak based on review history
-**And** each topic shows the time elapsed since the last review
+**Then** each topic displays a retention level using design tokens: strong (`--color-review-easy`, ≤100% of review interval elapsed), fading (`--color-review-good`, 100-200% elapsed), or weak (`--color-review-hard`, >200% elapsed)
+**And** each topic shows the time elapsed since the last review and estimated retention percentage from FSRS
 
 **Given** a topic has not been reviewed within the expected interval
 **When** the retention dashboard is rendered
 **Then** the topic's retention level degrades from strong to fading to weak as time passes
 **And** the visual indicator (color and label) updates to reflect the current retention state
+**And** retention status is accessible with `aria-label` describing the state
 
 **Given** a learner's study frequency drops below 50% of their 2-week rolling average
 **When** the system evaluates engagement metrics

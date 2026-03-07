@@ -106,4 +106,8 @@ See [plan](plans/e05-s05-study-reminders-notifications.md) for implementation ap
 
 ## Challenges and Lessons Learned
 
-[Document issues, solutions, and patterns worth remembering]
+- **Worktree dev server collision**: Playwright's `reuseExistingServer: true` silently reused a dev server running from the main workspace instead of the worktree. Tests passed structurally but components didn't exist in main's codebase. Fix: kill any dev server on port 5173 before running E2E tests in a worktree so Playwright starts its own from the correct directory.
+- **Vitest Notification constructor mocks**: `vi.fn()` cannot be used with `new` — `new (vi.fn())()` throws "is not a constructor". Use a class-based mock (`class MockNotification`) with `vi.stubGlobal('Notification', MockNotification)` and track instances via a closured array.
+- **WCAG contrast with Tailwind color scale**: `text-green-600` (3.30:1) and `text-amber-600` (3.19:1) fail AA contrast on white backgrounds. Use `-700` variants (4.87:1 and 4.55:1) as the minimum for status text.
+- **Reactivity via custom events**: The `isPaused` state in `ReminderSettings` initially read once on mount with no update mechanism. Added `streak-pause-updated` event listener to keep it reactive — same pattern used across the streak system (`study-log-updated`, `study-reminders-updated`).
+- **Dead code from copy-paste**: `useStudyReminders` had an empty `handleStudyUpdate` event listener that was never implemented — a no-op wired to `study-log-updated`. Code review caught it. Always verify listener bodies aren't empty stubs.

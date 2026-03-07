@@ -199,15 +199,20 @@
 - ErrorBoundary uses hardcoded `bg-[#FAF5EE]`, `bg-white`, `h-16 w-16` instead of theme tokens and `size-*`
 - `initErrorTracking` assigns `window.onerror`/`window.onunhandledrejection` directly (overrides, doesn't addEventListener)
 
+### E05-S05: Study Reminders & Notifications
+- BLOCKER (RECURRING x9): ENTIRE implementation (studyReminders.ts, useStudyReminders.ts, ReminderSettings.tsx, Layout.tsx, Settings.tsx changes) exists ONLY in working tree. Committed branch has only story doc, sprint-status, plan, and E2E spec.
+- `startIntervals` recreated on every call but captures `settingsRef.current` at call time -- interval closures read stale `settings.dailyReminderTime` if user changes time without re-toggling
+- `handleStudyUpdate` event listener is a no-op (empty function body) -- dead code
+- `isPaused` in ReminderSettings computed on every render via `getStreakPauseStatus()` -- no event listener for pause changes, UI goes stale if user pauses streak from another tab/component
+- Zero unit tests for studyReminders.ts (getReminderSettings, isStreakAtRisk, sendDailyReminder, dedup helpers)
+- Zero unit tests for ReminderSettings.tsx
+- No E2E tests for AC4 (daily notification fires) or AC5 (streak-at-risk notification fires) -- these are listed in spec header but no test bodies exist
+- `w-4 h-4` used instead of `size-4` in ReminderSettings (recurring)
+- `text-green-600`/`text-amber-600` hardcoded colors instead of theme tokens (recurring)
+
 ## Recurring Anti-Pattern: Uncommitted Fixes
-- E03-S02: Blocker fixes (focus trap, ARIA attrs) existed only in working tree
-- E03-S03: `urlTransform` override for video:// protocol existed only in working tree
-- E03-S05: 6+ fixes existed only in working tree
-- E03-S07 (Round 1): ENTIRE IMPLEMENTATION existed only in working tree
-- E03-S07 (Round 2): ALL implementation + Round 1 fixes + unit tests STILL only in working tree (6th consecutive occurrence)
-- E04-S01: ENTIRE IMPLEMENTATION exists only in working tree (7th consecutive occurrence)
-- E04-S02: ENTIRE implementation (progress.tsx, CourseCard.tsx, CourseDetail.tsx) exists only in working tree
-- E05-S01: Core streak fixes (event dispatch, DST fix, parse-once delegation, pauseStatus) exist only in working tree (8th occurrence)
+- E03-S02 through E05-S01: 8 consecutive stories with implementation/fixes only in working tree
+- E05-S05: ENTIRE implementation exists only in working tree (9th consecutive occurrence)
 - Root cause: Review findings are applied locally but never committed before shipping
 
 ## Silent Failure Patterns to Watch
