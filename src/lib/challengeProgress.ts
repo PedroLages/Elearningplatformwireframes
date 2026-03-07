@@ -10,7 +10,7 @@ export async function calculateCompletionProgress(challenge: Challenge): Promise
   return db.contentProgress
     .where('status')
     .equals('completed')
-    .filter(p => p.updatedAt >= challenge.createdAt)
+    .filter(p => new Date(p.updatedAt).getTime() >= new Date(challenge.createdAt).getTime())
     .count()
 }
 

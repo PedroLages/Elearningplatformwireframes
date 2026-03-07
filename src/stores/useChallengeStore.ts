@@ -56,10 +56,11 @@ export const useChallengeStore = create<ChallengeState>((set, get) => ({
         })
       )
 
-      set({ challenges: updated })
       await db.challenges.bulkPut(updated)
+      set({ challenges: updated })
     } catch (error) {
       console.error('[ChallengeStore] Failed to refresh progress:', error)
+      toast.error('Progress update may not have saved')
     }
   },
 

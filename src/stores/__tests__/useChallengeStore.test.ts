@@ -9,6 +9,11 @@ vi.mock('@/lib/persistWithRetry', () => ({
   persistWithRetry: async (op: () => Promise<void>) => op(),
 }))
 
+// Mock challengeProgress so refreshAllProgress tests are isolated
+vi.mock('@/lib/challengeProgress', () => ({
+  calculateProgress: vi.fn().mockResolvedValue(0),
+}))
+
 // Import store AFTER mock is set up
 const { useChallengeStore } = await import('@/stores/useChallengeStore')
 
@@ -214,5 +219,156 @@ describe('loadChallenges', () => {
     const state = useChallengeStore.getState()
     expect(state.error).toBe('Failed to load challenges')
     expect(state.isLoading).toBe(false)
+  })
+})
+
+describe('refreshAllProgress', () => {
+  it('should update challenge progress from calculated values', async () => {
+    const { calculateProgress } = await import('@/lib/challengeProgress')
+    vi.mocked(calculateProgress).mockResolvedValue(5)
+
+    const { db } = await import('@/db')
+    const challenge = createChallenge({
+      name: 'Test',
+      type: 'completion',
+      targetValue: 10,
+      currentProgress: 0,
+    })
+    await db.challenges.add(challenge)
+    useChallengeStore.setState({ challenges: [challenge] })
+
+    await act(async () => {
+      await useChallengeStore.getState().refreshAllProgress()
+    })
+
+    const state = useChallengeStore.getState()
+    expect(state.challenges[0].currentProgress).toBe(5)
+  })
+
+  it('should cap progress at targetValue', async () => {
+    const { calculateProgress } = await import('@/lib/challengeProgress')
+    vi.mocked(calculateProgress).mockResolvedValue(15) // exceeds target of 10
+
+    const { db } = await import('@/db')
+    const challenge = createChallenge({
+      name: 'Over target',
+      type: 'completion',
+      targetValue: 10,
+      currentProgress: 0,
+    })
+    await db.challenges.add(challenge)
+    useChallengeStore.setState({ challenges: [challenge] })
+
+    await act(async () => {
+      await useChallengeStore.getState().refreshAllProgress()
+    })
+
+    const state = useChallengeStore.getState()
+    expect(state.challenges[0].currentProgress).toBe(10) // capped at targetValue
+  })
+
+  it('should set completedAt when progress reaches target', async () => {
+    const { calculateProgress } = await import('@/lib/challengeProgress')
+    vi.mocked(calculateProgress).mockResolvedValue(10) // matches target
+
+    const { db } = await import('@/db')
+    const challenge = createChallenge({
+      name: 'Almost done',
+      type: 'completion',
+      targetValue: 10,
+      currentProgress: 9,
+    })
+    await db.challenges.add(challenge)
+    useChallengeStore.setState({ challenges: [challenge] })
+
+    await act(async () => {
+      await useChallengeStore.getState().refreshAllProgress()
+    })
+
+    const state = useChallengeStore.getState()
+    expect(state.challenges[0].completedAt).toBeTruthy()
+  })
+
+  it('should not overwrite existing completedAt', async () => {
+    const { calculateProgress } = await import('@/lib/challengeProgress')
+    vi.mocked(calculateProgress).mockResolvedValue(10)
+
+    const originalCompletedAt = '2026-01-15T12:00:00.000Z'
+    const { db } = await import('@/db')
+    const challenge = createChallenge({
+      name: 'Already completed',
+      type: 'completion',
+      targetValue: 10,
+      currentProgress: 10,
+      completedAt: originalCompletedAt,
+    })
+    await db.challenges.add(challenge)
+    useChallengeStore.setState({ challenges: [challenge] })
+
+    await act(async () => {
+      await useChallengeStore.getState().refreshAllProgress()
+    })
+
+    const state = useChallengeStore.getState()
+    expect(state.challenges[0].completedAt).toBe(originalCompletedAt)
+  })
+
+  it('should persist updated progress to IndexedDB', async () => {
+    const { calculateProgress } = await import('@/lib/challengeProgress')
+    vi.mocked(calculateProgress).mockResolvedValue(7)
+
+    const { db } = await import('@/db')
+    const challenge = createChallenge({
+      name: 'Persisted',
+      type: 'completion',
+      targetValue: 10,
+      currentProgress: 0,
+    })
+    await db.challenges.add(challenge)
+    useChallengeStore.setState({ challenges: [challenge] })
+
+    await act(async () => {
+      await useChallengeStore.getState().refreshAllProgress()
+    })
+
+    const dbChallenge = await db.challenges.get(challenge.id)
+    expect(dbChallenge?.currentProgress).toBe(7)
+  })
+
+  it('should show toast on DB write failure', async () => {
+    const { calculateProgress } = await import('@/lib/challengeProgress')
+    vi.mocked(calculateProgress).mockResolvedValue(3)
+
+    const { db } = await import('@/db')
+    const challenge = createChallenge({
+      name: 'Fail persist',
+      type: 'completion',
+      targetValue: 10,
+      currentProgress: 0,
+    })
+    await db.challenges.add(challenge)
+    useChallengeStore.setState({ challenges: [challenge] })
+
+    vi.spyOn(db.challenges, 'bulkPut').mockRejectedValue(new Error('DB write failed'))
+    vi.spyOn(console, 'error').mockImplementation(() => {})
+
+    await act(async () => {
+      await useChallengeStore.getState().refreshAllProgress()
+    })
+
+    // State should not be updated since DB write failed
+    const state = useChallengeStore.getState()
+    expect(state.challenges[0].currentProgress).toBe(0)
+  })
+
+  it('should be a no-op when challenges array is empty', async () => {
+    const { calculateProgress } = await import('@/lib/challengeProgress')
+    vi.mocked(calculateProgress).mockClear()
+
+    await act(async () => {
+      await useChallengeStore.getState().refreshAllProgress()
+    })
+
+    expect(calculateProgress).not.toHaveBeenCalled()
   })
 })

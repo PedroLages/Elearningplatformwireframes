@@ -79,7 +79,11 @@ function ChallengeCard({ challenge }: { challenge: Challenge }) {
             </span>
             <span className="font-medium">{progressPercent}%</span>
           </div>
-          <Progress value={progressPercent} className="h-2.5" />
+          <Progress
+            value={progressPercent}
+            className="h-2.5"
+            aria-label={`${challenge.name}: ${progressPercent}% complete`}
+          />
         </div>
 
         <p className="text-muted-foreground text-xs">
@@ -101,9 +105,13 @@ export function Challenges() {
   const [expiredOpen, setExpiredOpen] = useState(false)
 
   useEffect(() => {
+    let ignore = false
     loadChallenges().then(() => {
-      refreshAllProgress()
+      if (!ignore) refreshAllProgress()
     })
+    return () => {
+      ignore = true
+    }
   }, [loadChallenges, refreshAllProgress])
 
   const { active, expired } = useMemo(() => {
@@ -145,7 +153,13 @@ export function Challenges() {
           </CardContent>
         </Card>
       ) : isLoading ? (
-        <div className="text-muted-foreground py-12 text-center text-sm">Loading challenges...</div>
+        <div
+          role="status"
+          aria-live="polite"
+          className="text-muted-foreground py-12 text-center text-sm"
+        >
+          Loading challenges...
+        </div>
       ) : active.length === 0 && expired.length === 0 ? (
         <Card>
           <CardContent className="flex flex-col items-center gap-4 py-16">
@@ -167,17 +181,21 @@ export function Challenges() {
       ) : (
         <>
           {active.length > 0 && (
-            <div className="grid gap-4 sm:grid-cols-2">
-              {active.map(challenge => (
-                <ChallengeCard key={challenge.id} challenge={challenge} />
-              ))}
+            <div>
+              <h2 className="sr-only">Active Challenges</h2>
+              <div className="grid gap-4 sm:grid-cols-2">
+                {active.map(challenge => (
+                  <ChallengeCard key={challenge.id} challenge={challenge} />
+                ))}
+              </div>
             </div>
           )}
 
           {expired.length > 0 && (
             <Collapsible open={expiredOpen} onOpenChange={setExpiredOpen}>
-              <CollapsibleTrigger className="flex w-full items-center gap-2 py-2 text-sm font-medium text-muted-foreground hover:text-foreground transition-colors">
+              <CollapsibleTrigger className="flex w-full items-center gap-2 rounded-sm py-2 text-sm font-medium text-muted-foreground transition-colors hover:text-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-blue-600 focus-visible:ring-offset-2">
                 <ChevronDown
+                  aria-hidden="true"
                   className={cn('size-4 transition-transform', expiredOpen && 'rotate-180')}
                 />
                 Expired ({expired.length})

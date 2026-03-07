@@ -70,8 +70,8 @@ test.afterEach(async ({ page, indexedDB }) => {
     await indexedDB.clearStore('challenges')
     await indexedDB.clearStore('studySessions')
     await indexedDB.clearStore('contentProgress')
-  } catch {
-    // Page may already be closed
+  } catch (e) {
+    console.warn('Test cleanup failed:', e)
   }
 })
 
@@ -277,7 +277,7 @@ test.describe('AC5: Expired challenges', () => {
     await page.reload()
 
     // Active challenge visible in main grid
-    await expect(page.getByText('Active Challenge')).toBeVisible()
+    await expect(page.getByText('Active Challenge', { exact: true })).toBeVisible()
 
     // Expired section trigger visible with count
     const expiredTrigger = page.getByText(/expired\s*\(1\)/i)
@@ -289,8 +289,14 @@ test.describe('AC5: Expired challenges', () => {
     // Click to expand expired section
     await expiredTrigger.click()
 
-    // Now the expired challenge is visible with muted styling (opacity-60)
+    // Now the expired challenge is visible
     await expect(page.getByText('Expired Challenge')).toBeVisible()
+
+    // Verify muted styling (opacity-60) on expired card
+    const expiredCard = page
+      .getByText('Expired Challenge')
+      .locator('xpath=ancestor::div[contains(@class, "opacity")]')
+    await expect(expiredCard).toHaveCSS('opacity', '0.6')
   })
 })
 

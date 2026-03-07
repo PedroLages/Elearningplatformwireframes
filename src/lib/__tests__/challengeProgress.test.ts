@@ -1,5 +1,5 @@
 import 'fake-indexeddb/auto'
-import { describe, it, expect, beforeEach } from 'vitest'
+import { describe, it, expect, beforeEach, vi } from 'vitest'
 import { db } from '@/db'
 import {
   calculateCompletionProgress,
@@ -7,6 +7,7 @@ import {
   calculateStreakProgress,
   calculateProgress,
 } from '@/lib/challengeProgress'
+import * as studyLog from '@/lib/studyLog'
 import type { Challenge, ContentProgress, StudySession } from '@/data/types'
 
 function makeChallenge(overrides: Partial<Challenge> = {}): Challenge {
@@ -144,9 +145,41 @@ describe('calculateTimeProgress', () => {
 // ── Streak Progress ──────────────────────────────────
 
 describe('calculateStreakProgress', () => {
-  it('delegates to getCurrentStreak', () => {
-    // getCurrentStreak reads from localStorage which is empty in test
+  it('returns 0 when no streak data exists', () => {
     expect(calculateStreakProgress()).toBe(0)
+  })
+
+  it('delegates to getCurrentStreak and returns its value', () => {
+    const spy = vi.spyOn(studyLog, 'getCurrentStreak').mockReturnValue(14)
+    expect(calculateStreakProgress()).toBe(14)
+    spy.mockRestore()
+  })
+})
+
+// ── Progress Capping ────────────────────────────────
+
+describe('progress capping at 100%', () => {
+  it('completion progress can exceed targetValue (capping is in store)', async () => {
+    const challenge = makeChallenge({ targetValue: 2 })
+
+    await db.contentProgress.bulkPut([
+      makeContentProgress(),
+      makeContentProgress(),
+      makeContentProgress(),
+    ])
+
+    // Raw count is 3, exceeds target of 2 — store is responsible for capping
+    expect(await calculateCompletionProgress(challenge)).toBe(3)
+  })
+
+  it('time progress can exceed targetValue (capping is in store)', async () => {
+    const challenge = makeChallenge({ type: 'time', targetValue: 1 })
+
+    await db.studySessions.bulkPut([
+      makeSession({ duration: 7200 }), // 2 hours, exceeds 1-hour target
+    ])
+
+    expect(await calculateTimeProgress(challenge)).toBe(2)
   })
 })
 
