@@ -47,6 +47,7 @@ describe('ElearningDB schema', () => {
     expect(db.name).toBe('ElearningDB')
     expect(db.tables.map(t => t.name).sort()).toEqual([
       'bookmarks',
+      'challenges',
       'contentProgress',
       'importedCourses',
       'importedPdfs',
@@ -58,8 +59,8 @@ describe('ElearningDB schema', () => {
     ])
   })
 
-  it('should be at version 7', () => {
-    expect(db.verno).toBe(7)
+  it('should be at version 8', () => {
+    expect(db.verno).toBe(8)
   })
 })
 
