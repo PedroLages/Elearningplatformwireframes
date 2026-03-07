@@ -1,5 +1,6 @@
 import { useEffect, useState } from 'react'
-import { Plus, Target, Clock, Flame, Trophy } from 'lucide-react'
+import { Plus, Target, Clock, Flame, Trophy, RefreshCcw } from 'lucide-react'
+import { cn } from '@/app/components/ui/utils'
 import { Button } from '@/app/components/ui/button'
 import { Card, CardContent } from '@/app/components/ui/card'
 import { Badge } from '@/app/components/ui/badge'
@@ -14,17 +15,24 @@ const typeConfig: Record<ChallengeType, { label: string; unit: string; icon: typ
   streak: { label: 'Streak', unit: 'days', icon: Flame },
 }
 
+/** Parse date-only string as local date (avoids UTC midnight shift). */
+function parseLocalDate(dateStr: string): Date {
+  const [y, m, d] = dateStr.split('-').map(Number)
+  return new Date(y, m - 1, d)
+}
+
 function formatDeadline(deadline: string): string {
-  const date = new Date(deadline)
-  return date.toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' })
+  return parseLocalDate(deadline).toLocaleDateString('en-US', {
+    month: 'short',
+    day: 'numeric',
+    year: 'numeric',
+  })
 }
 
 function daysRemaining(deadline: string): number {
   const now = new Date()
   now.setHours(0, 0, 0, 0)
-  const end = new Date(deadline)
-  end.setHours(0, 0, 0, 0)
-  return Math.ceil((end.getTime() - now.getTime()) / (1000 * 60 * 60 * 24))
+  return Math.ceil((parseLocalDate(deadline).getTime() - now.getTime()) / (1000 * 60 * 60 * 24))
 }
 
 function ChallengeCard({ challenge }: { challenge: Challenge }) {
@@ -40,12 +48,12 @@ function ChallengeCard({ challenge }: { challenge: Challenge }) {
   )
 
   return (
-    <Card className={isExpired ? 'opacity-60' : ''}>
+    <Card className={cn(isExpired && 'opacity-60')}>
       <CardContent className="flex flex-col gap-3 p-5">
         <div className="flex items-start justify-between gap-3">
           <div className="flex items-center gap-2.5">
-            <div className="bg-primary/10 text-primary flex h-9 w-9 items-center justify-center rounded-lg">
-              <Icon className="h-4.5 w-4.5" />
+            <div className="bg-primary/10 text-primary flex size-9 items-center justify-center rounded-lg">
+              <Icon className="size-4.5" />
             </div>
             <div>
               <h3 className="text-sm font-semibold leading-tight">{challenge.name}</h3>
@@ -83,30 +91,46 @@ function ChallengeCard({ challenge }: { challenge: Challenge }) {
 }
 
 export function Challenges() {
-  const { challenges, isLoading, loadChallenges } = useChallengeStore()
+  const { challenges, isLoading, error, loadChallenges } = useChallengeStore()
   const [dialogOpen, setDialogOpen] = useState(false)
 
   useEffect(() => {
-    loadChallenges()
+    let ignore = false
+    loadChallenges().then(() => {
+      if (ignore) return
+    })
+    return () => {
+      ignore = true
+    }
   }, [loadChallenges])
 
   return (
     <div className="mx-auto w-full max-w-4xl space-y-6 p-6">
       <div className="flex items-center justify-between">
         <h1 className="text-2xl font-bold tracking-tight">Challenges</h1>
-        <Button onClick={() => setDialogOpen(true)}>
-          <Plus className="mr-1.5 h-4 w-4" />
+        <Button data-testid="header-create-challenge" onClick={() => setDialogOpen(true)}>
+          <Plus className="mr-2 size-4" />
           Create Challenge
         </Button>
       </div>
 
-      {isLoading ? (
+      {error ? (
+        <Card>
+          <CardContent className="flex flex-col items-center gap-4 py-16">
+            <p className="text-destructive text-sm">{error}</p>
+            <Button variant="outline" onClick={() => loadChallenges()}>
+              <RefreshCcw className="mr-2 size-4" />
+              Retry
+            </Button>
+          </CardContent>
+        </Card>
+      ) : isLoading ? (
         <div className="text-muted-foreground py-12 text-center text-sm">Loading challenges...</div>
       ) : challenges.length === 0 ? (
         <Card>
           <CardContent className="flex flex-col items-center gap-4 py-16">
-            <div className="bg-muted flex h-14 w-14 items-center justify-center rounded-full">
-              <Target className="text-muted-foreground h-7 w-7" />
+            <div className="bg-muted flex size-14 items-center justify-center rounded-full">
+              <Target className="text-muted-foreground size-7" />
             </div>
             <div className="text-center">
               <h2 className="text-base font-semibold">No challenges yet</h2>
@@ -115,7 +139,7 @@ export function Challenges() {
               </p>
             </div>
             <Button onClick={() => setDialogOpen(true)}>
-              <Plus className="mr-1.5 h-4 w-4" />
+              <Plus className="mr-2 size-4" />
               Create Challenge
             </Button>
           </CardContent>

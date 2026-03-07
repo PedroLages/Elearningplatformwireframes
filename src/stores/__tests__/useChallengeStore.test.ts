@@ -1,13 +1,18 @@
 import 'fake-indexeddb/auto'
-import { describe, it, expect, beforeEach, vi } from 'vitest'
+import { describe, it, expect, beforeEach, afterEach, vi } from 'vitest'
 import { act } from 'react'
 import { useChallengeStore } from '@/stores/useChallengeStore'
+import { createChallenge } from '../../../tests/support/fixtures/factories/challenge-factory'
 
 beforeEach(async () => {
   vi.restoreAllMocks()
   useChallengeStore.setState({ challenges: [], isLoading: false, error: null })
   const { db } = await import('@/db')
   await db.challenges.clear()
+})
+
+afterEach(() => {
+  vi.useRealTimers()
 })
 
 describe('useChallengeStore initial state', () => {
@@ -98,7 +103,6 @@ describe('addChallenge', () => {
     const state = useChallengeStore.getState()
     expect(state.challenges).toHaveLength(0)
     expect(state.error).toBe('Failed to create challenge')
-    vi.useRealTimers()
   })
 })
 
@@ -169,23 +173,21 @@ describe('deleteChallenge', () => {
     expect(state.challenges).toHaveLength(1)
     expect(state.challenges[0].name).toBe('Sticky challenge')
     expect(state.error).toBe('Failed to delete challenge')
-    vi.useRealTimers()
   })
 })
 
 describe('loadChallenges', () => {
   it('should load challenges from IndexedDB', async () => {
     const { db } = await import('@/db')
-    await db.challenges.add({
-      id: crypto.randomUUID(),
-      name: 'Preexisting challenge',
-      type: 'completion',
-      targetValue: 5,
-      deadline: '2030-01-01',
-      createdAt: new Date().toISOString(),
-      currentProgress: 2,
-      celebratedMilestones: [],
-    })
+    await db.challenges.add(
+      createChallenge({
+        name: 'Preexisting challenge',
+        type: 'completion',
+        targetValue: 5,
+        deadline: '2030-01-01',
+        currentProgress: 2,
+      })
+    )
 
     await act(async () => {
       await useChallengeStore.getState().loadChallenges()

@@ -1,152 +1,217 @@
-# E06-S01: Create Learning Challenges — Implementation Plan
+# Architecture: E06-S01 --- Create Learning Challenges
 
-## Context
-
-Epic 6 introduces gamification beyond daily streaks. Story 6.1 creates the foundation: a Challenges page where users create custom learning challenges with a name, type (completion/time/streak), target metric, and deadline. This data model also serves E06-S02 (progress tracking) and E06-S03 (milestone celebrations), so the schema must be forward-compatible.
-
-All Epic 5 dependencies (streaks) are complete. No blockers.
+Reference document for the Challenges feature data layer, state management, components, validation, and routing.
 
 ---
 
-## Task 1: Challenge type + Dexie schema (v8)
+## Data Layer
 
-**Files:**
-- `src/data/types.ts` — add `Challenge` interface
-- `src/db/schema.ts` — add `challenges` table at version 8
+### Challenge type (`src/data/types.ts`)
 
-**Challenge type:**
 ```typescript
 export type ChallengeType = 'completion' | 'time' | 'streak'
 
 export interface Challenge {
-  id: string
-  name: string                    // 1-60 chars
+  id: string                    // crypto.randomUUID()
+  name: string                  // 1-60 chars
   type: ChallengeType
-  targetValue: number             // > 0
-  deadline: string                // ISO 8601 date
-  createdAt: string               // ISO 8601 timestamp
-  currentProgress: number         // starts at 0 (updated by E06-S02)
-  celebratedMilestones: number[]  // [25, 50, 75, 100] (used by E06-S03)
-  completedAt?: string            // ISO 8601 (set when 100% reached)
+  targetValue: number           // > 0; integer for completion/streak, float OK for time
+  deadline: string              // ISO 8601 date (YYYY-MM-DD)
+  createdAt: string             // ISO 8601 timestamp
+  currentProgress: number       // starts at 0 (updated by E06-S02)
+  celebratedMilestones: number[] // e.g. [25, 50, 75, 100] (used by E06-S03)
 }
 ```
 
-**Dexie v8:**
+### Dexie schema v8 (`src/db/schema.ts`)
+
 ```
 challenges: 'id, type, deadline, createdAt'
 ```
 
-Add `challenges: EntityTable<Challenge, 'id'>` to the db type.
+- **Primary key**: `id` (string, application-generated UUID --- not auto-increment)
+- **Indexed fields**: `type` (filter by challenge kind), `deadline` (sort/filter expiring), `createdAt` (default sort order)
+- **EntityTable type**: `EntityTable<Challenge, 'id'>`
+- **No auto-increment**: IDs are `crypto.randomUUID()` generated in the store before persist. This enables optimistic UI updates (ID known before DB write completes).
 
-**Commit after this task.**
+### `persistWithRetry` pattern (`src/lib/persistWithRetry.ts`)
 
----
+```typescript
+persistWithRetry(operation: () => Promise<void>, maxRetries = 3): Promise<void>
+```
 
-## Task 2: Zustand challenge store
-
-**File:** `src/stores/useChallengeStore.ts` (new)
-
-Follow `useBookmarkStore.ts` pattern with `persistWithRetry`:
-- `challenges: Challenge[]`, `isLoading`, `error`
-- `loadChallenges()` — load all from Dexie, sorted by createdAt desc
-- `addChallenge(data)` — generate UUID, set createdAt/currentProgress/celebratedMilestones, persist to Dexie, optimistic update
-- `deleteChallenge(id)` — for future use (minimal, optional)
-
-**Commit after this task.**
+- Wraps any Dexie write with exponential backoff: 1s, 2s, 4s (capped at 8s)
+- Throws after final retry failure --- caller handles rollback
+- Shared utility across all Zustand stores that write to IndexedDB
+- Handles transient failures: quota pressure, locked database, browser throttling
 
 ---
 
-## Task 3: Challenges page + route + navigation
+## State Management
 
-**Files:**
-- `src/app/pages/Challenges.tsx` (new) — page component
-- `src/app/routes.tsx` — add lazy route at `/challenges`
-- `src/app/config/navigation.ts` — add to **Track** group with `Target` icon from lucide-react
+### Zustand store (`src/stores/useChallengeStore.ts`)
 
-**Page structure:**
-- `<h1>Challenges</h1>` heading
-- "Create Challenge" button (top right)
-- Challenge list (cards) — initially empty state: "No challenges yet. Create your first challenge to get started!" with CTA button
-- Each card shows: name, type badge, target, deadline, progress bar (at 0% for now)
+```typescript
+interface ChallengeState {
+  challenges: Challenge[]
+  isLoading: boolean
+  error: string | null
 
-**Commit after this task.**
+  loadChallenges: () => Promise<void>
+  addChallenge: (data: NewChallengeData) => Promise<void>
+  deleteChallenge: (id: string) => Promise<void>
+}
+```
 
----
+### Optimistic update pattern (addChallenge)
 
-## Task 4: Create Challenge form (Dialog)
+```
+1. Build full Challenge object (UUID, createdAt, currentProgress=0, etc.)
+2. Snapshot current challenges array
+3. set({ challenges: [newChallenge, ...snapshot] })    // optimistic
+4. await persistWithRetry(() => db.challenges.add(challenge))
+5. On failure: set({ challenges: snapshot })           // rollback
+6. Re-throw so caller (dialog) can show toast.error
+```
 
-**File:** `src/app/components/challenges/CreateChallengeDialog.tsx` (new)
+Same pattern applies to `deleteChallenge`: filter out immediately, restore on failure.
 
-**UI:** shadcn Dialog containing the form. Fields:
-1. **Challenge Name** — `<Input>` with `<Label>`, max 60 chars
-2. **Challenge Type** — `<Select>` with 3 options: Completion (videos), Time (hours), Streak (days)
-3. **Target Value** — `<Input type="number">` with dynamic label that updates based on type selection (e.g., "Target (videos)")
-4. **Deadline** — Date input via `<Input type="date">` (simplest, accessible, native validation support)
+### Load pattern
 
-**Submit button:** "Create Challenge"
+- `loadChallenges()`: `db.challenges.orderBy('createdAt').reverse().toArray()`
+- Sets `isLoading` during fetch, `error` on failure
+- Called in `useEffect` with cleanup flag (`ignore`) to prevent stale updates
 
-Wire to `useChallengeStore.addChallenge()`. On success: `toast.success('Challenge created')`, close dialog. On error: `toast.error('Failed to create challenge')`.
+### Error propagation
 
-**User contribution opportunity:** The dynamic label logic for type → unit mapping is a design choice (simple object lookup vs. something more elaborate).
-
-**Commit after this task.**
-
----
-
-## Task 5: Form validation
-
-**In same file:** `CreateChallengeDialog.tsx`
-
-Validation rules (on submit):
-- Name: required, 1-60 characters
-- Target: required, must be > 0
-- Deadline: required, must be in the future (compare with today's date)
-- Type: required (default to first option or force selection)
-
-Display inline error messages below each field. Wrap errors in `<p role="alert">` for screen reader announcement (AC5 — aria-live).
-
-**Commit after this task.**
+| Layer  | Error handling                                                    |
+| ------ | ----------------------------------------------------------------- |
+| Store  | Sets `error` state string, logs to console                        |
+| Page   | Renders error card with "Retry" button calling `loadChallenges()` |
+| Dialog | Catches store throw, shows `toast.error`                          |
 
 ---
 
-## Task 6: Accessibility polish
+## Component Architecture
 
-**In same file:** `CreateChallengeDialog.tsx` + `Challenges.tsx`
+### Component hierarchy
 
-- Verify all `<Label htmlFor>` associations work with `getByLabel()` in tests
-- Tab order: Name → Type → Target → Deadline → Create button
-- Error messages use `role="alert"` (acts as implicit `aria-live="assertive"`)
-- Dialog uses shadcn Dialog which already handles focus trap + Escape key
+```
+Challenges (page)
+  +-- ChallengeCard (per challenge)
+  +-- CreateChallengeDialog
+        +-- Dialog (shadcn)
+              +-- form with Input, Select, Label, Button
+```
 
-**Commit after this task (or combine with Task 5 if small).**
+### Page component (`src/app/pages/Challenges.tsx`)
+
+Four render states:
+
+| State | Condition | UI |
+|-------|-----------|-----|
+| Error | `error !== null` | Error message + "Retry" button |
+| Loading | `isLoading === true` | "Loading challenges..." text |
+| Empty | `challenges.length === 0` | Target icon + "No challenges yet" + CTA button |
+| List | `challenges.length > 0` | 2-column responsive grid of ChallengeCard |
+
+**ChallengeCard** renders: name, type badge, target with unit, progress bar, days remaining/expired status.
+
+### Dialog component (`src/app/components/challenges/CreateChallengeDialog.tsx`)
+
+- Controlled open state via props (`open`, `onOpenChange`)
+- Local form state: `name`, `type`, `target`, `deadline`, `errors`, `isSubmitting`
+- Resets form on close (via `onOpenChange` wrapper)
+- Submit disabled while `isSubmitting`
+- Dynamic unit label updates based on selected type
 
 ---
 
-## Key Files Summary
+## Validation Strategy
 
-| File | Action |
-|------|--------|
-| `src/data/types.ts` | Add `Challenge`, `ChallengeType` |
-| `src/db/schema.ts` | Add v8 with `challenges` table |
-| `src/stores/useChallengeStore.ts` | New Zustand store |
-| `src/app/pages/Challenges.tsx` | New page component |
-| `src/app/components/challenges/CreateChallengeDialog.tsx` | New form dialog |
-| `src/app/routes.tsx` | Add `/challenges` route |
-| `src/app/config/navigation.ts` | Add nav entry in Track group |
-| `tests/e2e/story-e06-s01.spec.ts` | Already created (ATDD) |
+### Client-side validation rules (on submit)
 
-## Existing Code to Reuse
+| Field | Rule | Error message |
+|-------|------|---------------|
+| Name | Required, 1-60 chars (trimmed) | "Challenge name is required" / "Name must be 60 characters or less" |
+| Type | Required (Select, no default) | "Please select a challenge type" |
+| Target | Required, > 0, numeric | "Target must be greater than zero" |
+| Target | Integer when type is `completion` or `streak` | "Target {unit} must be a whole number" |
+| Deadline | Required | "Deadline is required" |
+| Deadline | Must be in the future (> today at midnight) | "Deadline must be in the future" |
 
-- `persistWithRetry` from `src/lib/persistWithRetry.ts` — DB write resilience
-- `useBookmarkStore` pattern — Zustand + Dexie integration
-- shadcn components: Dialog, Input, Select, Label, Button, Card, Badge, Progress
-- `toast` from `sonner` — success/error feedback
-- Navigation config pattern from `src/app/config/navigation.ts`
-- Route pattern from `src/app/routes.tsx` (React.lazy + SuspensePage)
+### Local date parsing pattern
 
-## Verification
+Date-only strings (`YYYY-MM-DD`) are parsed as **local dates** using manual split:
 
-1. **ATDD tests:** `npx playwright test tests/e2e/story-e06-s01.spec.ts` — all 10 tests should pass
-2. **Build:** `npm run build` — no TypeScript errors
-3. **Manual:** Navigate to `/challenges`, create a challenge, verify it persists after page reload
-4. **Accessibility:** Tab through the form, submit empty to see error announcements
+```typescript
+const [y, m, d] = dateStr.split('-').map(Number)
+new Date(y, m - 1, d)
+```
+
+**Why not `new Date(dateStr)`**: Per ECMAScript spec, date-only strings (`"2025-03-15"`) are parsed as UTC midnight. In timezones west of UTC, this shifts to the previous day (e.g., `2025-03-14T17:00:00-07:00`). Manual parsing with `new Date(year, month, day)` creates a local midnight timestamp, avoiding the off-by-one bug.
+
+Used in both `Challenges.tsx` (display: `formatDeadline`, `daysRemaining`) and `CreateChallengeDialog.tsx` (validation: future date check).
+
+### Accessibility
+
+- Error messages wrapped in `<p role="alert">` (implicit `aria-live="assertive"`)
+- Invalid inputs marked with `aria-invalid={true}`
+- Error messages linked via `aria-describedby`
+- All labels associated via `htmlFor` / `id` pairs
+- Dialog handles focus trap + Escape key (Radix Dialog primitive)
+
+---
+
+## Routing & Navigation
+
+### Route (`src/app/routes.tsx`)
+
+```typescript
+const Challenges = React.lazy(() =>
+  import('./pages/Challenges').then(m => ({ default: m.Challenges }))
+)
+
+{ path: 'challenges', element: <SuspensePage><Challenges /></SuspensePage> }
+```
+
+Lazy-loaded with named export pattern (`.then(m => ({ default: m.Challenges }))`).
+
+### Sidebar navigation (`src/app/config/navigation.ts`)
+
+```typescript
+// In "Track" group, first item
+{ name: 'Challenges', path: '/challenges', icon: Target }
+```
+
+Grouped under **Track** alongside Session History and Reports.
+
+---
+
+## Design Decisions
+
+| Decision | Rationale |
+|----------|-----------|
+| Optimistic updates | Instant UI feedback --- user sees the new challenge immediately. Rollback on persist failure keeps data consistent. |
+| `persistWithRetry` | IndexedDB writes can fail transiently (quota pressure, locked DB in another tab, browser throttling during background). Exponential backoff handles these without user intervention. |
+| Local date parsing | ECMAScript spec parses `"YYYY-MM-DD"` as UTC midnight, which shifts to previous day in negative-offset timezones. Manual `new Date(y, m-1, d)` avoids this. |
+| Integer validation for completion/streak | Fractional videos or days are nonsensical. Time (hours) allows decimals (e.g., 1.5 hours). |
+| UUID generated in store, not Dexie auto-increment | Enables optimistic insert --- ID is known before the async DB write completes, so the UI can render immediately with a stable key. |
+| `celebratedMilestones` in initial schema | Forward-compatible for E06-S03 milestone celebrations without a schema migration. Starts as empty array. |
+| `currentProgress` in initial schema | Forward-compatible for E06-S02 progress tracking. Starts at 0. |
+| Form resets on dialog close | Prevents stale form data when reopening. Handled in `onOpenChange` wrapper. |
+
+---
+
+## Key Files
+
+| File | Purpose |
+|------|---------|
+| `src/data/types.ts` | `Challenge`, `ChallengeType` type definitions |
+| `src/db/schema.ts` | Dexie v8 schema with `challenges` table |
+| `src/stores/useChallengeStore.ts` | Zustand store with optimistic updates |
+| `src/app/pages/Challenges.tsx` | Page component (list, empty, error, loading states) |
+| `src/app/components/challenges/CreateChallengeDialog.tsx` | Form dialog with validation |
+| `src/app/routes.tsx` | `/challenges` route (lazy-loaded) |
+| `src/app/config/navigation.ts` | Sidebar entry in Track group |
+| `src/lib/persistWithRetry.ts` | Shared retry utility for Dexie writes |

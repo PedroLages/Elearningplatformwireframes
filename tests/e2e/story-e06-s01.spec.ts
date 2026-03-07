@@ -9,17 +9,13 @@ import { navigateAndWait } from '../support/helpers/navigation'
 /** Navigate to the Challenges page. */
 async function goToChallenges(page: import('@playwright/test').Page) {
   await navigateAndWait(page, '/challenges')
-  await page.waitForSelector('h1', { state: 'visible', timeout: 10000 }).catch(() => {})
+  await page.waitForSelector('h1', { state: 'visible', timeout: 10000 })
 }
 
 /** Open the Create Challenge dialog from the page header button. */
 async function openCreateDialog(page: import('@playwright/test').Page) {
   await goToChallenges(page)
-  // Use first() because there are two "Create Challenge" buttons (header + empty state)
-  await page
-    .getByRole('button', { name: /create challenge/i })
-    .first()
-    .click()
+  await page.getByTestId('header-create-challenge').click()
   // Wait for dialog to appear
   await expect(page.getByRole('dialog')).toBeVisible()
 }
@@ -35,6 +31,19 @@ test.describe('Create Learning Challenges (E06-S01)', () => {
     // Close tablet sidebar overlay
     await page.addInitScript(() => {
       localStorage.setItem('eduvi-sidebar-v1', 'false')
+    })
+  })
+
+  test.afterEach(async ({ page }) => {
+    await page.evaluate(async () => {
+      const req = indexedDB.open('ElearningDB')
+      req.onsuccess = () => {
+        const idb = req.result
+        if (idb.objectStoreNames.contains('challenges')) {
+          const tx = idb.transaction('challenges', 'readwrite')
+          tx.objectStore('challenges').clear()
+        }
+      }
     })
   })
 
@@ -229,6 +238,15 @@ test.describe('Create Learning Challenges (E06-S01)', () => {
     await page.keyboard.press('Tab')
     const deadlineInput = page.getByLabel(/deadline/i)
     await expect(deadlineInput).toBeFocused()
+
+    // Verify Cancel and Create buttons are keyboard-focusable within the dialog
+    const cancelButton = page.getByRole('dialog').getByRole('button', { name: /cancel/i })
+    await cancelButton.focus()
+    await expect(cancelButton).toBeFocused()
+
+    const createButton = page.getByRole('dialog').getByRole('button', { name: /create challenge/i })
+    await createButton.focus()
+    await expect(createButton).toBeFocused()
   })
 
   test('AC5: validation errors are announced via aria-live', async ({ page }) => {
@@ -253,5 +271,11 @@ test.describe('Create Learning Challenges (E06-S01)', () => {
       page.locator('[role="alert"]', { hasText: /must be greater than zero/i })
     ).toBeVisible()
     await expect(page.locator('[role="alert"]', { hasText: /deadline is required/i })).toBeVisible()
+
+    // Verify aria-invalid is set on each input
+    await expect(page.getByLabel(/challenge name/i)).toHaveAttribute('aria-invalid', 'true')
+    await expect(page.getByLabel(/challenge type/i)).toHaveAttribute('aria-invalid', 'true')
+    await expect(page.getByLabel(/target/i)).toHaveAttribute('aria-invalid', 'true')
+    await expect(page.getByLabel(/deadline/i)).toHaveAttribute('aria-invalid', 'true')
   })
 })

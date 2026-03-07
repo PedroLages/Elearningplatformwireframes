@@ -73,6 +73,8 @@ export function CreateChallengeDialog({ open, onOpenChange }: CreateChallengeDia
     const targetNum = Number(target)
     if (!target || isNaN(targetNum) || targetNum <= 0) {
       errs.target = 'Target must be greater than zero'
+    } else if (type !== 'time' && !Number.isInteger(targetNum)) {
+      errs.target = `Target ${typeUnits[type as ChallengeType]} must be a whole number`
     }
 
     if (!deadline) {
