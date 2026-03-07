@@ -149,18 +149,18 @@ test.describe('Streak Milestone Celebrations (E05-S06)', () => {
     const milestoneCollectionTrigger = page.getByTestId('milestone-collection-trigger')
     await milestoneCollectionTrigger.click()
 
-    // Then: earned badge shows with date
-    const earnedBadge = page.getByTestId('milestone-badge-7')
+    // Then: earned badge shows with date (gallery-prefixed to avoid toast collision)
+    const earnedBadge = page.getByTestId('gallery-milestone-badge-7')
     await expect(earnedBadge).toBeVisible()
 
     // And: unearned milestones shown as locked/dimmed
-    const lockedBadge30 = page.getByTestId('milestone-badge-30-locked')
+    const lockedBadge30 = page.getByTestId('gallery-milestone-badge-30-locked')
     await expect(lockedBadge30).toBeVisible()
 
-    const lockedBadge60 = page.getByTestId('milestone-badge-60-locked')
+    const lockedBadge60 = page.getByTestId('gallery-milestone-badge-60-locked')
     await expect(lockedBadge60).toBeVisible()
 
-    const lockedBadge100 = page.getByTestId('milestone-badge-100-locked')
+    const lockedBadge100 = page.getByTestId('gallery-milestone-badge-100-locked')
     await expect(lockedBadge100).toBeVisible()
   })
 
@@ -205,7 +205,7 @@ test.describe('Streak Milestone Celebrations (E05-S06)', () => {
     await trigger.click()
 
     // The earned badge should contain today's date (or relative date text)
-    const earnedBadge = page.getByTestId('milestone-badge-7')
+    const earnedBadge = page.getByTestId('gallery-milestone-badge-7')
     await expect(earnedBadge).toBeVisible()
     // Should have a date indicator (exact format TBD during implementation)
     await expect(earnedBadge).toContainText(/\d/)
