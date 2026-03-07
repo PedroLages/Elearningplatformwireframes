@@ -132,7 +132,7 @@ function SidebarContent({ onNavigate, iconOnly }: { onNavigate?: () => void; ico
                   <div className="mx-4 mb-2 border-t border-border/50" aria-hidden="true" />
                 )
               ) : (
-                <div className="px-4 mb-1.5 text-[10px] font-semibold uppercase tracking-widest text-muted-foreground/60">
+                <div className="px-4 mb-1.5 text-[10px] font-semibold uppercase tracking-widest text-muted-foreground">
                   {group.label}
                 </div>
               )}

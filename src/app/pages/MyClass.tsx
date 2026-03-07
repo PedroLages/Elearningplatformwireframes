@@ -150,7 +150,7 @@ export default function MyClass() {
               </TabsList>
 
               <Select value={sortBy} onValueChange={value => setSortBy(value as SortOption)}>
-                <SelectTrigger className="w-full sm:w-[200px]">
+                <SelectTrigger className="w-full sm:w-[200px]" aria-label="Sort courses">
                   <SelectValue placeholder="Sort by..." />
                 </SelectTrigger>
                 <SelectContent>
