@@ -43,20 +43,24 @@ export const useChallengeStore = create<ChallengeState>((set, get) => ({
     const { challenges } = get()
     if (challenges.length === 0) return
 
-    const updated = await Promise.all(
-      challenges.map(async challenge => {
-        const raw = await calculateProgress(challenge)
-        const currentProgress = Math.min(raw, challenge.targetValue)
-        const completedAt =
-          currentProgress >= challenge.targetValue && !challenge.completedAt
-            ? new Date().toISOString()
-            : challenge.completedAt
-        return { ...challenge, currentProgress, completedAt }
-      })
-    )
+    try {
+      const updated = await Promise.all(
+        challenges.map(async challenge => {
+          const raw = await calculateProgress(challenge)
+          const currentProgress = Math.min(raw, challenge.targetValue)
+          const completedAt =
+            currentProgress >= challenge.targetValue && !challenge.completedAt
+              ? new Date().toISOString()
+              : challenge.completedAt
+          return { ...challenge, currentProgress, completedAt }
+        })
+      )
 
-    set({ challenges: updated })
-    await db.challenges.bulkPut(updated)
+      set({ challenges: updated })
+      await db.challenges.bulkPut(updated)
+    } catch (error) {
+      console.error('[ChallengeStore] Failed to refresh progress:', error)
+    }
   },
 
   addChallenge: async (data: NewChallengeData) => {
