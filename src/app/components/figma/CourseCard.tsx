@@ -473,7 +473,7 @@ export function CourseCard({
                 className="flex items-center gap-1.5 mb-3 text-xs text-muted-foreground hover:text-brand transition-colors w-fit"
               >
                 <Avatar className="size-5">
-                  <AvatarImage {...getAvatarSrc(instructor.avatar, 20)} alt={instructor.name} />
+                  <AvatarImage {...getAvatarSrc(instructor.avatar, 20)} alt="" />
                   <AvatarFallback className="text-[8px]">
                     {instructor.name.split(' ').map(n => n[0]).join('')}
                   </AvatarFallback>
@@ -518,7 +518,7 @@ export function CourseCard({
                 className="flex items-center gap-1.5 mb-2 text-xs text-muted-foreground hover:text-brand transition-colors w-fit"
               >
                 <Avatar className="size-5">
-                  <AvatarImage {...getAvatarSrc(instructor.avatar, 20)} alt={instructor.name} />
+                  <AvatarImage {...getAvatarSrc(instructor.avatar, 20)} alt="" />
                   <AvatarFallback className="text-[8px]">
                     {instructor.name.split(' ').map(n => n[0]).join('')}
                   </AvatarFallback>
@@ -590,7 +590,7 @@ export function CourseCard({
                 className="flex items-center gap-1.5 text-xs text-muted-foreground hover:text-brand transition-colors w-fit"
               >
                 <Avatar className="size-5">
-                  <AvatarImage {...getAvatarSrc(instructor.avatar, 20)} alt={instructor.name} />
+                  <AvatarImage {...getAvatarSrc(instructor.avatar, 20)} alt="" />
                   <AvatarFallback className="text-[8px]">
                     {instructor.name.split(' ').map(n => n[0]).join('')}
                   </AvatarFallback>
