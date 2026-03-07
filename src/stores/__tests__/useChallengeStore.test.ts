@@ -1,8 +1,16 @@
 import 'fake-indexeddb/auto'
 import { describe, it, expect, beforeEach, afterEach, vi } from 'vitest'
 import { act } from 'react'
-import { useChallengeStore } from '@/stores/useChallengeStore'
 import { createChallenge } from '../../../tests/support/fixtures/factories/challenge-factory'
+
+// Mock persistWithRetry to run operation once (no retries).
+// Retry logic is tested in persistWithRetry's own tests.
+vi.mock('@/lib/persistWithRetry', () => ({
+  persistWithRetry: async (op: () => Promise<void>) => op(),
+}))
+
+// Import store AFTER mock is set up
+const { useChallengeStore } = await import('@/stores/useChallengeStore')
 
 beforeEach(async () => {
   vi.restoreAllMocks()
@@ -84,21 +92,18 @@ describe('addChallenge', () => {
   })
 
   it('should rollback on persistence failure', async () => {
-    vi.useFakeTimers()
     const { db } = await import('@/db')
     vi.spyOn(db.challenges, 'add').mockRejectedValue(new Error('DB write failed'))
+    vi.spyOn(console, 'error').mockImplementation(() => {})
 
-    const promise = useChallengeStore.getState().addChallenge({
-      name: 'Fail challenge',
-      type: 'completion',
-      targetValue: 5,
-      deadline: '2030-01-01',
-    })
-
-    // Advance past all persistWithRetry delays (1s + 2s + 4s)
-    await vi.advanceTimersByTimeAsync(10000)
-
-    await expect(promise).rejects.toThrow('DB write failed')
+    await expect(
+      useChallengeStore.getState().addChallenge({
+        name: 'Fail challenge',
+        type: 'completion',
+        targetValue: 5,
+        deadline: '2030-01-01',
+      })
+    ).rejects.toThrow('DB write failed')
 
     const state = useChallengeStore.getState()
     expect(state.challenges).toHaveLength(0)
@@ -157,17 +162,14 @@ describe('deleteChallenge', () => {
       })
     })
 
-    vi.useFakeTimers()
     const { db } = await import('@/db')
     const id = useChallengeStore.getState().challenges[0].id
     vi.spyOn(db.challenges, 'delete').mockRejectedValue(new Error('DB delete failed'))
+    vi.spyOn(console, 'error').mockImplementation(() => {})
 
-    const promise = useChallengeStore.getState().deleteChallenge(id)
-
-    // Advance past all persistWithRetry delays
-    await vi.advanceTimersByTimeAsync(10000)
-
-    await expect(promise).rejects.toThrow('DB delete failed')
+    await expect(
+      useChallengeStore.getState().deleteChallenge(id)
+    ).rejects.toThrow('DB delete failed')
 
     const state = useChallengeStore.getState()
     expect(state.challenges).toHaveLength(1)
