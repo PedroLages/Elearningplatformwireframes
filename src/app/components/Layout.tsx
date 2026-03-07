@@ -9,6 +9,7 @@ import { useTheme } from 'next-themes'
 import { SearchCommandPalette } from './figma/SearchCommandPalette'
 import { KeyboardShortcutsDialog } from './figma/KeyboardShortcutsDialog'
 import { BottomNav } from './navigation/BottomNav'
+import { useStudyReminders } from '@/app/hooks/useStudyReminders'
 import { ProgressWidget } from './ProgressWidget'
 import { useIsMobile, useIsTablet, useIsDesktop } from '@/app/hooks/useMediaQuery'
 import { Sheet, SheetContent } from './ui/sheet'
@@ -125,6 +126,8 @@ export function Layout() {
   const isMobile = useIsMobile()
   const isTablet = useIsTablet()
   const isDesktop = useIsDesktop()
+
+  useStudyReminders()
 
   const [searchOpen, setSearchOpen] = useState(false)
   const [shortcutsOpen, setShortcutsOpen] = useState(false)

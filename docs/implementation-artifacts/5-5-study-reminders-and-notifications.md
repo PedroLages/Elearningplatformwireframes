@@ -4,9 +4,9 @@ story_name: "Study Reminders & Notifications"
 status: in-progress
 started: 2026-03-07
 completed:
-reviewed: false
-review_started:
-review_gates_passed: []
+reviewed: in-progress
+review_started: 2026-03-07
+review_gates_passed: [build, lint, type-check, format-check, unit-tests, e2e-tests, design-review, code-review, code-review-testing]
 ---
 
 # Story 5.5: Study Reminders & Notifications
@@ -84,11 +84,20 @@ So that I receive timely nudges that help me maintain my streak and study habits
 
 ## Design Review Feedback
 
-[Populated by /review-story — Playwright MCP findings]
+Report: [design-review-2026-03-07-e05-s05.md](../reviews/design/design-review-2026-03-07-e05-s05.md)
+
+**Blockers**: 2 WCAG AA contrast failures (`text-green-600` 3.30:1, `text-amber-600` 3.19:1)
+**High**: Touch targets below 44px on switch rows and time input; missing `aria-live` on status messages
+**Medium**: No animation on sub-toggle reveal; h3 heading skip (pre-existing)
 
 ## Code Review Feedback
 
-[Populated by /review-story — adversarial code review findings]
+Architecture report: [code-review-2026-03-07-e05-s05.md](../reviews/code/code-review-2026-03-07-e05-s05.md)
+Testing report: [code-review-testing-2026-03-07-e05-s05.md](../reviews/code/code-review-testing-2026-03-07-e05-s05.md)
+
+**Blockers**: Implementation uncommitted; AC4/AC5 have zero test coverage
+**High**: Dead `handleStudyUpdate` listener; `isPaused` not reactive; no unit tests
+**Medium**: No validation on time string parsing; hardcoded colors; redundant re-render
 
 ## Implementation Plan
 

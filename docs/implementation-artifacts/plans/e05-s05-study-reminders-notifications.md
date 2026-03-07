@@ -1,106 +1,101 @@
-# E05-S05: Study Reminders & Notifications — Implementation Plan
+# E05-S05: Study Reminders & Notifications
 
 ## Context
 
-LevelUp's Epic 5 (Study Streaks & Daily Goals) is 4/6 stories done. Stories 5.1–5.4 built streak tracking, pause/freeze, goals, and a history calendar — all using **localStorage + pure lib functions + CustomEvents**. E05-S05 adds browser notification reminders to help learners maintain their study habits and streaks. This is the first feature in the codebase to use the **Browser Notifications API**.
+Epic 5 (Study Streaks & Daily Goals) has 4 completed stories establishing streak counting, pause/freeze days, study goals, and history calendar. Story 5.5 adds the final engagement layer: browser notification reminders that nudge learners to maintain study habits. This is the first use of the browser Notification API in LevelUp.
 
-## Design Decisions
+## Approach
 
-1. **localStorage only** (no Dexie) — consistent with all Epic 5 features
-2. **Tab-open scheduling** via `setInterval` in a hook mounted in Layout.tsx — no Service Worker (future enhancement)
-3. **Native `<input type="time">`** — accessible by default, no extra dependency
-4. **Multi-tab dedup** — store `lastDailyReminderDate` and `lastStreakRiskDate` in localStorage to prevent duplicate notifications across tabs
+4 files — one lib module, one hook, two existing file updates. No Zustand store needed (localStorage + hook is sufficient). No service worker (ACs scope to "when browser is open").
 
 ## Files
 
-### New Files
+### 1. NEW: `src/lib/studyReminders.ts` — Config CRUD
 
-| # | File | Purpose |
-|---|------|---------|
-| 1 | `src/lib/studyReminders.ts` | Pure functions: storage CRUD, permission helpers, notification senders, streak-at-risk check |
-| 2 | `src/app/hooks/useStudyReminders.ts` | Scheduling hook: daily reminder interval (60s check) + streak-at-risk monitor (5min check) |
-| 3 | `src/app/components/figma/ReminderSettings.tsx` | Settings UI: master toggle, permission flow, daily reminder + time picker, streak-at-risk toggle |
-
-### Modified Files
-
-| # | File | Change |
-|---|------|--------|
-| 4 | `src/app/pages/Settings.tsx` | Add `<ReminderSettings />` card between Appearance and Data Management |
-| 5 | `src/app/components/Layout.tsx` | Mount `useStudyReminders()` hook (1 line) |
-| 6 | `tests/e2e/story-e05-s05.spec.ts` | Fix AC7 test seed shape (`enabled`/`startDate`/`days` not `isPaused`/`pausedAt`/`freezeDaysRemaining`) |
-
-## Data Structure
+Dedicated localStorage key `study-reminders` (follows `study-streak-pause` pattern, not inside `app-settings`).
 
 ```typescript
-// localStorage key: 'study-reminders'
-interface StudyReminderSettings {
-  enabled: boolean           // Master toggle
-  dailyReminder: boolean     // Daily sub-toggle
-  dailyReminderTime: string  // "HH:MM", default "09:00"
-  streakAtRisk: boolean      // Streak-at-risk sub-toggle
+interface ReminderConfig {
+  enabled: boolean              // Master toggle
+  dailyReminderEnabled: boolean // Daily time-of-day reminder
+  dailyReminderTime: string     // "HH:mm" format, default "09:00"
+  streakAtRiskEnabled: boolean  // 22-hour inactivity warning
 }
-
-// Dedup keys (also in localStorage):
-// 'study-reminders-last-daily': "YYYY-MM-DD"
-// 'study-reminders-last-risk': "YYYY-MM-DD"
 ```
 
-## Implementation Order
+Functions:
+- `getReminderConfig()` — read with defaults merge
+- `saveReminderConfig(partial)` — shallow merge, save, dispatch `CustomEvent('study-reminders-updated')`
+- `getLastStudyTimestamp()` — reads raw `study-log` key, returns most recent timestamp
+- `checkNotificationPermission()` — wraps `Notification.permission` with window guard
+- `requestNotificationPermission()` — wraps `Notification.requestPermission()` with window guard
 
-### Task 1: `src/lib/studyReminders.ts` — Core lib functions
-- `getReminderSettings()` / `saveReminderSettings()` with defaults merge
-- `requestNotificationPermission()` wrapping `Notification.requestPermission()` with API-unavailable fallback
-- `getNotificationPermission()` returning current permission state
-- `sendDailyReminder(currentStreak)` — `new Notification("Time to study!", { body: "You're on a {n}-day streak!" })`
-- `sendStreakAtRiskNotification()` — supportive tone, ~2 hours warning
-- `getLastStudyTimestamp()` — reads study-log, returns most recent timestamp
-- `isStreakAtRisk()` — 22+ hours since last study AND pause NOT active (reads `getStreakPauseStatus()` from studyLog.ts)
-- Multi-tab dedup helpers: `hasNotifiedToday(key)` / `markNotifiedToday(key)`
+### 2. NEW: `src/app/hooks/useStudyReminders.ts` — Scheduling Hook
 
-### Task 2: `src/app/hooks/useStudyReminders.ts` — Scheduling hook
-- Reads settings on mount, re-reads on `study-reminders-updated` event
-- Daily: `setInterval(60_000)` — checks if current time matches target (±60s window), hasn't fired today
-- Streak-at-risk: `setInterval(300_000)` — calls `isStreakAtRisk()`, hasn't fired today
-- Clears intervals on unmount or when `enabled` toggled off
-- Also listens to `study-log-updated` to reset streak-at-risk "fired" state when user studies
+Side-effect-only hook mounted at Layout level. Listens for `study-reminders-updated` and `study-log-updated` events.
 
-### Task 3: `src/app/components/figma/ReminderSettings.tsx` — Settings UI
-- Card with `data-testid="reminders-section"`, Bell icon in header
-- Master Switch: "Enable reminders" — on click, calls `requestNotificationPermission()`
-  - Granted → show `data-testid="notification-permission-status"` (green check + "Notifications enabled"), reveal sub-toggles
-  - Denied → show `data-testid="permission-denied-guidance"` with "browser settings" text, revert toggle
-- Daily reminder Switch + `<input type="time">` wrapped in `data-testid="reminder-time-picker"`
-- Streak-at-risk Switch with "22-hour" description text
-- When streak paused: show "paused" text, disable streak-at-risk toggle
-- All changes call `saveReminderSettings()` immediately (no save button)
+**Daily reminder**: Calculate ms until configured time → `setTimeout` → show `new Notification(...)` → reschedule 24h later.
 
-### Task 4: Wire into Settings.tsx
-- Import and add `<ReminderSettings />` between Appearance and Data Management cards
+**Streak-at-risk**: Check last study timestamp. If 22+ hours → notify immediately (one-shot with guard ref). If < 22h → `setTimeout` until threshold. 5-minute `setInterval` fallback for background tab timer drift.
 
-### Task 5: Wire into Layout.tsx
-- Import and call `useStudyReminders()` in Layout component
+**Pause suppression (AC7)**: Check `getStreakPauseStatus()` — skip streak-at-risk entirely when paused.
 
-### Task 6: Fix ATDD test seed + run tests
-- AC7 test seeds `{ isPaused, pausedAt, freezeDaysRemaining }` but actual StreakPause shape is `{ enabled, startDate, days }` — fix seed data
-- Run `npx playwright test tests/e2e/story-e05-s05.spec.ts` to verify all pass
+**Notification tags**: `'levelup-daily-reminder'` and `'levelup-streak-at-risk'` to prevent duplicates.
 
-## AC Mapping
+### 3. EDIT: `src/app/pages/Settings.tsx` — Reminders Card
 
-| AC | Implementation |
-|----|---------------|
-| AC1 (permission prompt) | ReminderSettings master Switch → `requestNotificationPermission()` → show status/guidance |
-| AC2 (daily time config) | Daily Switch + `<input type="time">` → saved to `study-reminders.dailyReminderTime` |
-| AC3 (streak-at-risk) | `isStreakAtRisk()` in lib, polled by hook every 5min |
-| AC4 (daily notification) | `sendDailyReminder(currentStreak)` fired by hook when time matches |
-| AC5 (risk notification) | `sendStreakAtRiskNotification()` fired by hook when `isStreakAtRisk()` returns true |
-| AC6 (disable) | Master toggle off → `saveReminderSettings({enabled:false})` → hook clears intervals |
-| AC7 (pause suppression) | `isStreakAtRisk()` checks `getStreakPauseStatus()?.enabled` → returns false if paused |
+New Card between Appearance and Data Management:
+
+```
+Card: "Study Reminders" (Bell icon)
+├── Master toggle: "Enable study reminders" + Switch
+├── [If denied] Alert: "Notifications blocked" + browser instructions
+├── [If enabled + granted] Daily reminder toggle + <input type="time">
+├── [If enabled + granted] Streak protection toggle + helper text
+└── [If enabled + granted] Status badge: "Notifications active"
+```
+
+Toggle ON → `requestNotificationPermission()` → if granted, save enabled state. Toggle OFF → save disabled, hook clears timers.
+
+Test IDs: `reminders-toggle`, `daily-reminder-toggle`, `daily-reminder-time`, `streak-at-risk-toggle`, `reminders-blocked-alert`.
+
+### 4. EDIT: `src/app/components/Layout.tsx` — Mount Hook
+
+Single line: `useStudyReminders()` near existing hooks.
+
+## Notification Messages (Supportive Tone)
+
+| Type | Title | Body |
+|------|-------|------|
+| Daily (streak > 0) | "Time to study!" | "Keep your {N}-day streak going! Your daily study session awaits." |
+| Daily (streak = 0) | "Time to study!" | "Start a new streak today! Every journey begins with one step." |
+| Streak-at-risk | "Your streak is still alive!" | "You've been away for a while — a quick session will keep your {N}-day streak going." |
+
+## Implementation Sequence
+
+1. Create `src/lib/studyReminders.ts` (pure functions, testable)
+2. Create `src/app/hooks/useStudyReminders.ts` (scheduling logic)
+3. Update `src/app/pages/Settings.tsx` (Reminders Card UI)
+4. Update `src/app/components/Layout.tsx` (mount hook)
+
+Granular commits after each step.
+
+## Key Patterns to Reuse
+
+- **localStorage CRUD**: `src/lib/settings.ts` — defaults + shallow merge pattern
+- **CustomEvent dispatch**: `src/lib/studyLog.ts:46` — `window.dispatchEvent(new CustomEvent(...))`
+- **Streak data access**: `src/lib/studyLog.ts` — `getCurrentStreak()`, `getStreakPauseStatus()`
+- **Settings Card layout**: `src/app/pages/Settings.tsx` — Card/CardHeader/CardTitle/CardContent
+- **Switch + Label row**: flex items-center justify-between pattern
+- **Toast feedback**: `import { toast } from 'sonner'` for save confirmations
 
 ## Verification
 
-1. `npm run build` — no TypeScript errors
-2. `npx playwright test tests/e2e/story-e05-s05.spec.ts` — all 6 ATDD tests pass
-3. Manual: Open Settings → toggle reminders → verify permission prompt appears
-4. Manual: Set daily reminder 1 min from now → verify notification fires
-5. Manual: Seed 23-hour-old study log → verify streak-at-risk notification fires
-6. Manual: Pause streak → verify streak-at-risk does NOT fire
+1. **Build**: `npm run build` — no TypeScript errors
+2. **Manual test flow**:
+   - Settings → toggle reminders on → grant permission → see config options
+   - Set daily time to 1 minute from now → wait → verify browser notification appears
+   - Study log has no activity for 22+ hours → verify streak-at-risk notification
+   - Pause streak → verify streak-at-risk suppressed
+   - Toggle off → verify timers cleared
+3. **E2E tests**: Settings UI state machine (toggle states, permission flows, config persistence)

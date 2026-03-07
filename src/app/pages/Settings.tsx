@@ -31,6 +31,7 @@ import {
   importAllData,
   resetAllData,
 } from '@/lib/settings'
+import { ReminderSettings } from '@/app/components/figma/ReminderSettings'
 
 export default function Settings() {
   const { theme, setTheme } = useTheme()
@@ -133,6 +134,9 @@ export default function Settings() {
             </div>
           </CardContent>
         </Card>
+
+        {/* Reminders */}
+        <ReminderSettings />
 
         {/* Data Management */}
         <Card>

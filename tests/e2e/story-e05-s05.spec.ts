@@ -27,6 +27,17 @@ test.describe('Study Reminders & Notifications (E05-S05)', () => {
   test('AC1: should show notification permission prompt when enabling reminders', async ({
     page,
   }) => {
+    // Mock Notification.permission as 'default' → requestPermission resolves 'granted'
+    await page.addInitScript(() => {
+      Object.defineProperty(window, 'Notification', {
+        value: {
+          permission: 'default',
+          requestPermission: () => Promise.resolve('granted'),
+        },
+        writable: true,
+      })
+    })
+
     await goToSettings(page)
 
     // Expect a reminders section to exist
@@ -164,10 +175,7 @@ test.describe('Study Reminders & Notifications (E05-S05)', () => {
     await expect(toggleAfterReload).not.toBeChecked()
   })
 
-  test('AC7: should suppress streak-at-risk when streak is paused', async ({
-    page,
-    localStorage,
-  }) => {
+  test('AC7: should suppress streak-at-risk when streak is paused', async ({ page }) => {
     await page.addInitScript(() => {
       Object.defineProperty(window, 'Notification', {
         value: {
@@ -178,28 +186,34 @@ test.describe('Study Reminders & Notifications (E05-S05)', () => {
       })
     })
 
-    await goToSettings(page)
-
-    // Seed a paused streak
-    await localStorage.seed('study-streak-pause', {
-      isPaused: true,
-      pausedAt: new Date().toISOString(),
-      freezeDaysRemaining: 2,
+    // Seed pause data before navigating so the component reads isPaused = true on mount
+    await page.goto('/')
+    await page.evaluate(() => {
+      localStorage.setItem('eduvi-sidebar-v1', 'false')
+      localStorage.setItem(
+        'study-streak-pause',
+        JSON.stringify({
+          enabled: true,
+          startDate: new Date().toISOString(),
+          days: 2,
+        })
+      )
     })
+
+    await goToSettings(page)
 
     const remindersSection = page.getByTestId('reminders-section')
     const reminderToggle = remindersSection.getByRole('switch', { name: /enable.*reminders/i })
     await reminderToggle.click()
 
-    // Streak-at-risk toggle should be disabled or show paused message
+    // Streak-at-risk toggle should be disabled when paused
     const streakAtRiskToggle = remindersSection.getByRole('switch', {
       name: /streak.*risk/i,
     })
+    await expect(streakAtRiskToggle).toBeDisabled()
 
-    // Either disabled or shows paused indicator
+    // Should show paused indicator
     const isPausedIndicator = remindersSection.getByText(/paused/i)
-    const isDisabled = await streakAtRiskToggle.isDisabled().catch(() => false)
-
-    expect(isDisabled || (await isPausedIndicator.isVisible().catch(() => false))).toBe(true)
+    await expect(isPausedIndicator).toBeVisible()
   })
 })
