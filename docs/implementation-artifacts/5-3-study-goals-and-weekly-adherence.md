@@ -101,4 +101,8 @@ See [code-review-2026-03-07-e05-s03.md](../reviews/code/code-review-2026-03-07-e
 
 ## Challenges and Lessons Learned
 
-[Document issues, solutions, and patterns worth remembering]
+- **`addInitScript` runs on every page load**, including reloads — not just once per test. Using `localStorage.clear()` inside it wiped seeded test data on `page.reload()`. Fixed with a `sessionStorage` flag to clear only on the first load per test.
+- **Dev server must run from the worktree directory**, not the main workspace. When E2E tests hit a dev server serving main workspace code, all story-specific components are missing. Always verify with `lsof -ti:5173 | xargs ps -p`.
+- **Division by zero in progress calculations** is easy to miss when HTML `min="1"` feels sufficient — users can paste "0" or corrupt localStorage. Always add programmatic guards.
+- **Touch target WCAG compliance (44x44px)** requires explicit `min-w-[44px] min-h-[44px]` on icon-only buttons. The icon's `size-4` (16px) alone doesn't set the button's hit area.
+- **Pure-function architecture** for progress computation made unit testing and review fixes straightforward — changes to computation logic required zero React component changes.
