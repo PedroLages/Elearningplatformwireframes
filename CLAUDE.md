@@ -14,6 +14,8 @@ Original Figma design: https://www.figma.com/design/q4x6ttJD11avObQNFoeQ2D/E-lea
 - `npm run dev` - Start Vite development server (default: http://localhost:5173)
 - `npm run build` - Build production bundle with Vite
 
+**Worktree E2E Warning:** Before running E2E tests in a git worktree, kill any dev server on port 5173 (`lsof -ti:5173 | xargs kill`). Playwright's `reuseExistingServer: true` will silently reuse a dev server from the main workspace, causing tests to pass against stale code.
+
 ## Architecture
 
 ### Tech Stack

@@ -24,7 +24,7 @@ export function StreakMilestoneToast({ milestone }: StreakMilestoneToastProps) {
         colors: tier.confettiColors,
       })
     }
-  }, [milestone.id])
+  }, [milestone.id, tier.particleCount, tier.spread, tier.confettiColors])
 
   return (
     <div

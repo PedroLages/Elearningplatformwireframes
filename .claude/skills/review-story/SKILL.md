@@ -53,6 +53,12 @@ The `-skipped` suffix indicates the gate was intentionally skipped (no lint scri
 
 4. **Pre-checks** (always run — fast, validates current state):
 
+   **Pre-review commit gate:** Before running any checks, verify working tree is clean:
+   ```
+   git status --porcelain
+   ```
+   If there are uncommitted changes, STOP and warn the user: "Uncommitted changes detected. Commit all changes before review — code review runs against the committed snapshot, not the working tree. Run `git add -A && git commit` first." Do NOT proceed until working tree is clean.
+
    Run these sequentially — stop on first failure:
 
    a. `npm run build` — STOP on failure with build errors.
