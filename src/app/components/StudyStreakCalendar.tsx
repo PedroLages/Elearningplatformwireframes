@@ -129,7 +129,6 @@ export function StudyStreakCalendar({ weeks = 16, className }: StudyStreakCalend
   // Check milestones on mount
   useEffect(() => {
     celebrateMilestones(snapshot.currentStreak)
-    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [])
 
   useEffect(() => {
