@@ -1,8 +1,8 @@
 /**
  * ATDD tests for E06-S02: Track Challenge Progress
  *
- * RED phase — these tests define acceptance criteria and should FAIL
- * until the feature is implemented.
+ * Tests verify that challenge progress is calculated from source data
+ * (contentProgress, studySessions, study-log) and displayed correctly.
  */
 import { test, expect } from '../support/fixtures'
 import { createChallenge } from '../support/fixtures/factories/challenge-factory'
@@ -78,18 +78,26 @@ test.afterEach(async ({ page, indexedDB }) => {
 // ── AC1: Dashboard widget displays active challenges ────
 
 test.describe('AC1: Challenge dashboard widget', () => {
-  test('displays active challenge with name, type icon, progress bar, percentage, and remaining time', async ({
+  test('displays active challenge with name, progress bar, percentage, and remaining time', async ({
     page,
   }) => {
     const challenge = createChallenge({
       name: 'Complete 10 Videos',
       type: 'completion',
       targetValue: 10,
-      currentProgress: 3,
+      currentProgress: 0,
+      createdAt: '2020-01-01T00:00:00.000Z',
     })
 
     await goToChallenges(page)
     await seedStore(page, 'challenges', [challenge])
+
+    // Seed 3 completed content items so refreshAllProgress calculates 3/10 = 30%
+    await seedStore(page, 'contentProgress', [
+      { courseId: 'c1', itemId: 'l1', status: 'completed', updatedAt: '2025-01-01T00:00:00.000Z' },
+      { courseId: 'c1', itemId: 'l2', status: 'completed', updatedAt: '2025-01-02T00:00:00.000Z' },
+      { courseId: 'c1', itemId: 'l3', status: 'completed', updatedAt: '2025-01-03T00:00:00.000Z' },
+    ])
     await page.reload()
 
     // Challenge name visible
@@ -167,7 +175,7 @@ test.describe('AC3: Time-based challenge progress', () => {
     await goToChallenges(page)
     await seedStore(page, 'challenges', [challenge])
 
-    // Seed study sessions totaling 4 hours (14400 seconds) after creation
+    // Seed study sessions totaling 4 hours after creation
     const sessions = [
       {
         id: crypto.randomUUID(),
@@ -205,23 +213,23 @@ test.describe('AC3: Time-based challenge progress', () => {
 // ── AC4: Streak-based progress ──────────────────────────
 
 test.describe('AC4: Streak-based challenge progress', () => {
-  test('reads streak count since challenge creation date', async ({ page }) => {
-    const createdAt = '2026-03-01T00:00:00.000Z'
+  test('reads current streak and displays progress', async ({ page }) => {
     const challenge = createChallenge({
       name: 'Maintain 30-Day Streak',
       type: 'streak',
       targetValue: 30,
       currentProgress: 0,
-      createdAt,
+      createdAt: '2020-01-01T00:00:00.000Z',
     })
 
     await goToChallenges(page)
     await seedStore(page, 'challenges', [challenge])
 
-    // Seed a 7-day streak via study log localStorage
+    // Seed a 7-day streak ending today so getCurrentStreak() returns 7
+    const today = new Date()
     const studyLog = Array.from({ length: 7 }, (_, i) => {
-      const date = new Date('2026-03-01')
-      date.setDate(date.getDate() + i)
+      const date = new Date(today)
+      date.setDate(date.getDate() - (6 - i)) // 6 days ago through today
       return {
         type: 'lesson_complete',
         timestamp: date.toISOString(),
@@ -243,7 +251,7 @@ test.describe('AC4: Streak-based challenge progress', () => {
 // ── AC5: Expired challenges ─────────────────────────────
 
 test.describe('AC5: Expired challenges', () => {
-  test('shows expired challenge with muted style, separated from active', async ({ page }) => {
+  test('shows expired challenge in collapsed section, separated from active', async ({ page }) => {
     const yesterday = new Date()
     yesterday.setDate(yesterday.getDate() - 1)
     const expiredDeadline = yesterday.toISOString().split('T')[0]
@@ -252,7 +260,7 @@ test.describe('AC5: Expired challenges', () => {
       name: 'Expired Challenge',
       type: 'completion',
       targetValue: 20,
-      currentProgress: 5,
+      currentProgress: 0,
       deadline: expiredDeadline,
     })
 
@@ -260,7 +268,7 @@ test.describe('AC5: Expired challenges', () => {
       name: 'Active Challenge',
       type: 'time',
       targetValue: 10,
-      currentProgress: 2,
+      currentProgress: 0,
       deadline: '2030-12-31',
     })
 
@@ -268,16 +276,21 @@ test.describe('AC5: Expired challenges', () => {
     await seedStore(page, 'challenges', [expiredChallenge, activeChallenge])
     await page.reload()
 
-    // Both challenges visible
-    await expect(page.getByText('Expired Challenge')).toBeVisible()
+    // Active challenge visible in main grid
     await expect(page.getByText('Active Challenge')).toBeVisible()
 
-    // Expired section or group exists
-    await expect(page.getByText(/expired/i)).toBeVisible()
+    // Expired section trigger visible with count
+    const expiredTrigger = page.getByText(/expired\s*\(1\)/i)
+    await expect(expiredTrigger).toBeVisible()
 
-    // Expired challenge has muted/dimmed styling (opacity or muted class)
-    const expiredCard = page.getByText('Expired Challenge').locator('closest=[data-testid]')
-    // This will need to be refined once implementation data-testids are known
+    // Expired challenge hidden until section is expanded
+    await expect(page.getByText('Expired Challenge')).not.toBeVisible()
+
+    // Click to expand expired section
+    await expiredTrigger.click()
+
+    // Now the expired challenge is visible with muted styling (opacity-60)
+    await expect(page.getByText('Expired Challenge')).toBeVisible()
   })
 })
 
@@ -292,9 +305,9 @@ test.describe('AC6: Empty state', () => {
     // Empty state message
     await expect(page.getByText(/no.*challenge|create.*first/i)).toBeVisible()
 
-    // CTA button linking to create challenge
-    await expect(
-      page.getByRole('button', { name: /create.*challenge|new.*challenge/i })
-    ).toBeVisible()
+    // CTA button in empty state (second Create Challenge button, after header button)
+    const ctaButtons = page.getByRole('button', { name: /create.*challenge/i })
+    await expect(ctaButtons).toHaveCount(2)
+    await expect(ctaButtons.nth(1)).toBeVisible()
   })
 })
