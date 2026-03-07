@@ -1,86 +1,54 @@
-# Design Review: E06-S01 — Create Learning Challenges
+# Design Review: E06-S01 — Create Learning Challenges (Round 3)
 
 **Date**: 2026-03-07
 **Reviewer**: Design Review Agent (Playwright MCP)
 **Viewports Tested**: 375px (mobile), 768px (tablet), 1440px (desktop)
-**Route**: `/challenges`
+**Affected Pages**: `/challenges`
 
 ## Executive Summary
 
-The Challenges page and Create Challenge dialog are well-structured, functionally complete, and demonstrate strong accessibility fundamentals. All core acceptance criteria pass. Two findings require attention before merge: the dialog close button is critically undersized on mobile (16×16px), and buttons use `rounded-md` (8px) when design standard specifies `rounded-xl` (12px).
+Clean, well-structured addition. Page and dialog follow design system faithfully — correct background (#FAF5EE), card radius (rounded-[24px]), token-based colors, proper form semantics, and solid accessibility. Four issues, none blockers.
 
 ## What Works Well
 
-1. All acceptance criteria functionally met — type-switch updates labels, validation fires, toast confirms creation
-2. Accessibility fundamentals solid — proper labels, aria-invalid, aria-describedby, role="alert"
-3. Form resets correctly on close and successful submission
-4. Responsive layout clean — no horizontal scroll at any viewport
+1. Background and card tokens correct (#FAF5EE, rounded-[24px], bg-card)
+2. Full success/error flow polished — dialog, toast, reset, card appears
+3. Accessibility scaffolding thorough — labels, aria-invalid, aria-describedby, role="alert"
+4. Touch targets pass on mobile (buttons 44px, full-width in footer)
 5. Zero console errors/warnings
-6. No hardcoded colours or inline styles
-7. Background colour correct (#FAF5EE)
-8. Contrast passes everywhere (muted text 5.52:1 on white, 5.09:1 on body)
+6. Dynamic label update works (videos/hours/days)
 
 ## Findings
 
-### Blockers
-
-**B1 — Dialog close button is 16×16px on mobile (touch target violation)**
-WCAG 2.1 SC 2.5.5 requires minimum 44×44px on touch devices. The Radix DialogContent close button is less than one-third the required size.
-
 ### High Priority
 
-**H1 — Button border-radius is `rounded-md` (8px) — design standard requires `rounded-xl` (12px)**
-All Button elements compute to 8px border-radius. Fix in `button.tsx` buttonVariants base class.
+**H1 — Stale validation errors do not clear on field change**
+- Location: `CreateChallengeDialog.tsx:60-93` and onChange handlers
+- Errors persist after user corrects field. aria-invalid stays true.
+- Fix: Clear field error on onChange
 
-**H2 — Submit and header CTA buttons are 36px tall on mobile (touch target violation)**
-Both primary CTA buttons fall 8px short of the 44px minimum. Add `min-h-11` to Button size variants.
+### Medium Priority
 
-**H3 — No Cancel button in dialog footer**
-Only submit + X icon. A secondary Cancel button improves discoverability for keyboard users.
+**M1 — Mobile header row has no flex-wrap**
+- Location: `Challenges.tsx:109-115`
+- At 375px, title + button fit but fragile layout
+- Fix: Add `flex-wrap gap-2`
 
-**H4 — Primary colour token is near-black (#030213), not blue-600**
-This is likely a pre-existing theme configuration issue, not introduced by this story.
+**M2 — Icon container 36x36px (size-9), below 44px guideline**
+- Location: `Challenges.tsx:55`
+- Decorative, not interactive — not a violation but improves scannability
+- Fix: Change to `size-10` or `size-11`
 
-### Medium
-
-**M1 — Validation errors don't clear in real time as user corrects fields**
-Errors only clear on next submit attempt. Real-time clearing would improve UX.
-
-**M2 — Empty state button text identical to header button**
-Consider differentiating copy (e.g., "Set your first goal").
-
-**M3 — No delete/edit actions on challenge cards**
-Scope gap — worth a follow-up story.
+**M3 — Progress bar h-2 (8px) very thin**
+- Location: `Challenges.tsx:77`
+- At 0% progress nearly invisible
+- Fix: Change to `h-2.5` or `h-3`
 
 ### Nits
 
-**N1 — Icon margin `mr-1.5` (6px) instead of standard `mr-2` (8px)**
-**N2 — `daysRemaining` timezone edge case worth a comment**
+**N1 — Seed data mismatch**: "Read 20 books" with type:time shows "20 hours"
+**N2 — aria-live implicit via role="alert"**: Consider always-present containers for max AT compat
 
-## Accessibility Checklist
+## Accessibility Checklist — All pass except H1 (errors don't clear on correction)
 
-| Check | Status |
-|-------|--------|
-| Text contrast ≥4.5:1 | Pass |
-| Keyboard navigation | Pass |
-| Focus indicators visible | Pass |
-| Heading hierarchy | Pass |
-| ARIA labels on icon buttons | Pass |
-| Semantic HTML | Pass |
-| Form labels associated | Pass |
-| aria-invalid + aria-describedby | Pass |
-| role="alert" on errors | Pass |
-| prefers-reduced-motion | Pass |
-| Touch targets ≥44×44px | Fail (B1, H2) |
-
-## Responsive Verification
-
-| Viewport | Status | Notes |
-|----------|--------|-------|
-| Desktop 1440px | Pass | Clean layout, sidebar expanded |
-| Tablet 768px | Pass | Sidebar collapses, 2-column grid |
-| Mobile 375px | Partial | Touch target violations (B1, H2) |
-
-## Summary
-
-Findings: 9 | Blockers: 1 | High: 4 | Medium: 3 | Nits: 2
+## Responsive Verification — Pass at all 3 breakpoints

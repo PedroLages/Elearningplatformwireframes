@@ -74,7 +74,6 @@ export const useChallengeStore = create<ChallengeState>((set, get) => ({
 
   deleteChallenge: async (id: string) => {
     const { challenges } = get()
-    const toDelete = challenges.find(c => c.id === id)
 
     set({
       challenges: challenges.filter(c => c.id !== id),
@@ -86,12 +85,11 @@ export const useChallengeStore = create<ChallengeState>((set, get) => ({
         await db.challenges.delete(id)
       })
     } catch (error) {
-      if (toDelete) {
-        set({
-          challenges: [...get().challenges, toDelete],
-          error: 'Failed to delete challenge',
-        })
-      }
+      // Rollback to full snapshot preserving original order
+      set({
+        challenges,
+        error: 'Failed to delete challenge',
+      })
       console.error('[ChallengeStore] Failed to delete challenge:', error)
       toast.error('Failed to delete challenge')
       throw error

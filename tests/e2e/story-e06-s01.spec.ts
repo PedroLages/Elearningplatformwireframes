@@ -9,7 +9,10 @@ import { navigateAndWait } from '../support/helpers/navigation'
 /** Navigate to the Challenges page. */
 async function goToChallenges(page: import('@playwright/test').Page) {
   await navigateAndWait(page, '/challenges')
-  await page.waitForSelector('h1', { state: 'visible', timeout: 10000 })
+  await page.waitForSelector('[data-testid="header-create-challenge"]', {
+    state: 'visible',
+    timeout: 10000,
+  })
 }
 
 /** Open the Create Challenge dialog from the page header button. */
@@ -35,16 +38,28 @@ test.describe('Create Learning Challenges (E06-S01)', () => {
   })
 
   test.afterEach(async ({ page }) => {
-    await page.evaluate(async () => {
-      const req = indexedDB.open('ElearningDB')
-      req.onsuccess = () => {
-        const idb = req.result
-        if (idb.objectStoreNames.contains('challenges')) {
-          const tx = idb.transaction('challenges', 'readwrite')
-          tx.objectStore('challenges').clear()
-        }
-      }
-    })
+    await page.evaluate(
+      () =>
+        new Promise<void>((resolve, reject) => {
+          const req = indexedDB.open('ElearningDB')
+          req.onsuccess = () => {
+            const idb = req.result
+            if (!idb.objectStoreNames.contains('challenges')) {
+              idb.close()
+              resolve()
+              return
+            }
+            const tx = idb.transaction('challenges', 'readwrite')
+            const clearReq = tx.objectStore('challenges').clear()
+            clearReq.onsuccess = () => {
+              idb.close()
+              resolve()
+            }
+            clearReq.onerror = () => reject(clearReq.error)
+          }
+          req.onerror = () => reject(req.error)
+        })
+    )
   })
 
   // ── AC 1: Form displays all required fields ──────────────────────
@@ -78,6 +93,16 @@ test.describe('Create Learning Challenges (E06-S01)', () => {
     await expect(page.getByLabel(/target.*days/i)).toBeVisible()
   })
 
+  test('AC2: changing type dynamically updates the target label', async ({ page }) => {
+    await openCreateDialog(page)
+    await selectType(page, /time/i)
+    await expect(page.getByLabel(/target.*hours/i)).toBeVisible()
+
+    // Re-select a different type and verify label updates
+    await selectType(page, /completion/i)
+    await expect(page.getByLabel(/target.*videos/i)).toBeVisible()
+  })
+
   // ── AC 3: Valid submission saves to IndexedDB ────────────────────
   test('AC3: submitting valid form saves challenge and shows success toast', async ({ page }) => {
     await openCreateDialog(page)
@@ -90,7 +115,11 @@ test.describe('Create Learning Challenges (E06-S01)', () => {
     // Set deadline to 7 days from now
     const futureDate = new Date()
     futureDate.setDate(futureDate.getDate() + 7)
-    await page.getByLabel(/deadline/i).fill(futureDate.toISOString().split('T')[0])
+    await page
+      .getByLabel(/deadline/i)
+      .fill(
+        `${futureDate.getFullYear()}-${String(futureDate.getMonth() + 1).padStart(2, '0')}-${String(futureDate.getDate()).padStart(2, '0')}`
+      )
 
     // Submit via the dialog's submit button
     await page
@@ -144,7 +173,11 @@ test.describe('Create Learning Challenges (E06-S01)', () => {
 
     const futureDate = new Date()
     futureDate.setDate(futureDate.getDate() + 7)
-    await page.getByLabel(/deadline/i).fill(futureDate.toISOString().split('T')[0])
+    await page
+      .getByLabel(/deadline/i)
+      .fill(
+        `${futureDate.getFullYear()}-${String(futureDate.getMonth() + 1).padStart(2, '0')}-${String(futureDate.getDate()).padStart(2, '0')}`
+      )
 
     // Submit
     await page
@@ -165,7 +198,11 @@ test.describe('Create Learning Challenges (E06-S01)', () => {
 
     const futureDate = new Date()
     futureDate.setDate(futureDate.getDate() + 7)
-    await page.getByLabel(/deadline/i).fill(futureDate.toISOString().split('T')[0])
+    await page
+      .getByLabel(/deadline/i)
+      .fill(
+        `${futureDate.getFullYear()}-${String(futureDate.getMonth() + 1).padStart(2, '0')}-${String(futureDate.getDate()).padStart(2, '0')}`
+      )
 
     await page
       .getByRole('dialog')
@@ -186,7 +223,11 @@ test.describe('Create Learning Challenges (E06-S01)', () => {
 
     const futureDate = new Date()
     futureDate.setDate(futureDate.getDate() + 7)
-    await page.getByLabel(/deadline/i).fill(futureDate.toISOString().split('T')[0])
+    await page
+      .getByLabel(/deadline/i)
+      .fill(
+        `${futureDate.getFullYear()}-${String(futureDate.getMonth() + 1).padStart(2, '0')}-${String(futureDate.getDate()).padStart(2, '0')}`
+      )
 
     await page
       .getByRole('dialog')
@@ -223,23 +264,25 @@ test.describe('Create Learning Challenges (E06-S01)', () => {
     const nameInput = page.getByLabel(/challenge name/i)
     await expect(nameInput).toBeVisible()
 
-    // Keyboard navigation: Tab through all fields
+    // Keyboard navigation: Tab through fields and verify focus actually lands
     await nameInput.focus()
     await expect(nameInput).toBeFocused()
 
     await page.keyboard.press('Tab')
-    const typeSelect = page.getByLabel(/challenge type/i)
-    await expect(typeSelect).toBeFocused()
+    // Verify focus landed on the type select by checking document.activeElement
+    const focusedAfterTab1 = await page.evaluate(() => document.activeElement?.id)
+    expect(focusedAfterTab1).toBe('challenge-type')
 
     await page.keyboard.press('Tab')
-    const targetInput = page.getByLabel(/target/i)
-    await expect(targetInput).toBeFocused()
+    const focusedAfterTab2 = await page.evaluate(() => document.activeElement?.id)
+    expect(focusedAfterTab2).toBe('challenge-target')
 
     await page.keyboard.press('Tab')
-    const deadlineInput = page.getByLabel(/deadline/i)
-    await expect(deadlineInput).toBeFocused()
+    const focusedAfterTab3 = await page.evaluate(() => document.activeElement?.id)
+    expect(focusedAfterTab3).toBe('challenge-deadline')
 
-    // Verify Cancel and Create buttons are keyboard-focusable within the dialog
+    // Verify Cancel and Create buttons are focusable within the dialog
+    // (date inputs have internal sub-elements so Tab count varies by browser)
     const cancelButton = page.getByRole('dialog').getByRole('button', { name: /cancel/i })
     await cancelButton.focus()
     await expect(cancelButton).toBeFocused()

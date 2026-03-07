@@ -52,7 +52,7 @@ function ChallengeCard({ challenge }: { challenge: Challenge }) {
       <CardContent className="flex flex-col gap-3 p-5">
         <div className="flex items-start justify-between gap-3">
           <div className="flex items-center gap-2.5">
-            <div className="bg-primary/10 text-primary flex size-9 items-center justify-center rounded-lg">
+            <div className="flex size-10 items-center justify-center rounded-lg bg-blue-600/10 text-blue-600">
               <Icon className="size-4.5" />
             </div>
             <div>
@@ -74,7 +74,7 @@ function ChallengeCard({ challenge }: { challenge: Challenge }) {
             </span>
             <span className="font-medium">{progressPercent}%</span>
           </div>
-          <Progress value={progressPercent} className="h-2" />
+          <Progress value={progressPercent} className="h-2.5" />
         </div>
 
         <p className="text-muted-foreground text-xs">
@@ -95,18 +95,12 @@ export function Challenges() {
   const [dialogOpen, setDialogOpen] = useState(false)
 
   useEffect(() => {
-    let ignore = false
-    loadChallenges().then(() => {
-      if (ignore) return
-    })
-    return () => {
-      ignore = true
-    }
+    loadChallenges()
   }, [loadChallenges])
 
   return (
     <div className="mx-auto w-full max-w-4xl space-y-6 p-6">
-      <div className="flex items-center justify-between">
+      <div className="flex flex-wrap items-center justify-between gap-2">
         <h1 className="text-2xl font-bold tracking-tight">Challenges</h1>
         <Button data-testid="header-create-challenge" onClick={() => setDialogOpen(true)}>
           <Plus className="mr-2 size-4" />

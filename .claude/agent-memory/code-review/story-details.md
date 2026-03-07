@@ -37,12 +37,10 @@ See git history for these older reviews. Key recurring patterns captured in MEMO
 - getStreakStartDate() called twice in detectAndRecordMilestones (midnight race)
 - confetti useEffect deps should be [milestone.id] not [milestone.milestoneValue]
 
-## E06-S01: Create Learning Challenges (Round 2)
-- Round 1 blockers fixed in f51e11b (deleteChallenge throw, deadline validation, unit tests, button sizes)
-- REMAINING: formatDeadline/daysRemaining still use `new Date(dateString)` -- timezone bug in display
-- REMAINING: error state from store not rendered on Challenges page
-- REMAINING: `h-* w-*` instead of `size-*` recurring pattern continues
-- REMAINING: ChallengeCard string interpolation for className instead of cn()
-- REMAINING: E2E test line 12 `.catch(() => {})` silently swallows waitForSelector failure
-- NEW: targetValue allows fractional values for completion/streak types (1.5 videos)
-- NEW: no `aria-live` region wrapping validation errors (role="alert" used instead -- OK per WCAG)
+## E06-S01: Create Learning Challenges (Round 3)
+- Round 2 items largely fixed: parseLocalDate, error state, cn(), deleteChallenge throw, integer validation, ignore flag
+- REMAINING: E2E afterEach cleanup is fire-and-forget (callback-based IDB API not awaited)
+- REMAINING: useEffect ignore flag is a no-op (loadChallenges state update happens in store, not in .then())
+- REMAINING: Validation errors don't clear on input change (persist until next submit)
+- REMAINING: `type as ChallengeType` cast when type is '' produces "Target undefined must be a whole number"
+- REMAINING: E2E afterEach IDB cleanup doesn't await transaction completion -- test isolation risk

@@ -73,8 +73,8 @@ export function CreateChallengeDialog({ open, onOpenChange }: CreateChallengeDia
     const targetNum = Number(target)
     if (!target || isNaN(targetNum) || targetNum <= 0) {
       errs.target = 'Target must be greater than zero'
-    } else if (type !== 'time' && !Number.isInteger(targetNum)) {
-      errs.target = `Target ${typeUnits[type as ChallengeType]} must be a whole number`
+    } else if (type && type !== 'time' && !Number.isInteger(targetNum)) {
+      errs.target = `Target ${typeUnits[type]} must be a whole number`
     }
 
     if (!deadline) {
@@ -150,7 +150,10 @@ export function CreateChallengeDialog({ open, onOpenChange }: CreateChallengeDia
               placeholder="e.g., Complete 5 videos this week"
               maxLength={60}
               value={name}
-              onChange={e => setName(e.target.value)}
+              onChange={e => {
+                setName(e.target.value)
+                if (errors.name) setErrors(prev => ({ ...prev, name: undefined }))
+              }}
               aria-invalid={!!errors.name}
               aria-describedby={errors.name ? 'challenge-name-error' : undefined}
             />
@@ -166,7 +169,13 @@ export function CreateChallengeDialog({ open, onOpenChange }: CreateChallengeDia
             <Label htmlFor="challenge-type" id="challenge-type-label">
               Challenge Type
             </Label>
-            <Select value={type} onValueChange={v => setType(v as ChallengeType)}>
+            <Select
+              value={type}
+              onValueChange={v => {
+                setType(v as ChallengeType)
+                if (errors.type) setErrors(prev => ({ ...prev, type: undefined }))
+              }}
+            >
               <SelectTrigger
                 id="challenge-type"
                 aria-labelledby="challenge-type-label"
@@ -197,7 +206,10 @@ export function CreateChallengeDialog({ open, onOpenChange }: CreateChallengeDia
               min="1"
               placeholder={`e.g., 10 ${unit}`}
               value={target}
-              onChange={e => setTarget(e.target.value)}
+              onChange={e => {
+                setTarget(e.target.value)
+                if (errors.target) setErrors(prev => ({ ...prev, target: undefined }))
+              }}
               aria-invalid={!!errors.target}
               aria-describedby={errors.target ? 'challenge-target-error' : undefined}
             />
@@ -215,7 +227,10 @@ export function CreateChallengeDialog({ open, onOpenChange }: CreateChallengeDia
               id="challenge-deadline"
               type="date"
               value={deadline}
-              onChange={e => setDeadline(e.target.value)}
+              onChange={e => {
+                setDeadline(e.target.value)
+                if (errors.deadline) setErrors(prev => ({ ...prev, deadline: undefined }))
+              }}
               aria-invalid={!!errors.deadline}
               aria-describedby={errors.deadline ? 'challenge-deadline-error' : undefined}
             />

@@ -167,9 +167,9 @@ describe('deleteChallenge', () => {
     vi.spyOn(db.challenges, 'delete').mockRejectedValue(new Error('DB delete failed'))
     vi.spyOn(console, 'error').mockImplementation(() => {})
 
-    await expect(
-      useChallengeStore.getState().deleteChallenge(id)
-    ).rejects.toThrow('DB delete failed')
+    await expect(useChallengeStore.getState().deleteChallenge(id)).rejects.toThrow(
+      'DB delete failed'
+    )
 
     const state = useChallengeStore.getState()
     expect(state.challenges).toHaveLength(1)

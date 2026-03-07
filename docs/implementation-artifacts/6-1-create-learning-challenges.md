@@ -79,22 +79,29 @@ See [plan](plans/e06-s01-create-learning-challenges.md) for implementation appro
 
 ## Design Review Feedback
 
-Report: `docs/reviews/design/design-review-2026-03-07-e06-s01.md`
+Report: `docs/reviews/design/design-review-2026-03-07-e06-s01.md` (Round 3)
 
-**Blocker**: Dialog close button 16×16px on mobile (needs 44×44px touch target)
-**High**: Button border-radius `rounded-md` vs standard `rounded-xl`; CTA buttons 36px tall (need 44px); no Cancel button in dialog footer; primary colour token near-black vs blue-600 (pre-existing)
-**Medium**: Errors don't clear in real-time; empty-state button copy identical to header; no delete/edit actions (follow-up story)
+Previous blockers (R1/R2) resolved: dialog close button, button radius, CTA height, Cancel button.
+
+**High**: Stale validation errors don't clear on field change (aria-invalid persists)
+**Medium**: Mobile header row no flex-wrap; icon container 36px (decorative); progress bar h-2 thin
+**Nits**: Seed data mismatch ("Read 20 books" → type:time); implicit aria-live via role="alert"
 
 ## Code Review Feedback
 
 Reports:
-- `docs/reviews/code/code-review-2026-03-07-e06-s01.md`
-- `docs/reviews/code/code-review-testing-2026-03-07-e06-s01.md`
+- `docs/reviews/code/code-review-2026-03-07-e06-s01.md` (Round 3)
+- `docs/reviews/code/code-review-testing-2026-03-07-e06-s01.md` (Round 3)
 
-**High (code)**: `deleteChallenge` silently swallows errors; deadline validation timezone bug (UTC vs local); no unit tests for store or dialog
-**High (testing)**: AC3 doesn't verify IndexedDB fields; AC4 missing negative target test; AC5 aria-live assertion fragile; keyboard nav test incomplete; no challenges table CRUD tests
-**Medium**: `h-N w-N` vs `size-N`; no `cn()` for conditional classes; StrictMode double-fetch; silent `.catch(() => {})`; no IndexedDB cleanup between tests
+Previous high-priority issues (R1/R2) resolved: error swallowing, timezone bug, unit tests added.
+
+**High (code)**: E2E afterEach IDB cleanup fire-and-forget; empty type + fractional target → "undefined" in error; useEffect ignore flag no-op
+**High (testing)**: E2E IDB cleanup async-unsafe; keyboard nav test doesn't verify focus landing; negative target may not exercise validation; deleteChallenge rollback position untested
+**Medium (code)**: Validation errors persist until resubmit; bg-primary/10 near-black not blue-600; deleteChallenge rollback appends to end
+**Medium (testing)**: AC2 no dynamic label change test; Sonner internal selector; empty form aria-live test; static factory name; no schema update test
 
 ## Challenges and Lessons Learned
 
-[Document issues, solutions, and patterns worth remembering]
+- persistWithRetry + fake timers causes unhandled rejections — mock at module level with vi.mock for store tests
+- E2E IDB cleanup needs Promise-based wrapper, not fire-and-forget callback
+- Optimistic rollback must snapshot full state before mutation, not reconstruct after
