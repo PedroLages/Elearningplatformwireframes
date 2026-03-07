@@ -27,7 +27,7 @@ export const opsManualCourse: Course = {
   isSequential: false,
   basePath,
   coverImage: '/images/ops-manual',
-  instructorId: 'david-okafor',
+  instructorId: 'chase-hughes',
   modules: [
     {
       id: 'ops-authority-inventory',

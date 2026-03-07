@@ -22,7 +22,7 @@ import {
 } from '@/app/components/ui/breadcrumb'
 import { CourseCard } from '@/app/components/figma/CourseCard'
 import { getInstructorById } from '@/data/instructors'
-import { getInstructorStats } from '@/lib/instructors'
+import { getInstructorStats, getAvatarSrc } from '@/lib/instructors'
 import { getCourseCompletionPercent } from '@/lib/progress'
 
 function getInitials(name: string) {
@@ -80,7 +80,7 @@ export function InstructorProfile() {
           <div className="flex flex-col sm:flex-row gap-6">
             {/* Avatar */}
             <Avatar className="size-28 sm:size-32 shrink-0 ring-2 ring-border/50 self-center sm:self-start">
-              <AvatarImage src={instructor.avatar} alt={instructor.name} />
+              <AvatarImage {...getAvatarSrc(instructor.avatar, 128)} alt={instructor.name} />
               <AvatarFallback className="text-2xl font-semibold bg-blue-100 text-blue-700">
                 {getInitials(instructor.name)}
               </AvatarFallback>

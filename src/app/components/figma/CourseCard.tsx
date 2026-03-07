@@ -14,6 +14,7 @@ import { getResourceUrl } from '@/lib/media'
 import { cn } from '@/app/components/ui/utils'
 import { useCourseCardPreview } from '@/hooks/useCourseCardPreview'
 import { getInstructorById } from '@/data/instructors'
+import { getAvatarSrc } from '@/lib/instructors'
 import type { Course, CourseCategory } from '@/data/types'
 
 // ── Shared constants ────────────────────────────────────────────────
@@ -183,9 +184,9 @@ export function CourseCard({
               variant={getDifficultyBadgeVariant(course.difficulty)}
               className={
                 course.difficulty.toLowerCase() === 'beginner'
-                  ? 'bg-green-100 text-green-800 dark:bg-green-900 dark:text-green-100'
+                  ? 'bg-green-100 text-green-900 dark:bg-green-900 dark:text-green-100'
                   : course.difficulty.toLowerCase() === 'intermediate'
-                    ? 'bg-amber-100 text-amber-800 dark:bg-amber-900 dark:text-amber-100'
+                    ? 'bg-amber-100 text-amber-900 dark:bg-amber-900 dark:text-amber-100'
                     : ''
               }
             >
@@ -472,7 +473,7 @@ export function CourseCard({
                 className="flex items-center gap-1.5 mb-3 text-xs text-muted-foreground hover:text-brand transition-colors w-fit"
               >
                 <Avatar className="size-5">
-                  <AvatarImage src={instructor.avatar} alt={instructor.name} />
+                  <AvatarImage {...getAvatarSrc(instructor.avatar, 20)} alt={instructor.name} />
                   <AvatarFallback className="text-[8px]">
                     {instructor.name.split(' ').map(n => n[0]).join('')}
                   </AvatarFallback>
@@ -517,7 +518,7 @@ export function CourseCard({
                 className="flex items-center gap-1.5 mb-2 text-xs text-muted-foreground hover:text-brand transition-colors w-fit"
               >
                 <Avatar className="size-5">
-                  <AvatarImage src={instructor.avatar} alt={instructor.name} />
+                  <AvatarImage {...getAvatarSrc(instructor.avatar, 20)} alt={instructor.name} />
                   <AvatarFallback className="text-[8px]">
                     {instructor.name.split(' ').map(n => n[0]).join('')}
                   </AvatarFallback>
@@ -565,9 +566,9 @@ export function CourseCard({
                 variant={getDifficultyBadgeVariant(course.difficulty)}
                 className={`badge-entrance ${
                   course.difficulty.toLowerCase() === 'beginner'
-                    ? 'bg-green-100 text-green-800 dark:bg-green-900 dark:text-green-100 hover:bg-green-100 dark:hover:bg-green-900'
+                    ? 'bg-green-100 text-green-900 dark:bg-green-900 dark:text-green-100 hover:bg-green-100 dark:hover:bg-green-900'
                     : course.difficulty.toLowerCase() === 'intermediate'
-                      ? 'bg-amber-100 text-amber-800 dark:bg-amber-900 dark:text-amber-100 hover:bg-amber-100 dark:hover:bg-amber-900'
+                      ? 'bg-amber-100 text-amber-900 dark:bg-amber-900 dark:text-amber-100 hover:bg-amber-100 dark:hover:bg-amber-900'
                       : ''
                 }`}
               >
@@ -589,7 +590,7 @@ export function CourseCard({
                 className="flex items-center gap-1.5 text-xs text-muted-foreground hover:text-brand transition-colors w-fit"
               >
                 <Avatar className="size-5">
-                  <AvatarImage src={instructor.avatar} alt={instructor.name} />
+                  <AvatarImage {...getAvatarSrc(instructor.avatar, 20)} alt={instructor.name} />
                   <AvatarFallback className="text-[8px]">
                     {instructor.name.split(' ').map(n => n[0]).join('')}
                   </AvatarFallback>

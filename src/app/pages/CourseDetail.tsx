@@ -19,6 +19,7 @@ import { CourseNotesTab } from '@/app/components/notes/CourseNotesTab'
 import { categoryLabels, categoryColors } from '@/app/components/figma/CourseCard'
 import { allCourses } from '@/data/courses'
 import { getInstructorById } from '@/data/instructors'
+import { getAvatarSrc } from '@/lib/instructors'
 import { getProgress, getCourseCompletionPercent } from '@/lib/progress'
 import { useContentProgressStore } from '@/stores/useContentProgressStore'
 
@@ -91,7 +92,7 @@ export function CourseDetail() {
                   className="inline-flex items-center gap-2.5 mb-5 px-3 py-2 rounded-xl bg-muted/50 hover:bg-muted transition-colors w-fit"
                 >
                   <Avatar className="size-8">
-                    <AvatarImage src={instructor.avatar} alt={instructor.name} />
+                    <AvatarImage {...getAvatarSrc(instructor.avatar, 32)} alt={instructor.name} />
                     <AvatarFallback className="text-xs">
                       {instructor.name.split(' ').map(n => n[0]).join('')}
                     </AvatarFallback>

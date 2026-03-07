@@ -4,7 +4,7 @@ import { Card, CardContent } from '@/app/components/ui/card'
 import { Badge } from '@/app/components/ui/badge'
 import { Avatar, AvatarFallback, AvatarImage } from '@/app/components/ui/avatar'
 import { allInstructors } from '@/data/instructors'
-import { getInstructorStats } from '@/lib/instructors'
+import { getInstructorStats, getAvatarSrc } from '@/lib/instructors'
 
 function getInitials(name: string) {
   return name
@@ -21,7 +21,9 @@ export function Instructors() {
       <div className="mb-8">
         <h1 className="text-2xl font-bold mb-2">Our Instructors</h1>
         <p className="text-muted-foreground">
-          Meet the {allInstructors.length} experts behind your learning journey
+          {allInstructors.length === 1
+            ? 'Meet the expert behind your learning journey'
+            : `Meet the ${allInstructors.length} experts behind your learning journey`}
         </p>
       </div>
 
@@ -40,7 +42,7 @@ export function Instructors() {
                   {/* Avatar */}
                   <Avatar className="size-24 mb-4 ring-2 ring-border/50 group-hover:ring-brand/30 transition-all">
                     <AvatarImage
-                      src={instructor.avatar}
+                      {...getAvatarSrc(instructor.avatar, 96)}
                       alt={instructor.name}
                     />
                     <AvatarFallback className="text-lg font-semibold bg-blue-100 text-blue-700">
