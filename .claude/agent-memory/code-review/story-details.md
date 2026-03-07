@@ -36,3 +36,13 @@ See git history for these older reviews. Key recurring patterns captured in MEMO
 - MilestoneGallery reads milestones only on mount (stale data when popover opens after earning)
 - getStreakStartDate() called twice in detectAndRecordMilestones (midnight race)
 - confetti useEffect deps should be [milestone.id] not [milestone.milestoneValue]
+
+## E06-S01: Create Learning Challenges
+- No uncommitted changes (first story to break the pattern!)
+- No unit tests for useChallengeStore.ts or CreateChallengeDialog.tsx
+- deleteChallenge silently swallows errors (no throw, no user notification)
+- `h-* w-*` instead of `size-*` recurring pattern continues
+- Deadline validation timezone-sensitive: `new Date('2025-03-08')` parsed as UTC midnight
+- loadChallenges has no guard against concurrent calls (double-mount in StrictMode)
+- ChallengeCard string interpolation for className instead of cn()
+- E2E test line 12: `.catch(() => {})` silently swallows waitForSelector failure

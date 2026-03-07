@@ -103,7 +103,10 @@ vi.mock('motion/react', () => ({
     {
       get: (_target, prop) => {
         // Return a simple component that renders children
-        const Component = ({ children, ...props }: React.PropsWithChildren<Record<string, unknown>>) => {
+        const Component = ({
+          children,
+          ...props
+        }: React.PropsWithChildren<Record<string, unknown>>) => {
           const tag = String(prop)
           const safeProps: Record<string, unknown> = {}
           for (const [k, v] of Object.entries(props)) {

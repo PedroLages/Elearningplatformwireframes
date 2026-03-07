@@ -37,13 +37,7 @@ import { VideoPlayer } from '../VideoPlayer'
 // ---------------------------------------------------------------------------
 
 vi.mock('../ChapterProgressBar', () => ({
-  ChapterProgressBar: ({
-    progress,
-    onSeek,
-  }: {
-    progress: number
-    onSeek: (p: number) => void
-  }) => (
+  ChapterProgressBar: ({ progress, onSeek }: { progress: number; onSeek: (p: number) => void }) => (
     <div data-testid="chapter-progress-bar" data-progress={progress}>
       <input
         data-testid="progress-input"
@@ -58,13 +52,7 @@ vi.mock('../ChapterProgressBar', () => ({
 }))
 
 vi.mock('../VideoShortcutsOverlay', () => ({
-  VideoShortcutsOverlay: ({
-    open,
-    onClose,
-  }: {
-    open: boolean
-    onClose: () => void
-  }) =>
+  VideoShortcutsOverlay: ({ open, onClose }: { open: boolean; onClose: () => void }) =>
     open ? (
       <div data-testid="shortcuts-overlay">
         <button onClick={onClose}>Close</button>
@@ -247,16 +235,12 @@ describe('VideoPlayer', () => {
 
     it('renders theater mode button when onTheaterModeToggle is provided', () => {
       renderPlayer({ onTheaterModeToggle: vi.fn() })
-      expect(
-        screen.getByRole('button', { name: 'Toggle theater mode' })
-      ).toBeInTheDocument()
+      expect(screen.getByRole('button', { name: 'Toggle theater mode' })).toBeInTheDocument()
     })
 
     it('does NOT render theater mode button when callback is not provided', () => {
       renderPlayer()
-      expect(
-        screen.queryByRole('button', { name: 'Toggle theater mode' })
-      ).not.toBeInTheDocument()
+      expect(screen.queryByRole('button', { name: 'Toggle theater mode' })).not.toBeInTheDocument()
     })
   })
 
@@ -859,17 +843,13 @@ describe('VideoPlayer', () => {
   describe('external seek via seekToTime', () => {
     it('seeks to the specified time', () => {
       const onSeekComplete = vi.fn()
-      const { rerender } = render(
-        <VideoPlayer src="test.mp4" onSeekComplete={onSeekComplete} />
-      )
+      const { rerender } = render(<VideoPlayer src="test.mp4" onSeekComplete={onSeekComplete} />)
 
       const video = getVideo()
       Object.defineProperty(video, 'duration', { get: () => 120, configurable: true })
       fireEvent.loadedMetadata(video)
 
-      rerender(
-        <VideoPlayer src="test.mp4" seekToTime={45} onSeekComplete={onSeekComplete} />
-      )
+      rerender(<VideoPlayer src="test.mp4" seekToTime={45} onSeekComplete={onSeekComplete} />)
 
       expect(video.currentTime).toBe(45)
       expect(onSeekComplete).toHaveBeenCalled()

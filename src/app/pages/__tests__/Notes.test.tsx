@@ -20,9 +20,7 @@ vi.mock('@/data/courses', () => ({
         {
           id: 'm1',
           title: 'Module 1',
-          lessons: [
-            { id: 'l1', title: 'Lesson 1', type: 'video' },
-          ],
+          lessons: [{ id: 'l1', title: 'Lesson 1', type: 'video' }],
         },
       ],
       isSequential: false,

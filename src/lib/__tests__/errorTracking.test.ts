@@ -1,10 +1,5 @@
 import { describe, it, expect, beforeEach, vi } from 'vitest'
-import {
-  reportError,
-  getErrorLog,
-  clearErrorLog,
-  initErrorTracking,
-} from '@/lib/errorTracking'
+import { reportError, getErrorLog, clearErrorLog, initErrorTracking } from '@/lib/errorTracking'
 
 describe('errorTracking', () => {
   beforeEach(() => {
@@ -135,7 +130,6 @@ describe('errorTracking', () => {
     it('window.onerror handler falls back to message when no error object', () => {
       vi.spyOn(console, 'error').mockImplementation(() => {})
       initErrorTracking()
-
       ;(window.onerror as Function)('Script error', undefined, undefined, undefined, undefined)
 
       const log = getErrorLog()

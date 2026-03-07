@@ -19,9 +19,7 @@ vi.mock('@/data/courses', () => ({
         {
           id: 'm1',
           title: 'Module 1',
-          lessons: [
-            { id: 'l1', title: 'Lesson 1', type: 'video' },
-          ],
+          lessons: [{ id: 'l1', title: 'Lesson 1', type: 'video' }],
         },
       ],
       isSequential: false,
@@ -45,7 +43,7 @@ vi.mock('@/lib/studyLog', () => ({
 }))
 
 // Mock recharts — use importOriginal so chart.tsx namespace access works
-vi.mock('recharts', async (importOriginal) => {
+vi.mock('recharts', async importOriginal => {
   const actual = await importOriginal<typeof import('recharts')>()
   const Passthrough = ({ children }: React.PropsWithChildren) => <div>{children}</div>
   return {
