@@ -117,19 +117,27 @@ export function StudyStreakCalendar({ weeks = 16, className }: StudyStreakCalend
     setSnapshot(getStreakSnapshot(totalDays))
   }, [totalDays])
 
-  const celebrateMilestones = useCallback((streak: number) => {
-    const newMilestones = detectAndRecordMilestones(streak)
-    for (const milestone of newMilestones) {
-      toast.custom(() => <StreakMilestoneToast milestone={milestone} />, {
-        duration: 8000,
-      })
+  const celebrateMilestones = useCallback((currentStreak: number) => {
+    const sessionKey = `milestones-checked-${currentStreak}`
+    if (sessionStorage.getItem(sessionKey)) return
+    sessionStorage.setItem(sessionKey, '1')
+
+    try {
+      const newMilestones = detectAndRecordMilestones(currentStreak)
+      for (const milestone of newMilestones) {
+        toast.custom(() => <StreakMilestoneToast milestone={milestone} />, {
+          duration: 8000,
+        })
+      }
+    } catch (err) {
+      console.warn('Failed to detect/record milestones:', err)
     }
   }, [])
 
   // Check milestones on mount
   useEffect(() => {
     celebrateMilestones(snapshot.currentStreak)
-  }, [])
+  }, [celebrateMilestones])
 
   useEffect(() => {
     const handleUpdate = () => {
@@ -254,9 +262,11 @@ export function StudyStreakCalendar({ weeks = 16, className }: StudyStreakCalend
               Milestones
             </Button>
           </PopoverTrigger>
-          <PopoverContent className="w-80">
+          <PopoverContent className="w-80" aria-labelledby="milestone-gallery-heading">
             <div className="mb-3">
-              <h4 className="text-sm font-semibold">Streak Milestones</h4>
+              <h4 id="milestone-gallery-heading" className="text-sm font-semibold">
+                Streak Milestones
+              </h4>
               <p className="text-xs text-muted-foreground mt-1">
                 Your streak achievement collection
               </p>
