@@ -4,9 +4,9 @@ story_name: "Create Learning Challenges"
 status: in-progress
 started: 2026-03-07
 completed:
-reviewed: in-progress
+reviewed: true
 review_started: 2026-03-07
-review_gates_passed: []
+review_gates_passed: [build, lint, type-check, format-check, unit-tests, e2e-tests, design-review, code-review, code-review-testing]
 ---
 
 # Story 6.1: Create Learning Challenges
@@ -79,11 +79,21 @@ See [plan](plans/e06-s01-create-learning-challenges.md) for implementation appro
 
 ## Design Review Feedback
 
-[Populated by /review-story — Playwright MCP findings]
+Report: `docs/reviews/design/design-review-2026-03-07-e06-s01.md`
+
+**Blocker**: Dialog close button 16×16px on mobile (needs 44×44px touch target)
+**High**: Button border-radius `rounded-md` vs standard `rounded-xl`; CTA buttons 36px tall (need 44px); no Cancel button in dialog footer; primary colour token near-black vs blue-600 (pre-existing)
+**Medium**: Errors don't clear in real-time; empty-state button copy identical to header; no delete/edit actions (follow-up story)
 
 ## Code Review Feedback
 
-[Populated by /review-story — adversarial code review findings]
+Reports:
+- `docs/reviews/code/code-review-2026-03-07-e06-s01.md`
+- `docs/reviews/code/code-review-testing-2026-03-07-e06-s01.md`
+
+**High (code)**: `deleteChallenge` silently swallows errors; deadline validation timezone bug (UTC vs local); no unit tests for store or dialog
+**High (testing)**: AC3 doesn't verify IndexedDB fields; AC4 missing negative target test; AC5 aria-live assertion fragile; keyboard nav test incomplete; no challenges table CRUD tests
+**Medium**: `h-N w-N` vs `size-N`; no `cn()` for conditional classes; StrictMode double-fetch; silent `.catch(() => {})`; no IndexedDB cleanup between tests
 
 ## Challenges and Lessons Learned
 

@@ -198,6 +198,76 @@ describe('bulk operations', () => {
   })
 })
 
+describe('challenges table (v8)', () => {
+  function makeChallenge(overrides: Record<string, unknown> = {}) {
+    return {
+      id: crypto.randomUUID(),
+      name: 'Test Challenge',
+      type: 'completion' as const,
+      targetValue: 10,
+      deadline: '2030-12-31',
+      createdAt: new Date().toISOString(),
+      currentProgress: 0,
+      celebratedMilestones: [] as number[],
+      ...overrides,
+    }
+  }
+
+  it('should add and retrieve a challenge', async () => {
+    const challenge = makeChallenge({ name: 'Watch 5 videos' })
+    await db.challenges.add(challenge)
+
+    const retrieved = await db.challenges.get(challenge.id)
+    expect(retrieved).toBeDefined()
+    expect(retrieved!.name).toBe('Watch 5 videos')
+    expect(retrieved!.currentProgress).toBe(0)
+  })
+
+  it('should query challenges by type index', async () => {
+    await db.challenges.bulkAdd([
+      makeChallenge({ type: 'completion' }),
+      makeChallenge({ type: 'time' }),
+      makeChallenge({ type: 'completion' }),
+    ])
+
+    const completionChallenges = await db.challenges.where('type').equals('completion').toArray()
+    expect(completionChallenges).toHaveLength(2)
+  })
+
+  it('should query challenges by deadline index', async () => {
+    await db.challenges.bulkAdd([
+      makeChallenge({ deadline: '2030-06-01' }),
+      makeChallenge({ deadline: '2030-12-31' }),
+    ])
+
+    const results = await db.challenges.where('deadline').equals('2030-06-01').toArray()
+    expect(results).toHaveLength(1)
+    expect(results[0].deadline).toBe('2030-06-01')
+  })
+
+  it('should query challenges by createdAt index', async () => {
+    const ts1 = '2026-01-01T00:00:00.000Z'
+    const ts2 = '2026-06-01T00:00:00.000Z'
+    await db.challenges.bulkAdd([
+      makeChallenge({ createdAt: ts1 }),
+      makeChallenge({ createdAt: ts2 }),
+    ])
+
+    const results = await db.challenges.where('createdAt').above(ts1).toArray()
+    expect(results).toHaveLength(1)
+    expect(results[0].createdAt).toBe(ts2)
+  })
+
+  it('should delete a challenge by id', async () => {
+    const challenge = makeChallenge()
+    await db.challenges.add(challenge)
+
+    await db.challenges.delete(challenge.id)
+    const result = await db.challenges.get(challenge.id)
+    expect(result).toBeUndefined()
+  })
+})
+
 describe('notes table (v4)', () => {
   function makeNote(overrides: Record<string, unknown> = {}) {
     return {

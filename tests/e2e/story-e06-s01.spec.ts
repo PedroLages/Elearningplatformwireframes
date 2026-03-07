@@ -97,6 +97,32 @@ test.describe('Create Learning Challenges (E06-S01)', () => {
 
     // Verify challenge appears in the list
     await expect(page.getByText('Complete 5 Videos')).toBeVisible()
+
+    // Verify IndexedDB record has correct structural fields
+    const record = await page.evaluate(async () => {
+      const { indexedDB } = window
+      return new Promise<Record<string, unknown> | null>((resolve, reject) => {
+        const req = indexedDB.open('ElearningDB')
+        req.onsuccess = () => {
+          const idb = req.result
+          const tx = idb.transaction('challenges', 'readonly')
+          const store = tx.objectStore('challenges')
+          const getAll = store.getAll()
+          getAll.onsuccess = () => {
+            const records = getAll.result as Record<string, unknown>[]
+            resolve(records.length > 0 ? records[0] : null)
+          }
+          getAll.onerror = () => reject(getAll.error)
+        }
+        req.onerror = () => reject(req.error)
+      })
+    })
+
+    expect(record).not.toBeNull()
+    expect(record!.id).toBeTruthy()
+    expect(typeof record!.id).toBe('string')
+    expect(record!.createdAt).toBeTruthy()
+    expect(record!.currentProgress).toBe(0)
   })
 
   // ── AC 4: Invalid submission shows inline errors ─────────────────
@@ -138,6 +164,28 @@ test.describe('Create Learning Challenges (E06-S01)', () => {
       .click()
 
     await expect(page.getByText(/must be greater than zero/i)).toBeVisible()
+    // Dialog should remain open (form not submitted)
+    await expect(page.getByRole('dialog')).toBeVisible()
+  })
+
+  test('AC4: negative target value shows validation error', async ({ page }) => {
+    await openCreateDialog(page)
+
+    await page.getByLabel(/challenge name/i).fill('My Challenge')
+    await selectType(page, /completion/i)
+    await page.getByLabel(/target/i).fill('-5')
+
+    const futureDate = new Date()
+    futureDate.setDate(futureDate.getDate() + 7)
+    await page.getByLabel(/deadline/i).fill(futureDate.toISOString().split('T')[0])
+
+    await page
+      .getByRole('dialog')
+      .getByRole('button', { name: /create challenge/i })
+      .click()
+
+    await expect(page.getByText(/must be greater than zero/i)).toBeVisible()
+    await expect(page.getByRole('dialog')).toBeVisible()
   })
 
   test('AC4: past deadline shows validation error', async ({ page }) => {
@@ -166,13 +214,21 @@ test.describe('Create Learning Challenges (E06-S01)', () => {
     const nameInput = page.getByLabel(/challenge name/i)
     await expect(nameInput).toBeVisible()
 
-    // Keyboard navigation: Tab through fields
+    // Keyboard navigation: Tab through all fields
     await nameInput.focus()
-    await page.keyboard.press('Tab')
+    await expect(nameInput).toBeFocused()
 
-    // Next field should receive focus (type select trigger)
+    await page.keyboard.press('Tab')
     const typeSelect = page.getByLabel(/challenge type/i)
     await expect(typeSelect).toBeFocused()
+
+    await page.keyboard.press('Tab')
+    const targetInput = page.getByLabel(/target/i)
+    await expect(targetInput).toBeFocused()
+
+    await page.keyboard.press('Tab')
+    const deadlineInput = page.getByLabel(/deadline/i)
+    await expect(deadlineInput).toBeFocused()
   })
 
   test('AC5: validation errors are announced via aria-live', async ({ page }) => {
@@ -184,10 +240,18 @@ test.describe('Create Learning Challenges (E06-S01)', () => {
       .getByRole('button', { name: /create challenge/i })
       .click()
 
-    // Check for role="alert" elements containing error messages
+    // Check that each field's error is rendered with role="alert" (implicit aria-live="assertive")
     const alerts = page.locator('[role="alert"]')
     await expect(alerts.first()).toBeVisible()
-    // Should have multiple validation errors
-    await expect(alerts).toHaveCount(4) // name, type, target, deadline
+
+    // Verify specific error messages are present
+    await expect(page.locator('[role="alert"]', { hasText: /name is required/i })).toBeVisible()
+    await expect(
+      page.locator('[role="alert"]', { hasText: /select a challenge type/i })
+    ).toBeVisible()
+    await expect(
+      page.locator('[role="alert"]', { hasText: /must be greater than zero/i })
+    ).toBeVisible()
+    await expect(page.locator('[role="alert"]', { hasText: /deadline is required/i })).toBeVisible()
   })
 })

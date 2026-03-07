@@ -1,4 +1,5 @@
 import { create } from 'zustand'
+import { toast } from 'sonner'
 import { db } from '@/db'
 import type { Challenge, ChallengeType } from '@/data/types'
 import { persistWithRetry } from '@/lib/persistWithRetry'
@@ -92,6 +93,8 @@ export const useChallengeStore = create<ChallengeState>((set, get) => ({
         })
       }
       console.error('[ChallengeStore] Failed to delete challenge:', error)
+      toast.error('Failed to delete challenge')
+      throw error
     }
   },
 }))

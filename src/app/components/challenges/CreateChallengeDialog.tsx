@@ -78,7 +78,8 @@ export function CreateChallengeDialog({ open, onOpenChange }: CreateChallengeDia
     if (!deadline) {
       errs.deadline = 'Deadline is required'
     } else {
-      const deadlineDate = new Date(deadline)
+      const [y, m, d] = deadline.split('-').map(Number)
+      const deadlineDate = new Date(y, m - 1, d)
       const today = new Date()
       today.setHours(0, 0, 0, 0)
       if (deadlineDate <= today) {
@@ -224,6 +225,9 @@ export function CreateChallengeDialog({ open, onOpenChange }: CreateChallengeDia
           </div>
 
           <DialogFooter>
+            <Button type="button" variant="outline" onClick={() => onOpenChange(false)}>
+              Cancel
+            </Button>
             <Button type="submit" disabled={isSubmitting}>
               {isSubmitting ? 'Creating...' : 'Create Challenge'}
             </Button>
