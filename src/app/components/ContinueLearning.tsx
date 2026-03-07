@@ -77,13 +77,9 @@ function HeroCard({ session }: { session: ResolvedSession }) {
   const { course, lessonTitle, completionPercent, resumeLink } = session
   const cardRef = useRef<HTMLDivElement>(null)
 
-  // Mouse tracking — single source for parallax + 3D tilt
+  // Mouse tracking — single source for 3D tilt
   const mouseX = useMotionValue(0.5)
   const mouseY = useMotionValue(0.5)
-
-  // Image parallax (translate)
-  const imgX = useTransform(mouseX, [0, 1], [8, -8])
-  const imgY = useTransform(mouseY, [0, 1], [4, -4])
 
   // 3D card tilt (rotate) — subtle, Apple TV-style
   const rawRotateX = useTransform(mouseY, [0, 1], [2, -2])
@@ -122,30 +118,18 @@ function HeroCard({ session }: { session: ResolvedSession }) {
         style={{ rotateX, rotateY }}
         className="relative rounded-[28px] overflow-hidden min-h-[220px] sm:min-h-[240px] lg:min-h-[280px] motion-safe:hover:shadow-studio-hover motion-safe:transition-shadow motion-safe:duration-300 cursor-pointer [transform-style:preserve-3d]"
       >
-        {/* Full-bleed background image with parallax */}
-        {course.coverImage ? (
-          <motion.img
-            src={`${course.coverImage}-1280w.webp`}
-            srcSet={`${course.coverImage}-320w.webp 320w, ${course.coverImage}-640w.webp 640w, ${course.coverImage}-1280w.webp 1280w`}
-            sizes="(max-width: 640px) 320px, (max-width: 1024px) 640px, 1280px"
-            alt=""
-            aria-hidden="true"
-            style={{ x: imgX, y: imgY }}
-            className="absolute -inset-3 w-[calc(100%+24px)] h-[calc(100%+24px)] object-cover motion-safe:group-hover:scale-[1.03] motion-safe:transition-transform motion-safe:duration-700"
-          />
-        ) : (
-          /* Gradient mesh fallback — organic multi-point color blend */
-          <div
-            className="absolute inset-0"
-            style={{
-              background: `
-                radial-gradient(at 20% 30%, rgba(59,130,246,0.8) 0%, transparent 50%),
-                radial-gradient(at 80% 70%, rgba(99,102,241,0.6) 0%, transparent 50%),
-                radial-gradient(at 50% 50%, rgba(37,99,235,0.9) 0%, transparent 70%)
-              `,
-            }}
-          />
-        )}
+        {/* Gradient mesh background — organic multi-point color blend */}
+        <div
+          className="absolute inset-0"
+          style={{
+            background: `
+              radial-gradient(ellipse at 15% 20%, rgba(59,130,246,0.85) 0%, transparent 55%),
+              radial-gradient(ellipse at 85% 80%, rgba(124,58,237,0.7) 0%, transparent 50%),
+              radial-gradient(ellipse at 50% 50%, rgba(37,99,235,0.95) 0%, transparent 70%),
+              linear-gradient(135deg, #1e3a5f 0%, #1e293b 100%)
+            `,
+          }}
+        />
 
         {/* Gradient overlay for text legibility */}
         <div className="absolute inset-0 bg-gradient-to-r from-black/75 via-black/50 to-black/20" />
@@ -207,7 +191,7 @@ function HeroCard({ session }: { session: ResolvedSession }) {
 
           {/* CTA with micro-interactions */}
           <div
-            className="inline-flex items-center gap-2 bg-white text-foreground px-5 py-2.5 rounded-full font-medium text-sm shadow-lg w-fit motion-safe:group-hover:scale-[1.03] motion-safe:group-hover:shadow-xl motion-safe:transition-[transform,box-shadow] motion-safe:duration-200"
+            className="inline-flex items-center gap-2 bg-white text-slate-900 px-5 py-2.5 rounded-full font-medium text-sm shadow-lg w-fit motion-safe:group-hover:scale-[1.03] motion-safe:group-hover:shadow-xl motion-safe:transition-[transform,box-shadow] motion-safe:duration-200"
             tabIndex={-1}
             aria-hidden="true"
           >
