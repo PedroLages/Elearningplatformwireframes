@@ -158,5 +158,100 @@ test.describe('Streak Milestone Celebrations (E05-S06)', () => {
     // Then: celebration toast appears again for the repeated milestone
     const toast = page.locator('[data-sonner-toast]').filter({ hasText: /7-Day Streak/i })
     await expect(toast).toBeVisible({ timeout: 5000 })
+
+    // And: localStorage now contains TWO milestone entries for milestoneValue: 7
+    const milestones = await localStorage.get<
+      Array<{ milestoneValue: number; streakStartDate: string }>
+    >('streak-milestones')
+    expect(milestones).not.toBeNull()
+    const sevenDayEntries = milestones!.filter(m => m.milestoneValue === 7)
+    expect(sevenDayEntries).toHaveLength(2)
+    // First entry is the seeded old streak, second is the newly detected one
+    expect(sevenDayEntries[0].streakStartDate).toBe('2026-02-01')
+    expect(sevenDayEntries[1].streakStartDate).not.toBe('2026-02-01')
+  })
+
+  // ── Boundary: below milestone threshold ──────────────────────
+
+  test('should NOT display any toast for a 6-day streak', async ({ page, localStorage }) => {
+    // Given: streak is 6 days (below the 7-day milestone threshold)
+    await localStorage.seed('study-log', buildStreakLog(6))
+    await goToOverview(page)
+
+    // Then: no milestone toast should appear
+    const toast = page.locator('[data-sonner-toast]').filter({ hasText: /Streak/i })
+    // Wait briefly then assert absence
+    await page.waitForTimeout(2000)
+    await expect(toast).toHaveCount(0)
+  })
+
+  // ── Simultaneous milestones: 30-day triggers 7 + 30 ──────────
+
+  test('should display both 7-day and 30-day toasts for a 30-day streak with no prior celebrations', async ({
+    page,
+    localStorage,
+  }) => {
+    // Given: 30-day streak with NO prior milestone celebrations
+    await localStorage.seed('study-log', buildStreakLog(30))
+    // No streak-milestones seeded → both 7 and 30 are uncelebrated
+    await goToOverview(page)
+
+    // Then: both milestone toasts appear
+    const toast7 = page.locator('[data-sonner-toast]').filter({ hasText: /7-Day Streak/i })
+    const toast30 = page.locator('[data-sonner-toast]').filter({ hasText: /30-Day Streak/i })
+    await expect(toast7).toBeVisible({ timeout: 5000 })
+    await expect(toast30).toBeVisible({ timeout: 5000 })
+
+    // And: localStorage has entries for both milestones
+    const milestones = await localStorage.get<Array<{ milestoneValue: number }>>('streak-milestones')
+    expect(milestones).not.toBeNull()
+    const values = milestones!.map(m => m.milestoneValue).sort((a, b) => a - b)
+    expect(values).toEqual([7, 30])
+  })
+
+  // ── Gallery edge case: multi-earned badges ────────────────────
+
+  test('AC6+: should display multiple earned badges in gallery for 30-day streak', async ({
+    page,
+    localStorage,
+  }) => {
+    // Given: 30-day streak (earns both 7-day and 30-day badges)
+    await localStorage.seed('study-log', buildStreakLog(30))
+    await goToOverview(page)
+
+    // Wait for milestones to be detected and recorded
+    const toast30 = page.locator('[data-sonner-toast]').filter({ hasText: /30-Day Streak/i })
+    await expect(toast30).toBeVisible({ timeout: 5000 })
+
+    // When: milestone collection is opened
+    await page.getByTestId('milestone-collection-trigger').click()
+
+    // Then: both 7-day and 30-day badges are earned (not locked)
+    await expect(page.getByTestId('gallery-milestone-badge-7')).toBeVisible()
+    await expect(page.getByTestId('gallery-milestone-badge-30')).toBeVisible()
+
+    // And: 60-day and 100-day are still locked
+    await expect(page.getByTestId('gallery-milestone-badge-60-locked')).toBeVisible()
+    await expect(page.getByTestId('gallery-milestone-badge-100-locked')).toBeVisible()
+  })
+
+  // ── Gallery edge case: zero-streak all locked ─────────────────
+
+  test('AC6+: should display all badges as locked when no milestones earned', async ({
+    page,
+    localStorage,
+  }) => {
+    // Given: streak is 0 days (no milestones)
+    await localStorage.seed('study-log', [])
+    await goToOverview(page)
+
+    // When: milestone collection is opened
+    await page.getByTestId('milestone-collection-trigger').click()
+
+    // Then: all 4 milestones shown as locked
+    await expect(page.getByTestId('gallery-milestone-badge-7-locked')).toBeVisible()
+    await expect(page.getByTestId('gallery-milestone-badge-30-locked')).toBeVisible()
+    await expect(page.getByTestId('gallery-milestone-badge-60-locked')).toBeVisible()
+    await expect(page.getByTestId('gallery-milestone-badge-100-locked')).toBeVisible()
   })
 })
