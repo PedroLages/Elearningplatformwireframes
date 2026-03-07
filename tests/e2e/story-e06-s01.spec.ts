@@ -9,16 +9,17 @@ import { navigateAndWait } from '../support/helpers/navigation'
 /** Navigate to the Challenges page. */
 async function goToChallenges(page: import('@playwright/test').Page) {
   await navigateAndWait(page, '/challenges')
-  await page
-    .waitForSelector('h1', { state: 'visible', timeout: 10000 })
-    .catch(() => {})
+  await page.waitForSelector('h1', { state: 'visible', timeout: 10000 }).catch(() => {})
 }
 
 /** Open the Create Challenge dialog from the page header button. */
 async function openCreateDialog(page: import('@playwright/test').Page) {
   await goToChallenges(page)
   // Use first() because there are two "Create Challenge" buttons (header + empty state)
-  await page.getByRole('button', { name: /create challenge/i }).first().click()
+  await page
+    .getByRole('button', { name: /create challenge/i })
+    .first()
+    .click()
   // Wait for dialog to appear
   await expect(page.getByRole('dialog')).toBeVisible()
 }
@@ -83,7 +84,10 @@ test.describe('Create Learning Challenges (E06-S01)', () => {
     await page.getByLabel(/deadline/i).fill(futureDate.toISOString().split('T')[0])
 
     // Submit via the dialog's submit button
-    await page.getByRole('dialog').getByRole('button', { name: /create challenge/i }).click()
+    await page
+      .getByRole('dialog')
+      .getByRole('button', { name: /create challenge/i })
+      .click()
 
     // Success toast
     const toastEl = page
@@ -108,7 +112,10 @@ test.describe('Create Learning Challenges (E06-S01)', () => {
     await page.getByLabel(/deadline/i).fill(futureDate.toISOString().split('T')[0])
 
     // Submit
-    await page.getByRole('dialog').getByRole('button', { name: /create challenge/i }).click()
+    await page
+      .getByRole('dialog')
+      .getByRole('button', { name: /create challenge/i })
+      .click()
 
     // Inline error for name field
     await expect(page.getByText(/name is required/i)).toBeVisible()
@@ -125,7 +132,10 @@ test.describe('Create Learning Challenges (E06-S01)', () => {
     futureDate.setDate(futureDate.getDate() + 7)
     await page.getByLabel(/deadline/i).fill(futureDate.toISOString().split('T')[0])
 
-    await page.getByRole('dialog').getByRole('button', { name: /create challenge/i }).click()
+    await page
+      .getByRole('dialog')
+      .getByRole('button', { name: /create challenge/i })
+      .click()
 
     await expect(page.getByText(/must be greater than zero/i)).toBeVisible()
   })
@@ -140,7 +150,10 @@ test.describe('Create Learning Challenges (E06-S01)', () => {
     // Set deadline in the past
     await page.getByLabel(/deadline/i).fill('2020-01-01')
 
-    await page.getByRole('dialog').getByRole('button', { name: /create challenge/i }).click()
+    await page
+      .getByRole('dialog')
+      .getByRole('button', { name: /create challenge/i })
+      .click()
 
     await expect(page.getByText(/deadline must be in the future/i)).toBeVisible()
   })
@@ -166,7 +179,10 @@ test.describe('Create Learning Challenges (E06-S01)', () => {
     await openCreateDialog(page)
 
     // Submit empty form to trigger errors
-    await page.getByRole('dialog').getByRole('button', { name: /create challenge/i }).click()
+    await page
+      .getByRole('dialog')
+      .getByRole('button', { name: /create challenge/i })
+      .click()
 
     // Check for role="alert" elements containing error messages
     const alerts = page.locator('[role="alert"]')

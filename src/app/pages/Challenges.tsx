@@ -101,9 +101,7 @@ export function Challenges() {
       </div>
 
       {isLoading ? (
-        <div className="text-muted-foreground py-12 text-center text-sm">
-          Loading challenges...
-        </div>
+        <div className="text-muted-foreground py-12 text-center text-sm">Loading challenges...</div>
       ) : challenges.length === 0 ? (
         <Card>
           <CardContent className="flex flex-col items-center gap-4 py-16">

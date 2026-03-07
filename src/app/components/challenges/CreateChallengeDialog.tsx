@@ -163,10 +163,7 @@ export function CreateChallengeDialog({ open, onOpenChange }: CreateChallengeDia
             <Label htmlFor="challenge-type" id="challenge-type-label">
               Challenge Type
             </Label>
-            <Select
-              value={type}
-              onValueChange={v => setType(v as ChallengeType)}
-            >
+            <Select value={type} onValueChange={v => setType(v as ChallengeType)}>
               <SelectTrigger
                 id="challenge-type"
                 aria-labelledby="challenge-type-label"
