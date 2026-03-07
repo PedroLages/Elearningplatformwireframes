@@ -1,4 +1,4 @@
-import { useState, useEffect, useCallback, useRef } from 'react'
+import { useState, useEffect, useCallback } from 'react'
 import { Outlet, Link, useLocation, useNavigate } from 'react-router'
 import { Search, Bell, ChevronDown, ChevronLeft, ChevronRight, Sun, Moon, Menu } from 'lucide-react'
 import { LevelUpLogo } from './figma/LevelUpLogo'
@@ -176,32 +176,7 @@ export function Layout() {
     return saved !== null ? JSON.parse(saved) : false
   })
 
-  // Hover-to-peek state and timers
-  const [isPeeking, setIsPeeking] = useState(false)
   const [sidebarHovered, setSidebarHovered] = useState(false)
-  const peekEnterTimer = useRef<ReturnType<typeof setTimeout>>(null)
-  const peekLeaveTimer = useRef<ReturnType<typeof setTimeout>>(null)
-
-  const handleSidebarMouseEnter = useCallback(() => {
-    setSidebarHovered(true)
-    if (!sidebarCollapsed) return
-    if (peekLeaveTimer.current) clearTimeout(peekLeaveTimer.current)
-    peekEnterTimer.current = setTimeout(() => setIsPeeking(true), 300)
-  }, [sidebarCollapsed])
-
-  const handleSidebarMouseLeave = useCallback(() => {
-    if (peekEnterTimer.current) clearTimeout(peekEnterTimer.current)
-    setSidebarHovered(false)
-    peekLeaveTimer.current = setTimeout(() => setIsPeeking(false), 200)
-  }, [])
-
-  // Close peek when sidebar is permanently expanded
-  useEffect(() => {
-    if (!sidebarCollapsed) {
-      setIsPeeking(false)
-      setSidebarHovered(false)
-    }
-  }, [sidebarCollapsed])
 
   const toggleSidebar = useCallback(() => {
     setSidebarCollapsed((prev: boolean) => !prev)
@@ -271,8 +246,8 @@ export function Layout() {
         <div
           data-theater-hide
           className="relative mt-6 mb-6 ml-6"
-          onMouseEnter={handleSidebarMouseEnter}
-          onMouseLeave={handleSidebarMouseLeave}
+          onMouseEnter={() => setSidebarHovered(true)}
+          onMouseLeave={() => setSidebarHovered(false)}
         >
           {/* Sidebar */}
           <aside
@@ -282,30 +257,14 @@ export function Layout() {
             <SidebarContent iconOnly={sidebarCollapsed} />
           </aside>
 
-          {/* Hover-to-peek overlay (when collapsed) */}
-          {sidebarCollapsed && isPeeking && (
-            <aside
-              className="absolute top-0 left-0 z-40 w-[220px] h-full bg-card p-6 flex flex-col shadow-xl animate-in slide-in-from-left-2 fade-in-0 duration-200"
-              aria-label="Sidebar navigation"
-              onMouseEnter={() => {
-                if (peekLeaveTimer.current) clearTimeout(peekLeaveTimer.current)
-              }}
-              onMouseLeave={handleSidebarMouseLeave}
-            >
-              <SidebarContent
-                onNavigate={() => setIsPeeking(false)}
-              />
-            </aside>
-          )}
-
           {/* Edge notch toggle */}
           <button
             onClick={toggleSidebar}
             aria-label={sidebarCollapsed ? 'Expand sidebar' : 'Collapse sidebar'}
             aria-keyshortcuts="Meta+B Control+B"
-            className={`absolute top-1/2 -translate-y-1/2 z-50 flex items-center justify-center w-6 h-6 rounded-full bg-card border border-border shadow-sm text-muted-foreground hover:text-foreground hover:scale-110 transition-all duration-150 cursor-pointer ${
+            className={`absolute top-1/2 -translate-y-1/2 -right-3 z-50 flex items-center justify-center w-6 h-6 rounded-full bg-card border border-border shadow-sm text-muted-foreground hover:text-foreground hover:scale-110 transition-all duration-150 cursor-pointer ${
               sidebarHovered || !sidebarCollapsed ? 'opacity-100' : 'opacity-0 pointer-events-none'
-            } ${sidebarCollapsed && isPeeking ? 'right-[-12px]' : '-right-3'}`}
+            }`}
           >
             {sidebarCollapsed ? (
               <ChevronRight className="w-3 h-3" aria-hidden="true" />
