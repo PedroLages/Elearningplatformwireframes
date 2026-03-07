@@ -11,6 +11,7 @@ import { StatsCard } from '@/app/components/StatsCard'
 import { QuickActions } from '@/app/components/QuickActions'
 import { StudyStreakCalendar } from '@/app/components/StudyStreakCalendar'
 import { StudyGoalsWidget } from '@/app/components/StudyGoalsWidget'
+import { StudyHistoryCalendar } from '@/app/components/StudyHistoryCalendar'
 import { CourseCard } from '@/app/components/figma/CourseCard'
 import { ProgressChart } from '@/app/components/charts/ProgressChart'
 import { allCourses } from '@/data/courses'
@@ -200,6 +201,18 @@ export function Overview() {
             <StudyGoalsWidget />
             <RecentActivity activities={recentActivity} />
           </div>
+        </motion.section>
+
+        {/* ── Study History Calendar ── */}
+        <motion.section
+          initial={{ opacity: 0, y: 20 }}
+          whileInView={{ opacity: 1, y: 0 }}
+          viewport={{ once: true, margin: '-50px' }}
+          transition={{ duration: 0.5, ease: [0.16, 1, 0.3, 1] }}
+          className="rounded-[24px] border border-border/50 bg-card p-6"
+        >
+          <h2 className="text-xl mb-4">Study History</h2>
+          <StudyHistoryCalendar />
         </motion.section>
 
         {/* ── Insight + Action Zone ── */}

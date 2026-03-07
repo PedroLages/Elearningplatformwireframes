@@ -1,5 +1,5 @@
 /**
- * E05-S04: Study History Calendar E2E Tests (ATDD — failing until implemented)
+ * E05-S04: Study History Calendar E2E Tests
  *
  * Verifies:
  *   - AC1: Month-view calendar with study day highlights
@@ -10,7 +10,6 @@
  *   - AC6: Mobile responsiveness (44×44px touch targets)
  */
 import { test, expect } from '../support/fixtures'
-import { goToOverview } from '../support/helpers/navigation'
 
 function makeStudyEntry(daysAgo: number, courseId = 'course-1') {
   const d = new Date()
@@ -32,13 +31,14 @@ test.describe('Study History Calendar (E05-S04)', () => {
   })
 
   test('AC1: month-view calendar renders for current month', async ({ page, localStorage }) => {
+    await page.goto('/')
     await localStorage.seed('study-log', [
       makeStudyEntry(0),
       makeStudyEntry(2),
       makeStudyEntry(5),
     ])
-
-    await goToOverview(page)
+    await page.reload()
+    await page.waitForSelector('[data-testid="stats-grid"]', { state: 'visible', timeout: 10000 })
 
     const calendar = page.getByTestId('study-history-calendar')
     await expect(calendar).toBeVisible()
@@ -50,22 +50,26 @@ test.describe('Study History Calendar (E05-S04)', () => {
   })
 
   test('AC1: days with study sessions are highlighted', async ({ page, localStorage }) => {
+    await page.goto('/')
     await localStorage.seed('study-log', [
       makeStudyEntry(0),
       makeStudyEntry(1),
       makeStudyEntry(3),
     ])
-
-    await goToOverview(page)
+    await page.reload()
+    await page.waitForSelector('[data-testid="stats-grid"]', { state: 'visible', timeout: 10000 })
 
     const calendar = page.getByTestId('study-history-calendar')
-    // Days with activity should have a visual indicator
     const highlightedDays = calendar.locator('[data-has-activity="true"]')
     await expect(highlightedDays).toHaveCount(3)
   })
 
   test('AC2: navigate to previous and next month', async ({ page }) => {
-    await goToOverview(page)
+    await page.goto('/')
+    await page.waitForSelector('[data-testid="study-history-calendar"]', {
+      state: 'visible',
+      timeout: 15000,
+    })
 
     const calendar = page.getByTestId('study-history-calendar')
     const prevBtn = calendar.getByRole('button', { name: /previous/i })
@@ -86,27 +90,28 @@ test.describe('Study History Calendar (E05-S04)', () => {
   })
 
   test('AC3: clicking a day with sessions shows detail popover', async ({ page, localStorage }) => {
+    await page.goto('/')
     await localStorage.seed('study-log', [makeStudyEntry(0, 'course-1')])
-
-    await goToOverview(page)
+    await page.reload()
+    await page.waitForSelector('[data-testid="stats-grid"]', { state: 'visible', timeout: 10000 })
 
     const calendar = page.getByTestId('study-history-calendar')
-    const today = new Date().getDate().toString()
 
-    // Click today's cell
-    const todayCell = calendar.locator(`[data-has-activity="true"]`).first()
+    // Click today's cell (has activity)
+    const todayCell = calendar.locator('[data-has-activity="true"]').first()
     await todayCell.click()
 
     // Popover should appear with session details
     const popover = page.getByTestId('day-detail-popover')
     await expect(popover).toBeVisible()
 
-    // Should show course name, duration, and timestamp
+    // Should show course name
     await expect(popover.getByText(/course/i)).toBeVisible()
   })
 
   test('AC4: clicking a day with no sessions shows empty state', async ({ page }) => {
-    await goToOverview(page)
+    await page.goto('/')
+    await page.waitForSelector('[data-testid="stats-grid"]', { state: 'visible', timeout: 10000 })
 
     const calendar = page.getByTestId('study-history-calendar')
 
@@ -120,11 +125,12 @@ test.describe('Study History Calendar (E05-S04)', () => {
   })
 
   test('AC5: freeze days are visually distinguished', async ({ page, localStorage }) => {
+    await page.goto('/')
     // Set Monday (1) and Wednesday (3) as freeze days
     await localStorage.seed('study-streak-freeze-days', { freezeDays: [1, 3] })
     await localStorage.seed('study-log', [])
-
-    await goToOverview(page)
+    await page.reload()
+    await page.waitForSelector('[data-testid="stats-grid"]', { state: 'visible', timeout: 10000 })
 
     const calendar = page.getByTestId('study-history-calendar')
     const freezeDayCells = calendar.locator('[data-freeze-day="true"]')
@@ -134,19 +140,25 @@ test.describe('Study History Calendar (E05-S04)', () => {
     expect(count).toBeGreaterThan(0)
   })
 
-  test('AC6: calendar is responsive with adequate touch targets', async ({ page, localStorage }) => {
+  test('AC6: calendar is responsive with adequate touch targets', async ({
+    page,
+    localStorage,
+  }) => {
+    await page.goto('/')
     await localStorage.seed('study-log', [makeStudyEntry(0)])
 
-    // Set mobile viewport
+    // Set mobile viewport and reload to pick up seeded data
     await page.setViewportSize({ width: 375, height: 667 })
-    await goToOverview(page)
+    await page.reload()
+    await page.waitForSelector('[data-testid="stats-grid"]', { state: 'visible', timeout: 10000 })
 
     const calendar = page.getByTestId('study-history-calendar')
     await expect(calendar).toBeVisible()
 
     // Day cells should have minimum 44×44px touch targets
-    const firstDayCell = calendar.locator('button').first()
-    const box = await firstDayCell.boundingBox()
+    // Select a day button (has data-has-activity attr), not nav buttons
+    const dayCell = calendar.locator('[data-has-activity]').first()
+    const box = await dayCell.boundingBox()
     expect(box).toBeTruthy()
     expect(box!.width).toBeGreaterThanOrEqual(44)
     expect(box!.height).toBeGreaterThanOrEqual(44)
