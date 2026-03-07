@@ -117,13 +117,13 @@ development_status:
   5-4-study-history-calendar: done
   5-5-study-reminders-and-notifications: done
   5-6-streak-milestone-celebrations: done
-  epic-5-retrospective: optional
+  epic-5-retrospective: done
 
   # ──────────────────────────────────────────────────
   # Epic 6: Learning Challenges & Gamification
   # ──────────────────────────────────────────────────
-  epic-6: backlog
-  6-1-create-learning-challenges: backlog
+  epic-6: in-progress
+  6-1-create-learning-challenges: done
   6-2-track-challenge-progress: backlog
   6-3-challenge-milestone-celebrations: backlog
   epic-6-retrospective: optional
