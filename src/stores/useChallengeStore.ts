@@ -3,6 +3,7 @@ import { toast } from 'sonner'
 import { db } from '@/db'
 import type { Challenge, ChallengeType } from '@/data/types'
 import { persistWithRetry } from '@/lib/persistWithRetry'
+import { calculateProgress } from '@/lib/challengeProgress'
 
 interface NewChallengeData {
   name: string
@@ -17,6 +18,7 @@ interface ChallengeState {
   error: string | null
 
   loadChallenges: () => Promise<void>
+  refreshAllProgress: () => Promise<void>
   addChallenge: (data: NewChallengeData) => Promise<void>
   deleteChallenge: (id: string) => Promise<void>
 }
@@ -35,6 +37,26 @@ export const useChallengeStore = create<ChallengeState>((set, get) => ({
       set({ isLoading: false, error: 'Failed to load challenges' })
       console.error('[ChallengeStore] Failed to load challenges:', error)
     }
+  },
+
+  refreshAllProgress: async () => {
+    const { challenges } = get()
+    if (challenges.length === 0) return
+
+    const updated = await Promise.all(
+      challenges.map(async challenge => {
+        const raw = await calculateProgress(challenge)
+        const currentProgress = Math.min(raw, challenge.targetValue)
+        const completedAt =
+          currentProgress >= challenge.targetValue && !challenge.completedAt
+            ? new Date().toISOString()
+            : challenge.completedAt
+        return { ...challenge, currentProgress, completedAt }
+      })
+    )
+
+    set({ challenges: updated })
+    await db.challenges.bulkPut(updated)
   },
 
   addChallenge: async (data: NewChallengeData) => {

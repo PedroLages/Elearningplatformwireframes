@@ -1,10 +1,15 @@
-import { useEffect, useState } from 'react'
-import { Plus, Target, Clock, Flame, Trophy, RefreshCcw } from 'lucide-react'
+import { useEffect, useMemo, useState } from 'react'
+import { Plus, Target, Clock, Flame, Trophy, RefreshCcw, ChevronDown } from 'lucide-react'
 import { cn } from '@/app/components/ui/utils'
 import { Button } from '@/app/components/ui/button'
 import { Card, CardContent } from '@/app/components/ui/card'
 import { Badge } from '@/app/components/ui/badge'
 import { Progress } from '@/app/components/ui/progress'
+import {
+  Collapsible,
+  CollapsibleTrigger,
+  CollapsibleContent,
+} from '@/app/components/ui/collapsible'
 import { useChallengeStore } from '@/stores/useChallengeStore'
 import { CreateChallengeDialog } from '@/app/components/challenges/CreateChallengeDialog'
 import type { Challenge, ChallengeType } from '@/data/types'
@@ -91,12 +96,33 @@ function ChallengeCard({ challenge }: { challenge: Challenge }) {
 }
 
 export function Challenges() {
-  const { challenges, isLoading, error, loadChallenges } = useChallengeStore()
+  const { challenges, isLoading, error, loadChallenges, refreshAllProgress } = useChallengeStore()
   const [dialogOpen, setDialogOpen] = useState(false)
+  const [expiredOpen, setExpiredOpen] = useState(false)
 
   useEffect(() => {
-    loadChallenges()
-  }, [loadChallenges])
+    loadChallenges().then(() => {
+      refreshAllProgress()
+    })
+  }, [loadChallenges, refreshAllProgress])
+
+  const { active, expired } = useMemo(() => {
+    const now = new Date()
+    now.setHours(0, 0, 0, 0)
+    return challenges.reduce<{ active: Challenge[]; expired: Challenge[] }>(
+      (groups, c) => {
+        const deadlinePassed = parseLocalDate(c.deadline).getTime() < now.getTime()
+        const isCompleted = !!c.completedAt
+        if (deadlinePassed && !isCompleted) {
+          groups.expired.push(c)
+        } else {
+          groups.active.push(c)
+        }
+        return groups
+      },
+      { active: [], expired: [] }
+    )
+  }, [challenges])
 
   return (
     <div className="mx-auto w-full max-w-4xl space-y-6 p-6">
@@ -120,7 +146,7 @@ export function Challenges() {
         </Card>
       ) : isLoading ? (
         <div className="text-muted-foreground py-12 text-center text-sm">Loading challenges...</div>
-      ) : challenges.length === 0 ? (
+      ) : active.length === 0 && expired.length === 0 ? (
         <Card>
           <CardContent className="flex flex-col items-center gap-4 py-16">
             <div className="bg-muted flex size-14 items-center justify-center rounded-full">
@@ -139,11 +165,33 @@ export function Challenges() {
           </CardContent>
         </Card>
       ) : (
-        <div className="grid gap-4 sm:grid-cols-2">
-          {challenges.map(challenge => (
-            <ChallengeCard key={challenge.id} challenge={challenge} />
-          ))}
-        </div>
+        <>
+          {active.length > 0 && (
+            <div className="grid gap-4 sm:grid-cols-2">
+              {active.map(challenge => (
+                <ChallengeCard key={challenge.id} challenge={challenge} />
+              ))}
+            </div>
+          )}
+
+          {expired.length > 0 && (
+            <Collapsible open={expiredOpen} onOpenChange={setExpiredOpen}>
+              <CollapsibleTrigger className="flex w-full items-center gap-2 py-2 text-sm font-medium text-muted-foreground hover:text-foreground transition-colors">
+                <ChevronDown
+                  className={cn('size-4 transition-transform', expiredOpen && 'rotate-180')}
+                />
+                Expired ({expired.length})
+              </CollapsibleTrigger>
+              <CollapsibleContent>
+                <div className="grid gap-4 pt-2 sm:grid-cols-2">
+                  {expired.map(challenge => (
+                    <ChallengeCard key={challenge.id} challenge={challenge} />
+                  ))}
+                </div>
+              </CollapsibleContent>
+            </Collapsible>
+          )}
+        </>
       )}
 
       <CreateChallengeDialog open={dialogOpen} onOpenChange={setDialogOpen} />
