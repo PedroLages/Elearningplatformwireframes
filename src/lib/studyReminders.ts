@@ -1,4 +1,4 @@
-import { getStreakPauseStatus, getCurrentStreak, getStudyLog } from './studyLog'
+import { getStreakPauseStatus, getStudyLog } from './studyLog'
 
 // ── Storage keys ──
 const SETTINGS_KEY = 'study-reminders'
@@ -113,4 +113,3 @@ export function markNotifiedToday(key: string): void {
 
 // Re-export constants for the hook
 export { LAST_DAILY_KEY, LAST_RISK_KEY }
-

@@ -28,11 +28,16 @@ export function ReminderSettings() {
     function handleStudyLogUpdate() {
       setIsPaused(getStreakPauseStatus()?.enabled ?? false)
     }
+    function handlePauseUpdate() {
+      setIsPaused(getStreakPauseStatus()?.enabled ?? false)
+    }
     window.addEventListener('study-reminders-updated', handleReminderUpdate)
     window.addEventListener('study-log-updated', handleStudyLogUpdate)
+    window.addEventListener('streak-pause-updated', handlePauseUpdate)
     return () => {
       window.removeEventListener('study-reminders-updated', handleReminderUpdate)
       window.removeEventListener('study-log-updated', handleStudyLogUpdate)
+      window.removeEventListener('streak-pause-updated', handlePauseUpdate)
     }
   }, [])
 
@@ -64,13 +69,13 @@ export function ReminderSettings() {
     <Card data-testid="reminders-section">
       <CardHeader>
         <CardTitle className="text-base flex items-center gap-2">
-          <Bell className="w-4 h-4" aria-hidden="true" />
+          <Bell className="size-4" aria-hidden="true" />
           Study Reminders
         </CardTitle>
       </CardHeader>
       <CardContent className="space-y-4">
         {/* Master toggle */}
-        <div className="flex items-center justify-between">
+        <div className="flex items-center justify-between min-h-[44px]">
           <Label htmlFor="enable-reminders" className="cursor-pointer">
             Enable reminders
           </Label>
@@ -78,38 +83,39 @@ export function ReminderSettings() {
             id="enable-reminders"
             checked={settings.enabled}
             onCheckedChange={handleMasterToggle}
-            aria-label="Enable reminders"
           />
         </div>
 
         {/* Permission status feedback */}
-        {settings.enabled && permission === 'granted' && (
-          <div
-            data-testid="notification-permission-status"
-            className="flex items-center gap-2 text-sm text-green-600 dark:text-green-400"
-          >
-            <CheckCircle2 className="w-4 h-4" aria-hidden="true" />
-            Notifications enabled
-          </div>
-        )}
+        <div aria-live="polite" aria-atomic="true">
+          {settings.enabled && permission === 'granted' && (
+            <div
+              data-testid="notification-permission-status"
+              className="flex items-center gap-2 text-sm text-green-700 dark:text-green-400"
+            >
+              <CheckCircle2 className="size-4" aria-hidden="true" />
+              Notifications enabled
+            </div>
+          )}
 
-        {/* Permission denied guidance */}
-        {showDenied && (
-          <div
-            data-testid="permission-denied-guidance"
-            className="flex items-center gap-2 text-sm text-amber-600 dark:text-amber-400"
-          >
-            <AlertTriangle className="w-4 h-4" aria-hidden="true" />
-            Notifications are blocked. Please enable them in your browser settings.
-          </div>
-        )}
+          {/* Permission denied guidance */}
+          {showDenied && (
+            <div
+              data-testid="permission-denied-guidance"
+              className="flex items-center gap-2 text-sm text-amber-700 dark:text-amber-400"
+            >
+              <AlertTriangle className="size-4" aria-hidden="true" />
+              Notifications are blocked. Please enable them in your browser settings.
+            </div>
+          )}
+        </div>
 
         {/* Sub-toggles — only visible when enabled */}
         {settings.enabled && permission === 'granted' && (
-          <div className="space-y-4 pt-2 border-t border-border">
+          <div className="space-y-4 pt-2 border-t border-border animate-in fade-in-0 slide-in-from-top-1 duration-300">
             {/* Daily reminder */}
             <div className="space-y-2">
-              <div className="flex items-center justify-between">
+              <div className="flex items-center justify-between min-h-[44px]">
                 <Label htmlFor="daily-reminder" className="cursor-pointer">
                   Daily reminder
                 </Label>
@@ -117,7 +123,6 @@ export function ReminderSettings() {
                   id="daily-reminder"
                   checked={settings.dailyReminder}
                   onCheckedChange={checked => update({ dailyReminder: checked })}
-                  aria-label="Daily reminder"
                 />
               </div>
               {settings.dailyReminder && (
@@ -130,7 +135,7 @@ export function ReminderSettings() {
                     id="reminder-time"
                     value={settings.dailyReminderTime}
                     onChange={e => update({ dailyReminderTime: e.target.value })}
-                    className="mt-1 block w-32 rounded-md border border-input bg-background px-3 py-1.5 text-sm shadow-sm focus:border-ring focus:outline-none focus:ring-1 focus:ring-ring"
+                    className="mt-1 block w-full max-w-40 h-11 rounded-md border border-input bg-background px-3 py-1.5 text-sm shadow-sm focus-visible:border-ring focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
                   />
                 </div>
               )}
@@ -138,7 +143,7 @@ export function ReminderSettings() {
 
             {/* Streak at risk */}
             <div className="space-y-1">
-              <div className="flex items-center justify-between">
+              <div className="flex items-center justify-between min-h-[44px]">
                 <div>
                   <Label htmlFor="streak-at-risk" className="cursor-pointer">
                     Streak at risk
@@ -152,7 +157,6 @@ export function ReminderSettings() {
                   checked={settings.streakAtRisk}
                   onCheckedChange={checked => update({ streakAtRisk: checked })}
                   disabled={isPaused}
-                  aria-label="Streak at risk"
                 />
               </div>
               {isPaused && (

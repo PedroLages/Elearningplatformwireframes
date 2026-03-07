@@ -1,14 +1,10 @@
 /**
  * E05-S05: Study Reminders & Notifications — ATDD Tests
  *
- * RED phase: All tests should FAIL until implementation is complete.
- *
  * Verifies:
  *   - AC1: Notification permission request on first toggle
- *   - AC2: Daily reminder time configuration
+ *   - AC2: Daily reminder time configuration + persistence
  *   - AC3: Streak-at-risk reminder toggle
- *   - AC4: Browser notification with streak count (simulated)
- *   - AC5: 22-hour inactivity streak-at-risk notification (simulated)
  *   - AC6: Disable reminders cancels all scheduled notifications
  *   - AC7: Streak-at-risk suppressed when streak is paused
  */
@@ -49,9 +45,10 @@ test.describe('Study Reminders & Notifications (E05-S05)', () => {
     await expect(reminderToggle).toBeVisible()
     await reminderToggle.click()
 
-    // Should show permission state feedback (granted or denied guidance)
+    // Should show permission state feedback (granted)
     const permissionFeedback = remindersSection.getByTestId('notification-permission-status')
     await expect(permissionFeedback).toBeVisible()
+    await expect(permissionFeedback).toContainText(/notifications enabled/i)
   })
 
   test('AC1: should show guidance when notification permission is denied', async ({ page }) => {
@@ -78,7 +75,7 @@ test.describe('Study Reminders & Notifications (E05-S05)', () => {
     await expect(deniedMessage).toContainText(/browser settings/i)
   })
 
-  test('AC2: should allow selecting daily reminder time', async ({ page }) => {
+  test('AC2: should allow selecting daily reminder time and persist it', async ({ page }) => {
     // Mock Notification.permission as 'granted'
     await page.addInitScript(() => {
       Object.defineProperty(window, 'Notification', {
@@ -108,6 +105,17 @@ test.describe('Study Reminders & Notifications (E05-S05)', () => {
     // Time picker should be visible
     const timePicker = remindersSection.getByTestId('reminder-time-picker')
     await expect(timePicker).toBeVisible()
+
+    // Change the time and verify persistence
+    const timeInput = timePicker.locator('input[type="time"]')
+    await timeInput.fill('14:30')
+
+    const stored = await page.evaluate(() => {
+      const raw = localStorage.getItem('study-reminders')
+      return raw ? JSON.parse(raw) : null
+    })
+    expect(stored).not.toBeNull()
+    expect(stored.dailyReminderTime).toBe('14:30')
   })
 
   test('AC3: should allow enabling streak-at-risk reminder', async ({ page }) => {
@@ -155,17 +163,30 @@ test.describe('Study Reminders & Notifications (E05-S05)', () => {
     const remindersSection = page.getByTestId('reminders-section')
     const reminderToggle = remindersSection.getByRole('switch', { name: /enable.*reminders/i })
 
-    // Enable then disable
+    // Enable reminders and verify enabled state persisted
     await reminderToggle.click()
-    await reminderToggle.click()
-
-    // Configuration options should be hidden
-    const dailyReminderToggle = remindersSection.getByRole('switch', {
-      name: /daily.*reminder/i,
+    const enabledState = await page.evaluate(() => {
+      const raw = localStorage.getItem('study-reminders')
+      return raw ? JSON.parse(raw) : null
     })
-    await expect(dailyReminderToggle).not.toBeVisible()
+    expect(enabledState?.enabled).toBe(true)
 
-    // Verify toggle state is persisted
+    // Disable reminders
+    await reminderToggle.click()
+
+    // Configuration options should be hidden (element must not exist in DOM)
+    await expect(
+      remindersSection.getByRole('switch', { name: /daily.*reminder/i })
+    ).not.toBeVisible()
+
+    // Verify disabled state is persisted in localStorage
+    const disabledState = await page.evaluate(() => {
+      const raw = localStorage.getItem('study-reminders')
+      return raw ? JSON.parse(raw) : null
+    })
+    expect(disabledState?.enabled).toBe(false)
+
+    // Verify toggle state survives reload
     await page.reload()
     await goToSettings(page)
 
@@ -176,6 +197,7 @@ test.describe('Study Reminders & Notifications (E05-S05)', () => {
   })
 
   test('AC7: should suppress streak-at-risk when streak is paused', async ({ page }) => {
+    // Seed Notification mock via addInitScript (runs before page load)
     await page.addInitScript(() => {
       Object.defineProperty(window, 'Notification', {
         value: {

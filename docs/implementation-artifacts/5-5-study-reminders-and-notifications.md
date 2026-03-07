@@ -1,12 +1,13 @@
 ---
 story_id: E05-S05
 story_name: "Study Reminders & Notifications"
-status: in-progress
+status: done
 started: 2026-03-07
-completed:
-reviewed: in-progress
+completed: 2026-03-07
+reviewed: true
 review_started: 2026-03-07
 review_gates_passed: [build, lint, type-check, format-check, unit-tests, e2e-tests, design-review, code-review, code-review-testing]
+review_revalidated: 2026-03-07
 ---
 
 # Story 5.5: Study Reminders & Notifications

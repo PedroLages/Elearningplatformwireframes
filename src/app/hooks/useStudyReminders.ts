@@ -45,7 +45,9 @@ export function useStudyReminders(): void {
         if (hasNotifiedToday(LAST_DAILY_KEY)) return
 
         const now = new Date()
-        const [targetH, targetM] = settings.dailyReminderTime.split(':').map(Number)
+        const parts = settings.dailyReminderTime.split(':')
+        const targetH = parseInt(parts[0], 10)
+        const targetM = parseInt(parts[1], 10)
         if (Number.isNaN(targetH) || Number.isNaN(targetM)) return
 
         const currentMinutes = now.getHours() * 60 + now.getMinutes()
