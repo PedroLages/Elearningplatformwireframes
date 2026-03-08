@@ -1,7 +1,7 @@
 import { useState, useRef } from 'react'
 import { useTheme } from 'next-themes'
 import { Download, Upload, Trash2, Save } from 'lucide-react'
-import { Card, CardContent, CardHeader, CardTitle } from '@/app/components/ui/card'
+import { Card, CardContent, CardHeader } from '@/app/components/ui/card'
 import { Input } from '@/app/components/ui/input'
 import { Button } from '@/app/components/ui/button'
 import { Textarea } from '@/app/components/ui/textarea'
@@ -83,7 +83,7 @@ export default function Settings() {
         {/* Profile */}
         <Card>
           <CardHeader>
-            <CardTitle className="text-base">Profile</CardTitle>
+            <h2 className="text-base leading-none">Profile</h2>
           </CardHeader>
           <CardContent className="space-y-4">
             <div>
@@ -116,13 +116,13 @@ export default function Settings() {
         {/* Appearance */}
         <Card>
           <CardHeader>
-            <CardTitle className="text-base">Appearance</CardTitle>
+            <h2 className="text-base leading-none">Appearance</h2>
           </CardHeader>
           <CardContent>
             <div>
               <Label>Theme</Label>
-              <Select value={theme} onValueChange={setTheme} aria-label="Theme">
-                <SelectTrigger className="mt-1 w-48">
+              <Select value={theme} onValueChange={setTheme}>
+                <SelectTrigger className="mt-1 w-48" aria-label="Theme">
                   <SelectValue />
                 </SelectTrigger>
                 <SelectContent>
@@ -141,7 +141,7 @@ export default function Settings() {
         {/* Data Management */}
         <Card>
           <CardHeader>
-            <CardTitle className="text-base">Data Management</CardTitle>
+            <h2 className="text-base leading-none">Data Management</h2>
           </CardHeader>
           <CardContent className="space-y-4">
             <div className="flex gap-3">

@@ -58,6 +58,28 @@ export interface Module {
   lessons: Lesson[]
 }
 
+// --- Instructor Types ---
+
+export interface InstructorSocialLinks {
+  website?: string
+  linkedin?: string
+  twitter?: string
+}
+
+export interface Instructor {
+  id: string
+  name: string
+  avatar: string
+  title: string
+  bio: string
+  shortBio: string
+  specialties: string[]
+  yearsExperience: number
+  education?: string
+  socialLinks: InstructorSocialLinks
+  featuredQuote?: string
+}
+
 export interface Course {
   id: string
   title: string
@@ -74,6 +96,7 @@ export interface Course {
   modules: Module[]
   isSequential: boolean
   basePath: string
+  instructorId: string
 }
 
 export interface Note {
@@ -192,6 +215,22 @@ export interface StudySession {
   videosWatched: string[] // Video IDs watched during session
   lastActivity: string // ISO 8601 of last interaction
   sessionType: 'video' | 'pdf' | 'mixed'
+}
+
+// --- Learning Challenges (Story 6.1) ---
+
+export type ChallengeType = 'completion' | 'time' | 'streak'
+
+export interface Challenge {
+  id: string
+  name: string // 1-60 chars
+  type: ChallengeType
+  targetValue: number // > 0
+  deadline: string // ISO 8601 date
+  createdAt: string // ISO 8601 timestamp
+  currentProgress: number // starts at 0 (updated by E06-S02)
+  celebratedMilestones: number[] // [25, 50, 75, 100] (used by E06-S03)
+  completedAt?: string // ISO 8601 (set when 100% reached)
 }
 
 // --- Streak Milestones (Story 5.6) ---

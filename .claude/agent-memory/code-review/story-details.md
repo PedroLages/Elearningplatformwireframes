@@ -36,3 +36,28 @@ See git history for these older reviews. Key recurring patterns captured in MEMO
 - MilestoneGallery reads milestones only on mount (stale data when popover opens after earning)
 - getStreakStartDate() called twice in detectAndRecordMilestones (midnight race)
 - confetti useEffect deps should be [milestone.id] not [milestone.milestoneValue]
+
+## E06-S01: Create Learning Challenges (Round 3)
+- Round 2 items largely fixed: parseLocalDate, error state, cn(), deleteChallenge throw, integer validation, ignore flag
+- REMAINING: E2E afterEach cleanup is fire-and-forget (callback-based IDB API not awaited)
+- REMAINING: useEffect ignore flag is a no-op (loadChallenges state update happens in store, not in .then())
+- REMAINING: Validation errors don't clear on input change (persist until next submit)
+- REMAINING: `type as ChallengeType` cast when type is '' produces "Target undefined must be a whole number"
+- REMAINING: E2E afterEach IDB cleanup doesn't await transaction completion -- test isolation risk
+
+## E06-S02: Track Challenge Progress
+- String comparison for date filtering (`p.updatedAt >= challenge.createdAt`) -- fragile with mixed ISO formats
+- useEffect `.then()` chain lacks cleanup/ignore flag (stale updates on unmount)
+- `refreshAllProgress` optimistic UI update before DB write -- progress "resets" on reload if bulkPut fails
+- Streak progress not scoped to challenge creation date (contradicts AC4 wording)
+- No `updatedAt` index on contentProgress -- full table scan for completion progress
+- E2E afterEach IDB cleanup fire-and-forget (recurring from E06-S01)
+
+## E06-S03: Challenge Milestone Celebrations
+- `fireMilestoneToasts` setTimeout timers never cleaned up on unmount -- leaked toasts after navigation
+- `refreshAllProgress` returns milestoneMap outside try/catch -- returns stale empty map on error
+- `confettiColors` array reference in useEffect deps causes re-fire (referential inequality)
+- Hardcoded hex colors in confettiColors (acceptable for canvas-confetti, not Tailwind classes)
+- `hasFiredRef` prevents milestone toasts after first load -- new milestones from manual refresh never celebrated
+- E2E afterEach IDB cleanup fire-and-forget (recurring from E06-S01)
+- ChallengeMilestoneToast missing `role="status"` for screen reader announcements
